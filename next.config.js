@@ -4,7 +4,7 @@ const nextConfig = {
     // Add a rule to handle .node files
     config.module.rules.push({
       test: /\.node$/,
-      use: 'node-loader',
+      loader: 'node-loader',
     });
 
     if (!isServer) {
@@ -16,6 +16,10 @@ const nextConfig = {
     }
 
     return config;
+  },
+  // Add experimental features to support native modules
+  experimental: {
+    serverComponentsExternalPackages: ['@duckdb/node-api'],
   },
 };
 

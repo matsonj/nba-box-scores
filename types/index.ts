@@ -6,6 +6,9 @@ export interface Game {
   home_team_score: number;
   away_team_score: number;
   status: string;
+  boxScoreLoaded?: boolean;
+  homeTeam: Team;
+  awayTeam: Team;
 }
 
 export interface GameInfo extends Game {
@@ -32,6 +35,14 @@ export interface PlayerStats {
   turnovers: number;
   personal_fouls: number;
   points: number;
+}
+
+export interface Team {
+  teamId: string;
+  teamName: string;
+  teamAbbreviation: string;
+  score: number;
+  players?: PlayerStats[];
 }
 
 export interface TeamStats {

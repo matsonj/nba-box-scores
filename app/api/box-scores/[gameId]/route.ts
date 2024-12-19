@@ -8,7 +8,7 @@ export async function GET(
   { params }: { params: { gameId: string } }
 ) {
   try {
-    const gameId = params.gameId;
+    const { gameId } = params;
 
     // Get player stats
     const playerStats = await queryDb(`
@@ -31,7 +31,7 @@ export async function GET(
         turnovers,
         personal_fouls,
         points
-      FROM box_scores
+      FROM main.box_scores
       WHERE game_id = $1
       AND period = 'FullGame'
       ORDER BY team_abbreviation, points DESC
@@ -58,7 +58,7 @@ export async function GET(
         personal_fouls,
         offensive_possessions,
         defensive_possessions
-      FROM team_stats
+      FROM main.team_stats
       WHERE game_id = $1
       AND period = 'FullGame'
     `, [gameId]);
@@ -73,7 +73,7 @@ export async function GET(
         home_team_score,
         away_team_score,
         status
-      FROM schedule
+      FROM main.schedule
       WHERE game_id = $1
     `, [gameId]);
 
