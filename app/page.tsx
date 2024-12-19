@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { format, addDays, parseISO, isWithinInterval, startOfDay } from 'date-fns';
-import GameCard from '../components/GameCard';
+import { format, parseISO } from 'date-fns';
+import Link from 'next/link';
 import { Game } from '../types';
 
 export default function Home() {
@@ -14,107 +13,87 @@ export default function Home() {
   useEffect(() => {
     const fetchGames = async () => {
       try {
-        setLoading(true);
-        const response = await axios.get(
-          'https://data.nba.com/data/10s/v2015/json/mobile_teams/nba/2024/league/00_full_schedule.json'
-        );
-
-        // Get today and next two days
-        const today = startOfDay(new Date());
-        const twoDaysFromNow = addDays(today, 2);
-        
-        // Filter and organize games by date
-        const newGamesByDate: Record<string, Game[]> = {};
-        
-        // Initialize empty arrays for the next three days
-        for (let i = 0; i <= 2; i++) {
-          const date = format(addDays(today, i), 'yyyy-MM-dd');
-          newGamesByDate[date] = [];
+        const response = await fetch('/api/schedule');
+        if (!response.ok) {
+          throw new Error('Failed to fetch schedule');
         }
-
-        // Process all months in the schedule
-        response.data.lscd.forEach((month: any) => {
-          month.mscd.g.forEach((game: any) => {
-            const gameDate = game.gdte;
-            const parsedGameDate = parseISO(gameDate);
-            
-            if (isWithinInterval(parsedGameDate, { start: today, end: twoDaysFromNow })) {
-              // Transform the API response into our Game type
-              const transformedGame: Game = {
-                gameId: game.gid,
-                startTime: game.etm, // Eastern time
-                homeTeam: {
-                  teamId: game.h.tid,
-                  teamName: game.h.tn,
-                  score: parseInt(game.h.s || '0'),
-                  players: []
-                },
-                awayTeam: {
-                  teamId: game.v.tid,
-                  teamName: game.v.tn,
-                  score: parseInt(game.v.s || '0'),
-                  players: []
-                },
-                gameStatus: game.stt, // Game status text
-                period: parseInt(game.p || '0'),
-                clock: game.cl || ''
-              };
-              
-              newGamesByDate[gameDate].push(transformedGame);
-            }
-          });
+        const data = await response.json();
+        
+        // Group games by date
+        const games: Record<string, Game[]> = {};
+        data.forEach((game: Game) => {
+          const gameDate = format(parseISO(game.gameDate), 'yyyy-MM-dd');
+          if (!games[gameDate]) {
+            games[gameDate] = [];
+          }
+          games[gameDate].push(game);
         });
 
-        setGamesByDate(newGamesByDate);
+        setGamesByDate(games);
+        setError('');
       } catch (err) {
-        setError('Failed to fetch games');
-        console.error(err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch games');
       } finally {
         setLoading(false);
       }
     };
 
     fetchGames();
-    // Refresh every minute for live games
-    const interval = setInterval(fetchGames, 60000);
-    return () => clearInterval(interval);
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
+    return <div className="p-8">Loading schedule...</div>;
   }
 
   if (error) {
-    return (
-      <div className="flex justify-center items-center min-h-screen text-red-500">
-        {error}
-      </div>
-    );
+    return <div className="p-8 text-red-500">Error: {error}</div>;
   }
 
   return (
-    <main className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">NBA Games</h1>
-      {Object.entries(gamesByDate).map(([date, games]) => (
-        <div key={date} className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">
-            {format(parseISO(date), 'EEEE, MMMM d, yyyy')}
-          </h2>
-          {games.length === 0 ? (
-            <p className="text-gray-500">No games scheduled for this day</p>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <main className="container mx-auto p-8">
+      <h1 className="text-3xl font-bold mb-8">NBA Schedule</h1>
+      {Object.entries(gamesByDate)
+        .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
+        .map(([date, games]) => (
+          <div key={date} className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">
+              {format(parseISO(date), 'EEEE, MMMM d, yyyy')}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {games.map((game) => (
-                <GameCard key={game.gameId} game={game} />
+                <Link
+                  key={game.game_id}
+                  href={`/game/${game.game_id}`}
+                  className="block"
+                >
+                  <div className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow">
+                    <div className="text-sm text-gray-600 mb-2">
+                      {format(parseISO(game.gameDate), 'h:mm a')}
+                    </div>
+                    <div className="flex justify-between items-center mb-2">
+                      <div>
+                        <div className="font-semibold">{game.away_team_abbreviation}</div>
+                        {game.status === 'Final' && (
+                          <div className="text-lg">{game.away_team_score}</div>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-600">@</div>
+                      <div className="text-right">
+                        <div className="font-semibold">{game.home_team_abbreviation}</div>
+                        {game.status === 'Final' && (
+                          <div className="text-lg">{game.home_team_score}</div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-600 text-center">
+                      {game.status}
+                    </div>
+                  </div>
+                </Link>
               ))}
             </div>
-          )}
-        </div>
-      ))}
+          </div>
+        ))}
     </main>
   );
 }

@@ -1,54 +1,56 @@
 export interface Game {
-  gameId: string;
-  homeTeam: Team;
-  awayTeam: Team;
-  gameStatus: string;
+  game_id: string;
+  gameDate: string;
+  home_team_abbreviation: string;
+  away_team_abbreviation: string;
+  home_team_score: number;
+  away_team_score: number;
+  status: string;
+}
+
+export interface GameInfo extends Game {
   period: number;
   clock: string;
-  startTime: string;
-}
-
-export interface Team {
-  teamId: string;
-  teamName: string;
-  score: number;
-  players: Player[];
-}
-
-export interface Player {
-  playerId: string;
-  firstName: string;
-  lastName: string;
-  jerseyNumber: string;
-  position: string;
-  stats: PlayerStats;
 }
 
 export interface PlayerStats {
-  minutes: string;
-  points: number;
-  assists: number;
+  player_name: string;
+  team_abbreviation: string;
+  minutes: number;
+  field_goals_made: number;
+  field_goals_attempted: number;
+  three_pointers_made: number;
+  three_pointers_attempted: number;
+  free_throws_made: number;
+  free_throws_attempted: number;
+  offensive_rebounds: number;
+  defensive_rebounds: number;
   rebounds: number;
+  assists: number;
   steals: number;
   blocks: number;
   turnovers: number;
-  fieldGoalsMade: number;
-  fieldGoalsAttempted: number;
-  threePointersMade: number;
-  threePointersAttempted: number;
-  freeThrowsMade: number;
-  freeThrowsAttempted: number;
+  personal_fouls: number;
+  points: number;
 }
 
-export interface ApiGameResponse {
-  GameId: string;
-  Date: string;
-  HomeTeamId: string;
-  AwayTeamId: string;
-  HomePoints: number;
-  AwayPoints: number;
-  HomePossessions: number;
-  AwayPossessions: number;
-  HomeTeamAbbreviation: string;
-  AwayTeamAbbreviation: string;
+export interface TeamStats {
+  team_abbreviation: string;
+  points: number;
+  field_goals_made: number;
+  field_goals_attempted: number;
+  three_pointers_made: number;
+  three_pointers_attempted: number;
+  free_throws_made: number;
+  free_throws_attempted: number;
+  offensive_rebounds: number;
+  defensive_rebounds: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  personal_fouls: number;
+  offensive_possessions: number;
+  defensive_possessions: number;
 }
