@@ -19,6 +19,7 @@ export interface GameInfo extends Game {
 export interface PlayerStats {
   player_name: string;
   team_abbreviation: string;
+  period: string;
   minutes: number;
   field_goals_made: number;
   field_goals_attempted: number;
@@ -47,6 +48,7 @@ export interface Team {
 
 export interface TeamStats {
   team_abbreviation: string;
+  period: string;
   points: number;
   field_goals_made: number;
   field_goals_attempted: number;

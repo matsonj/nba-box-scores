@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import { Team } from '@/types';
 
 interface BoxScoreProps {
@@ -6,9 +9,18 @@ interface BoxScoreProps {
 }
 
 export default function BoxScore({ homeTeam, awayTeam }: BoxScoreProps) {
+  const [selectedPeriod, setSelectedPeriod] = useState('FullGame');
+  const periods = ['FullGame', '1', '2', '3', '4'];
+
   const renderTeamStats = (team: Team) => {
     if (!team.players || team.players.length === 0) {
       return <div>No player stats available</div>;
+    }
+
+    const periodPlayers = team.players.filter(player => player.period === selectedPeriod);
+
+    if (periodPlayers.length === 0) {
+      return <div>No stats available for this period</div>;
     }
 
     return (
@@ -32,8 +44,8 @@ export default function BoxScore({ homeTeam, awayTeam }: BoxScoreProps) {
               </tr>
             </thead>
             <tbody>
-              {team.players.map((player, index) => (
-                <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+              {periodPlayers.map((player, index) => (
+                <tr key={player.player_name} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                   <td className="px-4 py-2">{player.player_name}</td>
                   <td className="px-4 py-2 text-right">{player.minutes}</td>
                   <td className="px-4 py-2 text-right">{player.points}</td>
@@ -61,9 +73,26 @@ export default function BoxScore({ homeTeam, awayTeam }: BoxScoreProps) {
   };
 
   return (
-    <div className="space-y-8">
-      {renderTeamStats(awayTeam)}
-      {renderTeamStats(homeTeam)}
+    <div>
+      <div className="mb-4">
+        <label htmlFor="period" className="mr-2">Period:</label>
+        <select
+          id="period"
+          value={selectedPeriod}
+          onChange={(e) => setSelectedPeriod(e.target.value)}
+          className="border rounded px-2 py-1"
+        >
+          {periods.map((period) => (
+            <option key={period} value={period}>
+              {period === 'FullGame' ? 'Full Game' : `Quarter ${period}`}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="space-y-8">
+        {renderTeamStats(awayTeam)}
+        {renderTeamStats(homeTeam)}
+      </div>
     </div>
   );
 }

@@ -1,11 +1,8 @@
-import * as duckdb from 'duckdb';
+import { getConnection, queryDb } from '../lib/db';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-// Initialize DuckDB with a persistent file
-const db = new duckdb.Database('/Users/jacobmatson/code/nba-box-scores/nba-box-scores/data/nba.db');
-
-const BOX_SCORES_DIR = '/Users/jacobmatson/code/nba-box-scores/nba-box-scores/data/box_scores';
+const BOX_SCORES_DIR = path.join(process.cwd(), 'data', 'box_scores');
 
 const loadBoxScores = async () => {
   // Get all JSON files in the box_scores directory
@@ -14,92 +11,67 @@ const loadBoxScores = async () => {
 
   console.log(`Found ${jsonFiles.length} box score files to process`);
 
+  const conn = await getConnection();
+
   // Drop existing tables and create new ones
-  await new Promise<void>((resolve, reject) => {
-    db.exec(`
-      DROP TABLE IF EXISTS box_scores;
-      DROP TABLE IF EXISTS team_stats;
+  await conn.run(`
+    DROP TABLE IF EXISTS box_scores;
+    DROP TABLE IF EXISTS team_stats;
 
-      CREATE TABLE box_scores (
-        game_id VARCHAR,
-        team_id VARCHAR,
-        entity_id VARCHAR,
-        player_name VARCHAR,
-        minutes VARCHAR,
-        points INTEGER,
-        rebounds INTEGER,
-        assists INTEGER,
-        steals INTEGER,
-        blocks INTEGER,
-        turnovers INTEGER,
-        fg_made INTEGER,
-        fg_attempted INTEGER,
-        fg3_made INTEGER,
-        fg3_attempted INTEGER,
-        ft_made INTEGER,
-        ft_attempted INTEGER,
-        plus_minus INTEGER,
-        starter BOOLEAN,
-        period VARCHAR,  -- '1', '2', '3', '4', or 'FullGame'
-        PRIMARY KEY (game_id, team_id, entity_id, period)
-      );
+    CREATE TABLE box_scores (
+      game_id VARCHAR,
+      team_id VARCHAR,
+      entity_id VARCHAR,
+      player_name VARCHAR,
+      minutes VARCHAR,
+      points INTEGER,
+      rebounds INTEGER,
+      assists INTEGER,
+      steals INTEGER,
+      blocks INTEGER,
+      turnovers INTEGER,
+      fg_made INTEGER,
+      fg_attempted INTEGER,
+      fg3_made INTEGER,
+      fg3_attempted INTEGER,
+      ft_made INTEGER,
+      ft_attempted INTEGER,
+      plus_minus INTEGER,
+      starter INTEGER,  -- 1 for true, 0 for false
+      period VARCHAR,  -- '1', '2', '3', '4', or 'FullGame'
+      PRIMARY KEY (game_id, team_id, entity_id, period)
+    );
 
-      CREATE TABLE team_stats (
-        game_id VARCHAR,
-        team_id VARCHAR,
-        team_abbreviation VARCHAR,
-        period VARCHAR,
-        minutes VARCHAR,
-        offensive_possessions INTEGER,
-        defensive_possessions INTEGER,
-        points INTEGER,
-        field_goals_made INTEGER,
-        field_goals_attempted INTEGER,
-        three_pointers_made INTEGER,
-        three_pointers_attempted INTEGER,
-        free_throws_made INTEGER,
-        free_throws_attempted INTEGER,
-        offensive_rebounds INTEGER,
-        defensive_rebounds INTEGER,
-        assists INTEGER,
-        steals INTEGER,
-        blocks INTEGER,
-        turnovers INTEGER,
-        personal_fouls INTEGER,
-        PRIMARY KEY (game_id, team_id, period)
-      );
+    CREATE TABLE team_stats (
+      game_id VARCHAR,
+      team_id VARCHAR,
+      team_abbreviation VARCHAR,
+      period VARCHAR,
+      minutes VARCHAR,
+      offensive_possessions INTEGER,
+      defensive_possessions INTEGER,
+      points INTEGER,
+      field_goals_made INTEGER,
+      field_goals_attempted INTEGER,
+      three_pointers_made INTEGER,
+      three_pointers_attempted INTEGER,
+      free_throws_made INTEGER,
+      free_throws_attempted INTEGER,
+      offensive_rebounds INTEGER,
+      defensive_rebounds INTEGER,
+      assists INTEGER,
+      steals INTEGER,
+      blocks INTEGER,
+      turnovers INTEGER,
+      personal_fouls INTEGER,
+      PRIMARY KEY (game_id, team_id, period)
+    );
 
-      CREATE INDEX box_scores_game_idx ON box_scores(game_id);
-      CREATE INDEX box_scores_player_idx ON box_scores(entity_id);
-      CREATE INDEX box_scores_team_idx ON box_scores(team_id);
-      CREATE INDEX team_stats_game_idx ON team_stats(game_id);
-      CREATE INDEX team_stats_team_idx ON team_stats(team_id);
-    `, (err) => {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
-
-  // Prepare statements
-  const playerStmt = db.prepare(`
-    INSERT OR REPLACE INTO box_scores (
-      game_id, team_id, entity_id, player_name, minutes,
-      points, rebounds, assists, steals, blocks, turnovers,
-      fg_made, fg_attempted, fg3_made, fg3_attempted,
-      ft_made, ft_attempted, plus_minus, starter, period
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  const teamStmt = db.prepare(`
-    INSERT OR REPLACE INTO team_stats (
-      game_id, team_id, team_abbreviation, period, minutes,
-      offensive_possessions, defensive_possessions,
-      points, field_goals_made, field_goals_attempted,
-      three_pointers_made, three_pointers_attempted,
-      free_throws_made, free_throws_attempted,
-      offensive_rebounds, defensive_rebounds,
-      assists, steals, blocks, turnovers, personal_fouls
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    CREATE INDEX box_scores_game_idx ON box_scores(game_id);
+    CREATE INDEX box_scores_player_idx ON box_scores(entity_id);
+    CREATE INDEX box_scores_team_idx ON box_scores(team_id);
+    CREATE INDEX team_stats_game_idx ON team_stats(game_id);
+    CREATE INDEX team_stats_team_idx ON team_stats(team_id);
   `);
 
   // Process each file
@@ -109,13 +81,13 @@ const loadBoxScores = async () => {
     const data = JSON.parse(content);
 
     const gameId = data.game.gameId;
-    const homeTeamId = data.boxScore.home_team_id;
-    const awayTeamId = data.boxScore.away_team_id;
-    const homeTeamAbbrev = data.boxScore.home_team_abbreviation;
-    const awayTeamAbbrev = data.boxScore.away_team_abbreviation;
+    const homeTeamId = data.game.homeTeam.teamId;
+    const awayTeamId = data.game.awayTeam.teamId;
+    const homeTeamAbbrev = data.game.homeTeam.teamTricode;
+    const awayTeamAbbrev = data.game.awayTeam.teamTricode;
 
     // Process player stats for both teams
-    for (const teamType of ['Home', 'Away'] as const) {
+    for (const teamType of ['Away', 'Home'] as const) {
       const teamId = teamType === 'Home' ? homeTeamId : awayTeamId;
       const teamAbbrev = teamType === 'Home' ? homeTeamAbbrev : awayTeamAbbrev;
       const periods = ['1', '2', '3', '4', 'FullGame'];
@@ -134,28 +106,42 @@ const loadBoxScores = async () => {
         // Insert player stats
         for (const player of playerStats) {
           try {
-            playerStmt.run(
+            const fg2Made = parseInt(player.FG2M || '0');
+            const fg3Made = parseInt(player.FG3M || '0');
+            const fg2Attempted = parseInt(player.FG2A || '0');
+            const fg3Attempted = parseInt(player.FG3A || '0');
+            const offReb = parseInt(player.OffRebounds || '0');
+            const defReb = parseInt(player.DefRebounds || '0');
+
+            await queryDb(`
+              INSERT OR REPLACE INTO box_scores (
+                game_id, team_id, entity_id, player_name, minutes,
+                points, rebounds, assists, steals, blocks, turnovers,
+                fg_made, fg_attempted, fg3_made, fg3_attempted,
+                ft_made, ft_attempted, plus_minus, starter, period
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+            `, [
               gameId,
               teamId,
               player.EntityId,
               player.Name,
               player.Minutes || '0:00',
-              player.Points || 0,
-              (player.OffReb || 0) + (player.DefReb || 0),
-              player.Assists || 0,
-              player.Steals || 0,
-              player.Blocks || 0,
-              player.Turnovers || 0,
-              player.FGM || 0,
-              player.FGA || 0,
-              player.TPM || 0,
-              player.TPA || 0,
-              player.FTM || 0,
-              player.FTA || 0,
-              player.PlusMinus || 0,
-              period === '1',
+              parseInt(player.Points || '0'),
+              offReb + defReb,
+              parseInt(player.Assists || '0'),
+              parseInt(player.Steals || '0'),
+              parseInt(player.Blocks || '0'),
+              parseInt(player.Turnovers || '0'),
+              fg2Made + fg3Made,
+              fg2Attempted + fg3Attempted,
+              fg3Made,
+              fg3Attempted,
+              0, // FT stats not available in this format
+              0,
+              0, // Plus/minus not available
+              period === '1' ? 1 : 0, // Convert boolean to integer
               period
-            );
+            ]);
           } catch (err) {
             console.error('Error inserting player stats:', err);
             console.error('Player:', player);
@@ -163,50 +149,91 @@ const loadBoxScores = async () => {
           }
         }
 
-        // Insert team stats
-        const teamStats = data.boxScore.team_results[teamType][period];
-        if (teamStats) {
-          try {
-            teamStmt.run(
-              gameId,
-              teamId,
-              teamAbbrev,
-              period,
-              teamStats.Minutes || '0:00',
-              teamStats.OffPoss || 0,
-              teamStats.DefPoss || 0,
-              teamStats.Points || 0,
-              teamStats.FGM || 0,
-              teamStats.FGA || 0,
-              teamStats.TPM || 0,
-              teamStats.TPA || 0,
-              teamStats.FTM || 0,
-              teamStats.FTA || 0,
-              teamStats.OffReb || 0,
-              teamStats.DefReb || 0,
-              teamStats.Assists || 0,
-              teamStats.Steals || 0,
-              teamStats.Blocks || 0,
-              teamStats.Turnovers || 0,
-              teamStats.Fouls || 0
-            );
-          } catch (err) {
-            console.error('Error inserting team stats:', err);
-            console.error('Team Stats:', teamStats);
-            throw err;
-          }
+        // Calculate team stats
+        const teamStats = players.reduce((acc, player) => {
+          if (player.EntityId === '0') return acc;
+          
+          return {
+            minutes: '48:00', // Full game
+            offPoss: parseInt(player.OffPoss || '0') + acc.offPoss,
+            defPoss: parseInt(player.DefPoss || '0') + acc.defPoss,
+            points: parseInt(player.Points || '0') + acc.points,
+            fgm: (parseInt(player.FG2M || '0') + parseInt(player.FG3M || '0')) + acc.fgm,
+            fga: (parseInt(player.FG2A || '0') + parseInt(player.FG3A || '0')) + acc.fga,
+            tpm: parseInt(player.FG3M || '0') + acc.tpm,
+            tpa: parseInt(player.FG3A || '0') + acc.tpa,
+            offReb: parseInt(player.OffRebounds || '0') + acc.offReb,
+            defReb: parseInt(player.DefRebounds || '0') + acc.defReb,
+            assists: parseInt(player.Assists || '0') + acc.assists,
+            steals: parseInt(player.Steals || '0') + acc.steals,
+            blocks: parseInt(player.Blocks || '0') + acc.blocks,
+            turnovers: parseInt(player.Turnovers || '0') + acc.turnovers,
+            fouls: parseInt(player.Fouls || '0') + acc.fouls,
+          };
+        }, {
+          minutes: '0:00',
+          offPoss: 0,
+          defPoss: 0,
+          points: 0,
+          fgm: 0,
+          fga: 0,
+          tpm: 0,
+          tpa: 0,
+          offReb: 0,
+          defReb: 0,
+          assists: 0,
+          steals: 0,
+          blocks: 0,
+          turnovers: 0,
+          fouls: 0,
+        });
+
+        try {
+          await queryDb(`
+            INSERT OR REPLACE INTO team_stats (
+              game_id, team_id, team_abbreviation, period, minutes,
+              offensive_possessions, defensive_possessions,
+              points, field_goals_made, field_goals_attempted,
+              three_pointers_made, three_pointers_attempted,
+              free_throws_made, free_throws_attempted,
+              offensive_rebounds, defensive_rebounds,
+              assists, steals, blocks, turnovers, personal_fouls
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+          `, [
+            gameId,
+            teamId,
+            teamAbbrev,
+            period,
+            teamStats.minutes,
+            teamStats.offPoss,
+            teamStats.defPoss,
+            teamStats.points,
+            teamStats.fgm,
+            teamStats.fga,
+            teamStats.tpm,
+            teamStats.tpa,
+            0, // FT stats not available
+            0,
+            teamStats.offReb,
+            teamStats.defReb,
+            teamStats.assists,
+            teamStats.steals,
+            teamStats.blocks,
+            teamStats.turnovers,
+            teamStats.fouls
+          ]);
+        } catch (err) {
+          console.error('Error inserting team stats:', err);
+          console.error('Team Stats:', teamStats);
+          throw err;
         }
       }
     }
 
-    console.log(`Processed box score for game ${gameId}`);
+    console.log(`Processed game ${gameId}`);
   }
 
-  // Finalize statements
-  playerStmt.finalize();
-  teamStmt.finalize();
-
-  console.log('Finished loading all box scores');
+  console.log('Done!');
 };
 
 loadBoxScores().catch(console.error);

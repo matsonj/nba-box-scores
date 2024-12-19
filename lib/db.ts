@@ -6,8 +6,13 @@ import fs from 'fs';
 let db: DuckDBInstance | null = null;
 let conn: any | null = null;
 
-export async function getConnection(): Promise<DuckDBInstance | null> {
+export async function getConnection(): Promise<any> {
   try {
+    // Return existing connection if it exists
+    if (conn) {
+      return conn;
+    }
+
     const dbPath = path.join(process.cwd(), 'data', 'nba.db');
     
     // Check if database file exists and log its size
@@ -17,8 +22,8 @@ export async function getConnection(): Promise<DuckDBInstance | null> {
     }
 
     // Create a new DuckDB instance
-    const db = await DuckDBInstance.create(dbPath);
-    const conn = await db.connect();
+    db = await DuckDBInstance.create(dbPath);
+    conn = await db.connect();
     
     // Create schema and tables if they don't exist
     await conn.run(`
@@ -29,8 +34,8 @@ export async function getConnection(): Promise<DuckDBInstance | null> {
       CREATE TABLE IF NOT EXISTS main.schedule (
         game_id VARCHAR PRIMARY KEY,
         game_date DATE,
-        home_team VARCHAR,
-        away_team VARCHAR,
+        home_team_abbreviation VARCHAR,
+        away_team_abbreviation VARCHAR,
         home_team_score INTEGER,
         away_team_score INTEGER,
         status VARCHAR
@@ -173,14 +178,6 @@ process.on('exit', () => {
       console.log('Database connection closed');
     } catch (error) {
       console.error('Error closing database connection:', error);
-    }
-  }
-  if (db) {
-    try {
-      db.close();
-      console.log('Database closed');
-    } catch (error) {
-      console.error('Error closing database:', error);
     }
   }
 });
