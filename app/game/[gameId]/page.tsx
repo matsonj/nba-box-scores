@@ -1,8 +1,22 @@
 import BoxScore from '@/components/BoxScore';
 import { Team } from '@/types';
 
-async function getBoxScore(gameId: string) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/box-scores/${gameId}`, {
+interface BoxScoreResponse {
+  gameInfo: {
+    game_id: string;
+    gameDate: string;
+    home_team_abbreviation: string;
+    away_team_abbreviation: string;
+    home_team_score: number;
+    away_team_score: number;
+    status: string;
+  };
+  homeTeam: Team;
+  awayTeam: Team;
+}
+
+async function getBoxScore(gameId: string): Promise<BoxScoreResponse> {
+  const res = await fetch(`/api/box-scores/${gameId}`, {
     next: { revalidate: 30 }, // Revalidate every 30 seconds
   });
   
@@ -23,7 +37,7 @@ export default async function GamePage({ params }: { params: { gameId: string } 
           {data.gameInfo.away_team_abbreviation} @ {data.gameInfo.home_team_abbreviation}
         </h1>
         <p className="text-gray-600">
-          {data.gameInfo.status} - {data.gameInfo.game_date}
+          {data.gameInfo.status} - {data.gameInfo.gameDate}
         </p>
         <p className="text-xl">
           {data.gameInfo.away_team_score} - {data.gameInfo.home_team_score}

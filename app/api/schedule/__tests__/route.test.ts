@@ -1,5 +1,6 @@
 import { GET } from '../route';
 import { queryDb } from '@/lib/db';
+import { NextRequest, Request } from 'next/server';
 
 // Mock the database query function
 jest.mock('@/lib/db', () => ({
@@ -14,6 +15,7 @@ jest.mock('next/server', () => ({
       ...options
     })),
   },
+  NextRequest: jest.fn().mockImplementation((request) => request),
 }));
 
 describe('Schedule API Route', () => {
@@ -39,8 +41,11 @@ describe('Schedule API Route', () => {
     // Set up the mock to return our test data
     (queryDb as jest.Mock).mockResolvedValue(mockDbResponse);
 
-    // Call the API route handler
-    const response = await GET();
+    // Create a mock request object
+    const mockRequest = new NextRequest('http://localhost:3000/api/schedule');
+
+    // Call the API route handler with the mock request
+    const response = await GET(mockRequest);
     const data = await response.json();
 
     // Check the transformed data structure
@@ -49,7 +54,7 @@ describe('Schedule API Route', () => {
     
     // Test each property individually for better error messages
     expect(game.game_id).toBe('202312180LAL');
-    expect(game.game_date).toBe('2023-12-18');
+    expect(game.gameDate).toBe('2023-12-18');
     expect(game.homeTeam).toMatchObject({
       teamId: 'LAL',
       teamName: 'LAL',
@@ -72,12 +77,15 @@ describe('Schedule API Route', () => {
     // Mock a database error
     (queryDb as jest.Mock).mockRejectedValue(new Error('Database error'));
 
-    // Call the API route handler and get the error response
-    const response = await GET();
+    // Create a mock request object
+    const mockRequest = new NextRequest('http://localhost:3000/api/schedule');
+
+    // Call the API route handler with the mock request
+    const response = await GET(mockRequest);
     const data = await response.json();
 
     // Verify error response
-    expect(data).toMatchObject({
+    expect(data).toEqual({
       error: 'Error fetching schedule: Database error'
     });
   });
@@ -86,11 +94,14 @@ describe('Schedule API Route', () => {
     // Mock empty database response
     (queryDb as jest.Mock).mockResolvedValue([]);
 
-    // Call the API route handler
-    const response = await GET();
+    // Create a mock request object
+    const mockRequest = new NextRequest('http://localhost:3000/api/schedule');
+
+    // Call the API route handler with the mock request
+    const response = await GET(mockRequest);
     const data = await response.json();
 
-    // Verify response
-    expect(data).toHaveLength(0);
+    // Verify empty array response
+    expect(data).toEqual([]);
   });
 });

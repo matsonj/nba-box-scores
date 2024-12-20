@@ -25,85 +25,11 @@ export async function getConnection(): Promise<any> {
     db = await DuckDBInstance.create(dbPath);
     conn = await db.connect();
     
-    // Create schema and tables if they don't exist
-    await conn.run(`
-      CREATE SCHEMA IF NOT EXISTS main;
-    `);
-    
-    await conn.run(`
-      CREATE TABLE IF NOT EXISTS main.schedule (
-        game_id VARCHAR PRIMARY KEY,
-        game_date DATE,
-        home_team_abbreviation VARCHAR,
-        away_team_abbreviation VARCHAR,
-        home_team_score INTEGER,
-        away_team_score INTEGER,
-        status VARCHAR
-      );
-    `);
-    
-    await conn.run(`
-      CREATE TABLE IF NOT EXISTS main.box_scores (
-        game_id VARCHAR,
-        player_id VARCHAR,
-        player_name VARCHAR,
-        team_id VARCHAR,
-        period VARCHAR,
-        minutes INTEGER,
-        field_goals_made INTEGER,
-        field_goals_attempted INTEGER,
-        three_pointers_made INTEGER,
-        three_pointers_attempted INTEGER,
-        free_throws_made INTEGER,
-        free_throws_attempted INTEGER,
-        offensive_rebounds INTEGER,
-        defensive_rebounds INTEGER,
-        rebounds INTEGER,
-        assists INTEGER,
-        steals INTEGER,
-        blocks INTEGER,
-        turnovers INTEGER,
-        personal_fouls INTEGER,
-        points INTEGER,
-        PRIMARY KEY (game_id, player_id, period)
-      );
-    `);
-    
-    await conn.run(`
-      CREATE TABLE IF NOT EXISTS main.team_stats (
-        game_id VARCHAR,
-        team_id VARCHAR,
-        period VARCHAR,
-        field_goals_made INTEGER,
-        field_goals_attempted INTEGER,
-        three_pointers_made INTEGER,
-        three_pointers_attempted INTEGER,
-        free_throws_made INTEGER,
-        free_throws_attempted INTEGER,
-        offensive_rebounds INTEGER,
-        defensive_rebounds INTEGER,
-        rebounds INTEGER,
-        assists INTEGER,
-        steals INTEGER,
-        blocks INTEGER,
-        turnovers INTEGER,
-        personal_fouls INTEGER,
-        points INTEGER,
-        offensive_possessions INTEGER,
-        defensive_possessions INTEGER,
-        PRIMARY KEY (game_id, team_id, period)
-      );
-    `);
-    
-    // Log test query result
-    const result = await conn.run('SELECT 1');
-    console.log('Test query result:', result);
-    
     console.log('Successfully connected to database');
     return conn;
   } catch (error) {
     console.error('Error connecting to database:', error);
-    return null;
+    throw error;
   }
 }
 

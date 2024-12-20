@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db';
+import { Team, PlayerStats } from '@/types';
 
 export const runtime = 'nodejs';
 
@@ -81,10 +82,43 @@ export async function GET(
       return NextResponse.json({ error: 'Game not found' }, { status: 404 });
     }
 
+    const game = gameInfo[0];
+    
+    // Group players by team
+    const homeTeamPlayers = playerStats.filter((p: PlayerStats) => p.team_abbreviation === game.home_team_abbreviation);
+    const awayTeamPlayers = playerStats.filter((p: PlayerStats) => p.team_abbreviation === game.away_team_abbreviation);
+    
+    // Find team stats
+    const homeTeamStats = teamStats.find((t: any) => t.team_abbreviation === game.home_team_abbreviation) || {};
+    const awayTeamStats = teamStats.find((t: any) => t.team_abbreviation === game.away_team_abbreviation) || {};
+    
+    // Create team objects
+    const homeTeam: Team = {
+      teamId: game.home_team_abbreviation,
+      teamName: game.home_team_abbreviation,
+      teamAbbreviation: game.home_team_abbreviation,
+      score: game.home_team_score || 0,
+      players: homeTeamPlayers,
+      ...homeTeamStats
+    };
+    
+    const awayTeam: Team = {
+      teamId: game.away_team_abbreviation,
+      teamName: game.away_team_abbreviation,
+      teamAbbreviation: game.away_team_abbreviation,
+      score: game.away_team_score || 0,
+      players: awayTeamPlayers,
+      ...awayTeamStats
+    };
+
     return NextResponse.json({
-      gameInfo: gameInfo[0],
-      playerStats,
-      teamStats,
+      gameInfo: {
+        ...game,
+        gameDate: game.game_date,
+        game_date: undefined
+      },
+      homeTeam,
+      awayTeam,
     });
   } catch (error) {
     console.error('Error fetching box score:', error);
