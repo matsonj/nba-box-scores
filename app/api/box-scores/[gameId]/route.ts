@@ -9,57 +9,59 @@ export async function GET(
   { params }: { params: { gameId: string } }
 ) {
   try {
-    const { gameId } = params;
+    const gameId = params.gameId;
 
     // Get player stats
     const playerStats = await queryDb(`
       SELECT 
+        game_id,
+        team_id,
+        entity_id,
         player_name,
-        team_abbreviation,
         minutes,
-        field_goals_made,
-        field_goals_attempted,
-        three_pointers_made,
-        three_pointers_attempted,
-        free_throws_made,
-        free_throws_attempted,
-        offensive_rebounds,
-        defensive_rebounds,
+        points,
         rebounds,
         assists,
         steals,
         blocks,
         turnovers,
-        personal_fouls,
-        points
-      FROM main.box_scores
+        fg_made,
+        fg_attempted,
+        fg3_made,
+        fg3_attempted,
+        ft_made,
+        ft_attempted,
+        plus_minus,
+        starter,
+        period
+      FROM box_scores
       WHERE game_id = $1
       AND period = 'FullGame'
-      ORDER BY team_abbreviation, points DESC
+      ORDER BY team_id, points DESC
     `, [gameId]);
 
     // Get team stats
     const teamStats = await queryDb(`
       SELECT 
-        team_abbreviation,
+        game_id,
+        team_id,
+        period,
+        minutes,
         points,
-        field_goals_made,
-        field_goals_attempted,
-        three_pointers_made,
-        three_pointers_attempted,
-        free_throws_made,
-        free_throws_attempted,
-        offensive_rebounds,
-        defensive_rebounds,
         rebounds,
         assists,
         steals,
         blocks,
         turnovers,
-        personal_fouls,
+        fg_made,
+        fg_attempted,
+        fg3_made,
+        fg3_attempted,
+        ft_made,
+        ft_attempted,
         offensive_possessions,
         defensive_possessions
-      FROM main.team_stats
+      FROM team_stats
       WHERE game_id = $1
       AND period = 'FullGame'
     `, [gameId]);
@@ -69,12 +71,12 @@ export async function GET(
       SELECT 
         game_id,
         game_date,
-        home_team_abbreviation,
-        away_team_abbreviation,
+        home_team_id,
+        away_team_id,
         home_team_score,
         away_team_score,
         status
-      FROM main.schedule
+      FROM schedule
       WHERE game_id = $1
     `, [gameId]);
 
@@ -85,41 +87,29 @@ export async function GET(
     const game = gameInfo[0];
     
     // Group players by team
-    const homeTeamPlayers = playerStats.filter((p: PlayerStats) => p.team_abbreviation === game.home_team_abbreviation);
-    const awayTeamPlayers = playerStats.filter((p: PlayerStats) => p.team_abbreviation === game.away_team_abbreviation);
+    const homeTeamPlayers = playerStats.filter((p: PlayerStats) => p.team_id === game.home_team_id);
+    const awayTeamPlayers = playerStats.filter((p: PlayerStats) => p.team_id === game.away_team_id);
     
     // Find team stats
-    const homeTeamStats = teamStats.find((t: any) => t.team_abbreviation === game.home_team_abbreviation) || {};
-    const awayTeamStats = teamStats.find((t: any) => t.team_abbreviation === game.away_team_abbreviation) || {};
-    
-    // Create team objects
-    const homeTeam: Team = {
-      teamId: game.home_team_abbreviation,
-      teamName: game.home_team_abbreviation,
-      teamAbbreviation: game.home_team_abbreviation,
-      score: game.home_team_score || 0,
-      players: homeTeamPlayers,
-      ...homeTeamStats
-    };
-    
-    const awayTeam: Team = {
-      teamId: game.away_team_abbreviation,
-      teamName: game.away_team_abbreviation,
-      teamAbbreviation: game.away_team_abbreviation,
-      score: game.away_team_score || 0,
-      players: awayTeamPlayers,
-      ...awayTeamStats
+    const homeTeamStats = teamStats.find((t: any) => t.team_id === game.home_team_id) || {};
+    const awayTeamStats = teamStats.find((t: any) => t.team_id === game.away_team_id) || {};
+
+    const boxScore = {
+      gameInfo: game,
+      homeTeam: {
+        ...homeTeamStats,
+        teamId: game.home_team_id,
+        players: homeTeamPlayers,
+      },
+      awayTeam: {
+        ...awayTeamStats,
+        teamId: game.away_team_id,
+        players: awayTeamPlayers,
+      },
     };
 
-    return NextResponse.json({
-      gameInfo: {
-        ...game,
-        gameDate: game.game_date,
-        game_date: undefined
-      },
-      homeTeam,
-      awayTeam,
-    });
+    return NextResponse.json(boxScore);
+
   } catch (error) {
     console.error('Error fetching box score:', error);
     return NextResponse.json(

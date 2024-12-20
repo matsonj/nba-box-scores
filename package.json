@@ -14,6 +14,7 @@
     "backfill-db": "tsx scripts/backfill-db.ts",
     "test-db": "tsx scripts/test-db.ts",
     "load-box-scores": "tsx scripts/load-box-scores.ts",
+    "query": "tsx scripts/query.ts",
     "test-box-scores": "tsx scripts/test-box-scores.ts"
   },
   "dependencies": {

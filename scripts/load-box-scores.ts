@@ -3,6 +3,125 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 
 const BOX_SCORES_DIR = path.join(process.cwd(), 'data', 'box_scores');
+const BATCH_SIZE = 1000;
+
+interface BoxScoreRow {
+  game_id: string;
+  team_id: string;
+  entity_id: string;
+  player_name: string;
+  minutes: string;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  fg_made: number;
+  fg_attempted: number;
+  fg3_made: number;
+  fg3_attempted: number;
+  ft_made: number;
+  ft_attempted: number;
+  plus_minus: number;
+  starter: number;
+  period: string;
+}
+
+interface TeamStatsRow {
+  game_id: string;
+  team_id: string;
+  period: string;
+  minutes: string;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  fg_made: number;
+  fg_attempted: number;
+  fg3_made: number;
+  fg3_attempted: number;
+  ft_made: number;
+  ft_attempted: number;
+  offensive_possessions: number;
+  defensive_possessions: number;
+}
+
+function escapeString(str: string): string {
+  return str.replace(/'/g, "''");
+}
+
+async function insertBoxScoreBatch(conn: any, rows: BoxScoreRow[]) {
+  if (rows.length === 0) return;
+
+  const values = rows.map(row => `(
+    '${row.game_id}',
+    '${row.team_id}',
+    '${row.entity_id}',
+    '${escapeString(row.player_name)}',
+    '${row.minutes}',
+    ${row.points},
+    ${row.rebounds},
+    ${row.assists},
+    ${row.steals},
+    ${row.blocks},
+    ${row.turnovers},
+    ${row.fg_made},
+    ${row.fg_attempted},
+    ${row.fg3_made},
+    ${row.fg3_attempted},
+    ${row.ft_made},
+    ${row.ft_attempted},
+    ${row.plus_minus},
+    ${row.starter},
+    '${row.period}'
+  )`).join(',\n');
+
+  await conn.run(`
+    INSERT INTO box_scores (
+      game_id, team_id, entity_id, player_name, minutes,
+      points, rebounds, assists, steals, blocks, turnovers,
+      fg_made, fg_attempted, fg3_made, fg3_attempted,
+      ft_made, ft_attempted, plus_minus, starter, period
+    ) VALUES ${values}
+  `);
+}
+
+async function insertTeamStatsBatch(conn: any, rows: TeamStatsRow[]) {
+  if (rows.length === 0) return;
+
+  const values = rows.map(row => `(
+    '${row.game_id}',
+    '${row.team_id}',
+    '${row.period}',
+    '${row.minutes}',
+    ${row.points},
+    ${row.rebounds},
+    ${row.assists},
+    ${row.steals},
+    ${row.blocks},
+    ${row.turnovers},
+    ${row.fg_made},
+    ${row.fg_attempted},
+    ${row.fg3_made},
+    ${row.fg3_attempted},
+    ${row.ft_made},
+    ${row.ft_attempted},
+    ${row.offensive_possessions},
+    ${row.defensive_possessions}
+  )`).join(',\n');
+
+  await conn.run(`
+    INSERT INTO team_stats (
+      game_id, team_id, period, minutes,
+      points, rebounds, assists, steals, blocks, turnovers,
+      fg_made, fg_attempted, fg3_made, fg3_attempted,
+      ft_made, ft_attempted, offensive_possessions, defensive_possessions
+    ) VALUES ${values}
+  `);
+}
 
 const loadBoxScores = async () => {
   // Get all JSON files in the box_scores directory
@@ -38,202 +157,140 @@ const loadBoxScores = async () => {
       ft_attempted INTEGER,
       plus_minus INTEGER,
       starter INTEGER,  -- 1 for true, 0 for false
-      period VARCHAR,  -- '1', '2', '3', '4', or 'FullGame'
-      PRIMARY KEY (game_id, team_id, entity_id, period)
+      period VARCHAR  -- '1', '2', '3', '4', or 'FullGame'
     );
 
     CREATE TABLE team_stats (
       game_id VARCHAR,
       team_id VARCHAR,
-      team_abbreviation VARCHAR,
       period VARCHAR,
       minutes VARCHAR,
-      offensive_possessions INTEGER,
-      defensive_possessions INTEGER,
       points INTEGER,
-      field_goals_made INTEGER,
-      field_goals_attempted INTEGER,
-      three_pointers_made INTEGER,
-      three_pointers_attempted INTEGER,
-      free_throws_made INTEGER,
-      free_throws_attempted INTEGER,
-      offensive_rebounds INTEGER,
-      defensive_rebounds INTEGER,
+      rebounds INTEGER,
       assists INTEGER,
       steals INTEGER,
       blocks INTEGER,
       turnovers INTEGER,
-      personal_fouls INTEGER,
-      PRIMARY KEY (game_id, team_id, period)
+      fg_made INTEGER,
+      fg_attempted INTEGER,
+      fg3_made INTEGER,
+      fg3_attempted INTEGER,
+      ft_made INTEGER,
+      ft_attempted INTEGER,
+      offensive_possessions INTEGER,
+      defensive_possessions INTEGER
     );
-
-    CREATE INDEX box_scores_game_idx ON box_scores(game_id);
-    CREATE INDEX box_scores_player_idx ON box_scores(entity_id);
-    CREATE INDEX box_scores_team_idx ON box_scores(team_id);
-    CREATE INDEX team_stats_game_idx ON team_stats(game_id);
-    CREATE INDEX team_stats_team_idx ON team_stats(team_id);
   `);
+
+  let boxScoreBatch: BoxScoreRow[] = [];
+  let teamStatsBatch: TeamStatsRow[] = [];
 
   // Process each file
   for (const file of jsonFiles) {
     const filePath = path.join(BOX_SCORES_DIR, file);
-    const content = await fs.readFile(filePath, 'utf-8');
-    const data = JSON.parse(content);
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      const data = JSON.parse(content);
 
-    const gameId = data.game.gameId;
-    const homeTeamId = data.game.homeTeam.teamId;
-    const awayTeamId = data.game.awayTeam.teamId;
-    const homeTeamAbbrev = data.game.homeTeam.teamTricode;
-    const awayTeamAbbrev = data.game.awayTeam.teamTricode;
+      if (!data.boxScore?.stats?.Away || !data.boxScore?.stats?.Home) {
+        console.log(`Skipping ${file} - missing required data structure`);
+        continue;
+      }
 
-    // Process player stats for both teams
-    for (const teamType of ['Away', 'Home'] as const) {
-      const teamId = teamType === 'Home' ? homeTeamId : awayTeamId;
-      const teamAbbrev = teamType === 'Home' ? homeTeamAbbrev : awayTeamAbbrev;
-      const periods = ['1', '2', '3', '4', 'FullGame'];
+      const gameId = data.game.gameId;
+      const homeTeamId = data.boxScore.home_team_id;
+      const awayTeamId = data.boxScore.away_team_id;
 
-      for (const period of periods) {
-        // Skip if stats for this period don't exist
-        if (!data.boxScore.stats?.[teamType]?.[period]) {
-          continue;
-        }
+      // Process player stats for both teams
+      for (const teamType of ['Away', 'Home'] as const) {
+        const teamId = teamType === 'Home' ? homeTeamId : awayTeamId;
+        const teamStats = data.boxScore.stats[teamType];
 
-        const players = data.boxScore.stats[teamType][period];
-        
-        // Skip the "Team" entry which has EntityId "0"
-        const playerStats = players.filter(p => p.EntityId !== '0');
+        // Process each player's stats for each period
+        for (const period of ['1', '2', '3', '4', '5', 'FullGame'] as const) {
+          const periodStats = teamStats[period];
+          if (!periodStats) continue;
 
-        // Insert player stats
-        for (const player of playerStats) {
-          try {
-            const fg2Made = parseInt(player.FG2M || '0');
-            const fg3Made = parseInt(player.FG3M || '0');
-            const fg2Attempted = parseInt(player.FG2A || '0');
-            const fg3Attempted = parseInt(player.FG3A || '0');
-            const offReb = parseInt(player.OffRebounds || '0');
-            const defReb = parseInt(player.DefRebounds || '0');
+          // Filter out the "Team" entry which has EntityId "0"
+          const players = periodStats.filter((p: any) => p.EntityId !== '0');
 
-            await queryDb(`
-              INSERT OR REPLACE INTO box_scores (
-                game_id, team_id, entity_id, player_name, minutes,
-                points, rebounds, assists, steals, blocks, turnovers,
-                fg_made, fg_attempted, fg3_made, fg3_attempted,
-                ft_made, ft_attempted, plus_minus, starter, period
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
-            `, [
-              gameId,
-              teamId,
-              player.EntityId,
-              player.Name,
-              player.Minutes || '0:00',
-              parseInt(player.Points || '0'),
-              offReb + defReb,
-              parseInt(player.Assists || '0'),
-              parseInt(player.Steals || '0'),
-              parseInt(player.Blocks || '0'),
-              parseInt(player.Turnovers || '0'),
-              fg2Made + fg3Made,
-              fg2Attempted + fg3Attempted,
-              fg3Made,
-              fg3Attempted,
-              0, // FT stats not available in this format
-              0,
-              0, // Plus/minus not available
-              period === '1' ? 1 : 0, // Convert boolean to integer
+          for (const player of players) {
+            boxScoreBatch.push({
+              game_id: gameId,
+              team_id: teamId,
+              entity_id: player.EntityId,
+              player_name: player.Name,
+              minutes: player.Minutes || '0:00',
+              points: parseInt(player.Points || '0'),
+              rebounds: parseInt(player.OffRebounds || '0') + parseInt(player.DefRebounds || '0'),
+              assists: parseInt(player.Assists || '0'),
+              steals: parseInt(player.Steals || '0'),
+              blocks: parseInt(player.Blocks || '0'),
+              turnovers: parseInt(player.Turnovers || '0'),
+              fg_made: parseInt(player.FG2M || '0') + parseInt(player.FG3M || '0'),
+              fg_attempted: parseInt(player.FG2A || '0') + parseInt(player.FG3A || '0'),
+              fg3_made: parseInt(player.FG3M || '0'),
+              fg3_attempted: parseInt(player.FG3A || '0'),
+              ft_made: parseInt(player.FTM || '0'),
+              ft_attempted: parseInt(player.FTA || '0'),
+              plus_minus: parseInt(player.PlusMinus || '0'),
+              starter: player.Starter ? 1 : 0,
               period
-            ]);
-          } catch (err) {
-            console.error('Error inserting player stats:', err);
-            console.error('Player:', player);
-            throw err;
+            });
+
+            if (boxScoreBatch.length >= BATCH_SIZE) {
+              await insertBoxScoreBatch(conn, boxScoreBatch);
+              boxScoreBatch = [];
+            }
+          }
+
+          // Process team stats
+          const teamPeriodStats = data.boxScore.team_results[teamType][period];
+          if (!teamPeriodStats) continue;
+
+          teamStatsBatch.push({
+            game_id: gameId,
+            team_id: teamId,
+            period,
+            minutes: teamPeriodStats.Minutes || '0:00',
+            points: parseInt(teamPeriodStats.Points || '0'),
+            rebounds: parseInt(teamPeriodStats.DefRebounds || '0') + parseInt(teamPeriodStats.OffRebounds || '0'),
+            assists: parseInt(teamPeriodStats.Assists || '0'),
+            steals: parseInt(teamPeriodStats.Steals || '0'),
+            blocks: parseInt(teamPeriodStats.Blocks || '0'),
+            turnovers: parseInt(teamPeriodStats.Turnovers || '0'),
+            fg_made: parseInt(teamPeriodStats.FG2M || '0') + parseInt(teamPeriodStats.FG3M || '0'),
+            fg_attempted: parseInt(teamPeriodStats.FG2A || '0') + parseInt(teamPeriodStats.FG3A || '0'),
+            fg3_made: parseInt(teamPeriodStats.FG3M || '0'),
+            fg3_attempted: parseInt(teamPeriodStats.FG3A || '0'),
+            ft_made: parseInt(teamPeriodStats.FTM || '0'),
+            ft_attempted: parseInt(teamPeriodStats.FTA || '0'),
+            offensive_possessions: parseInt(teamPeriodStats.OffPoss || '0'),
+            defensive_possessions: parseInt(teamPeriodStats.DefPoss || '0')
+          });
+
+          if (teamStatsBatch.length >= BATCH_SIZE) {
+            await insertTeamStatsBatch(conn, teamStatsBatch);
+            teamStatsBatch = [];
           }
         }
-
-        // Calculate team stats
-        const teamStats = players.reduce((acc, player) => {
-          if (player.EntityId === '0') return acc;
-          
-          return {
-            minutes: '48:00', // Full game
-            offPoss: parseInt(player.OffPoss || '0') + acc.offPoss,
-            defPoss: parseInt(player.DefPoss || '0') + acc.defPoss,
-            points: parseInt(player.Points || '0') + acc.points,
-            fgm: (parseInt(player.FG2M || '0') + parseInt(player.FG3M || '0')) + acc.fgm,
-            fga: (parseInt(player.FG2A || '0') + parseInt(player.FG3A || '0')) + acc.fga,
-            tpm: parseInt(player.FG3M || '0') + acc.tpm,
-            tpa: parseInt(player.FG3A || '0') + acc.tpa,
-            offReb: parseInt(player.OffRebounds || '0') + acc.offReb,
-            defReb: parseInt(player.DefRebounds || '0') + acc.defReb,
-            assists: parseInt(player.Assists || '0') + acc.assists,
-            steals: parseInt(player.Steals || '0') + acc.steals,
-            blocks: parseInt(player.Blocks || '0') + acc.blocks,
-            turnovers: parseInt(player.Turnovers || '0') + acc.turnovers,
-            fouls: parseInt(player.Fouls || '0') + acc.fouls,
-          };
-        }, {
-          minutes: '0:00',
-          offPoss: 0,
-          defPoss: 0,
-          points: 0,
-          fgm: 0,
-          fga: 0,
-          tpm: 0,
-          tpa: 0,
-          offReb: 0,
-          defReb: 0,
-          assists: 0,
-          steals: 0,
-          blocks: 0,
-          turnovers: 0,
-          fouls: 0,
-        });
-
-        try {
-          await queryDb(`
-            INSERT OR REPLACE INTO team_stats (
-              game_id, team_id, team_abbreviation, period, minutes,
-              offensive_possessions, defensive_possessions,
-              points, field_goals_made, field_goals_attempted,
-              three_pointers_made, three_pointers_attempted,
-              free_throws_made, free_throws_attempted,
-              offensive_rebounds, defensive_rebounds,
-              assists, steals, blocks, turnovers, personal_fouls
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
-          `, [
-            gameId,
-            teamId,
-            teamAbbrev,
-            period,
-            teamStats.minutes,
-            teamStats.offPoss,
-            teamStats.defPoss,
-            teamStats.points,
-            teamStats.fgm,
-            teamStats.fga,
-            teamStats.tpm,
-            teamStats.tpa,
-            0, // FT stats not available
-            0,
-            teamStats.offReb,
-            teamStats.defReb,
-            teamStats.assists,
-            teamStats.steals,
-            teamStats.blocks,
-            teamStats.turnovers,
-            teamStats.fouls
-          ]);
-        } catch (err) {
-          console.error('Error inserting team stats:', err);
-          console.error('Team Stats:', teamStats);
-          throw err;
-        }
       }
-    }
 
-    console.log(`Processed game ${gameId}`);
+      console.log(`Processed box score for game ${gameId}`);
+    } catch (error) {
+      console.error(`Error processing ${file}: ${error.message}`);
+    }
   }
 
-  console.log('Done!');
+  // Insert any remaining rows
+  if (boxScoreBatch.length > 0) {
+    await insertBoxScoreBatch(conn, boxScoreBatch);
+  }
+  if (teamStatsBatch.length > 0) {
+    await insertTeamStatsBatch(conn, teamStatsBatch);
+  }
+
+  console.log('Finished loading box scores');
 };
 
 loadBoxScores().catch(console.error);

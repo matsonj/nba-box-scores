@@ -22,7 +22,7 @@ jest.mock('next/server', () => ({
 }));
 
 describe('Box Scores API Route', () => {
-  const mockGameId = '202312180LAL';
+  const mockGameId = '0022400001';
   const mockRequest = new NextRequest('http://localhost:3000/api/box-scores/' + mockGameId);
   const mockParams = { params: { gameId: mockGameId } };
 
@@ -31,70 +31,73 @@ describe('Box Scores API Route', () => {
   });
 
   it('should return complete box score data', async () => {
-    // Mock game info
-    const mockGameInfo = [{
-      game_id: '202312180LAL',
-      game_date: '2023-12-18',
-      home_team_abbreviation: 'LAL',
-      away_team_abbreviation: 'NYK',
-      home_team_score: 115,
-      away_team_score: 105,
-      status: 'Final'
-    }];
-
     // Mock player stats data
-    const mockPlayerStats = [{
-      game_id: mockGameId,
-      player_name: 'LeBron James',
-      team_abbreviation: 'LAL',
-      minutes: 35,
-      field_goals_made: 10,
-      field_goals_attempted: 20,
-      three_pointers_made: 2,
-      three_pointers_attempted: 5,
-      free_throws_made: 5,
-      free_throws_attempted: 6,
-      offensive_rebounds: 2,
-      defensive_rebounds: 8,
-      rebounds: 10,
-      assists: 8,
-      steals: 2,
-      blocks: 1,
-      turnovers: 3,
-      personal_fouls: 2,
-      points: 27,
-      period: 'FullGame'
-    }];
+    const mockPlayerStats = [
+      {
+        game_id: mockGameId,
+        team_id: 'BOS',
+        entity_id: '1234',
+        player_name: 'Player 1',
+        minutes: '32:45',
+        points: 20,
+        rebounds: 5,
+        assists: 6,
+        steals: 2,
+        blocks: 1,
+        turnovers: 3,
+        fg_made: 8,
+        fg_attempted: 15,
+        fg3_made: 2,
+        fg3_attempted: 5,
+        ft_made: 2,
+        ft_attempted: 2,
+        plus_minus: 10,
+        starter: true,
+        period: 'FullGame'
+      }
+    ];
 
     // Mock team stats data
-    const mockTeamStats = [{
-      game_id: mockGameId,
-      team_abbreviation: 'LAL',
-      field_goals_made: 42,
-      field_goals_attempted: 85,
-      three_pointers_made: 12,
-      three_pointers_attempted: 30,
-      free_throws_made: 19,
-      free_throws_attempted: 25,
-      offensive_rebounds: 10,
-      defensive_rebounds: 35,
-      rebounds: 45,
-      assists: 25,
-      steals: 8,
-      blocks: 5,
-      turnovers: 12,
-      personal_fouls: 18,
-      points: 115,
-      offensive_possessions: 100,
-      defensive_possessions: 98,
-      period: 'FullGame'
-    }];
+    const mockTeamStats = [
+      {
+        team_id: 'BOS',
+        points: 110,
+        rebounds: 40,
+        assists: 25,
+        steals: 8,
+        blocks: 5,
+        turnovers: 12,
+        fg_made: 40,
+        fg_attempted: 85,
+        fg3_made: 12,
+        fg3_attempted: 35,
+        ft_made: 18,
+        ft_attempted: 20,
+        game_id: mockGameId,
+        period: 'FullGame'
+      }
+    ];
+
+    // Mock game info
+    const mockGameInfo = [
+      {
+        game_id: mockGameId,
+        game_date: '2024-12-19',
+        home_team_id: 'BOS',
+        away_team_id: 'LAL',
+        home_team_score: 110,
+        away_team_score: 105,
+        status: 'Final'
+      }
+    ];
 
     // Set up mock database responses in the same order as the route handler
     (queryDb as jest.Mock)
-      .mockResolvedValueOnce(mockPlayerStats)  // First query: player stats
-      .mockResolvedValueOnce(mockTeamStats)    // Second query: team stats
-      .mockResolvedValueOnce(mockGameInfo);    // Third query: game info
+      .mockImplementation((query: string) => {
+        if (query.includes('box_scores')) return mockPlayerStats;
+        if (query.includes('team_stats')) return mockTeamStats;
+        if (query.includes('schedule')) return mockGameInfo;
+      });
 
     // Call the API route handler
     const response = await GET(mockRequest, mockParams);
@@ -103,62 +106,35 @@ describe('Box Scores API Route', () => {
     // Verify the response structure
     expect(data.gameInfo).toEqual({
       game_id: mockGameId,
-      game_date: undefined,
-      gameDate: '2023-12-18',
-      home_team_abbreviation: 'LAL',
-      away_team_abbreviation: 'NYK',
-      home_team_score: 115,
+      game_date: '2024-12-19',
+      home_team_id: 'BOS',
+      away_team_id: 'LAL',
+      home_team_score: 110,
       away_team_score: 105,
       status: 'Final'
     });
 
     // Verify homeTeam structure
     expect(data.homeTeam).toEqual({
-      teamId: 'LAL',
-      teamName: 'LAL',
-      teamAbbreviation: 'LAL',
-      score: 115,
-      players: [{
-        game_id: mockGameId,
-        player_name: 'LeBron James',
-        team_abbreviation: 'LAL',
-        minutes: 35,
-        field_goals_made: 10,
-        field_goals_attempted: 20,
-        three_pointers_made: 2,
-        three_pointers_attempted: 5,
-        free_throws_made: 5,
-        free_throws_attempted: 6,
-        offensive_rebounds: 2,
-        defensive_rebounds: 8,
-        rebounds: 10,
-        assists: 8,
-        steals: 2,
-        blocks: 1,
-        turnovers: 3,
-        personal_fouls: 2,
-        points: 27,
-        period: 'FullGame'
-      }],
-      game_id: mockGameId,
-      team_abbreviation: 'LAL',
-      field_goals_made: 42,
-      field_goals_attempted: 85,
-      three_pointers_made: 12,
-      three_pointers_attempted: 30,
-      free_throws_made: 19,
-      free_throws_attempted: 25,
-      offensive_rebounds: 10,
-      defensive_rebounds: 35,
-      rebounds: 45,
+      teamId: 'BOS',
+      teamName: 'BOS',
+      teamAbbreviation: 'BOS',
+      score: 110,
+      players: mockPlayerStats,
+      team_id: 'BOS',
+      points: 110,
+      rebounds: 40,
       assists: 25,
       steals: 8,
       blocks: 5,
       turnovers: 12,
-      personal_fouls: 18,
-      points: 115,
-      offensive_possessions: 100,
-      defensive_possessions: 98,
+      fg_made: 40,
+      fg_attempted: 85,
+      fg3_made: 12,
+      fg3_attempted: 35,
+      ft_made: 18,
+      ft_attempted: 20,
+      game_id: mockGameId,
       period: 'FullGame'
     });
   });
