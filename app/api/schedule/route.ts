@@ -7,7 +7,10 @@ export const runtime = 'nodejs';
 export async function GET(request: NextRequest) {
   try {
     console.log('Fetching schedule from DuckDB...');
-    const result = await queryDb('SELECT * FROM main.schedule');
+    const result = await queryDb(`
+      SELECT * FROM main.schedule 
+      WHERE game_id NOT LIKE '006%'
+    `);
     
     console.log('Raw query result:', result[0]);
     console.log('Total games:', result.length);

@@ -82,7 +82,10 @@ describe('Schedule API Route', () => {
     });
 
     // Verify database was queried correctly
-    expect(queryDb).toHaveBeenCalledWith('SELECT * FROM main.schedule');
+    expect(queryDb).toHaveBeenCalledWith(`
+      SELECT * FROM main.schedule 
+      WHERE game_id NOT LIKE '006%'
+    `);
   });
 
   it('should handle database errors', async () => {
