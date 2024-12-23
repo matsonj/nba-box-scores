@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import Link from 'next/link';
-import { Game } from '../types';
+import { Game } from './types';
 
 export default function Home() {
   const [gamesByDate, setGamesByDate] = useState<Record<string, Game[]>>({});

@@ -10,8 +10,10 @@ export async function GET(request: NextRequest) {
   try {
     console.log('Fetching schedule from DuckDB...');
     const result = await queryDb<Schedule>(
-      'SELECT * FROM main.schedule'
+      `SELECT * FROM main.schedule`
     );
+    
+    console.log('Raw query result:', result[0]);
     
     // Transform the data to include team objects
     const games = result.map((game) => {
@@ -19,7 +21,7 @@ export async function GET(request: NextRequest) {
         teamId: game.home_team_abbreviation,
         teamName: game.home_team_abbreviation,
         teamAbbreviation: game.home_team_abbreviation,
-        score: game.home_team_score || 0,
+        score: Number(game.home_team_score) || 0,
         players: []
       };
 
@@ -27,21 +29,24 @@ export async function GET(request: NextRequest) {
         teamId: game.away_team_abbreviation,
         teamName: game.away_team_abbreviation,
         teamAbbreviation: game.away_team_abbreviation,
-        score: game.away_team_score || 0,
+        score: Number(game.away_team_score) || 0,
         players: []
       };
 
       return {
         game_id: game.game_id,
-        gameDate: new Date(game.game_date).toISOString(),
+        gameDate: game.game_date,
+        home_team_id: Number(game.home_team_id),
+        away_team_id: Number(game.away_team_id),
         home_team_abbreviation: game.home_team_abbreviation,
         away_team_abbreviation: game.away_team_abbreviation,
-        home_team_score: game.home_team_score || 0,
-        away_team_score: game.away_team_score || 0,
+        home_team_score: Number(game.home_team_score),
+        away_team_score: Number(game.away_team_score),
         status: game.status,
         homeTeam,
         awayTeam,
-        boxScoreLoaded: false
+        boxScoreLoaded: false,
+        created_at: game.created_at
       } as Game;
     });
 

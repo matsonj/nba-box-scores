@@ -4,7 +4,7 @@ interface PlayerStats {
   game_id: string;
   team_id: string;
   entity_id: string;
-  player_name: string;
+  playerName: string;
   minutes: string;
   points: number;
   rebounds: number;
@@ -12,12 +12,12 @@ interface PlayerStats {
   steals: number;
   blocks: number;
   turnovers: number;
-  fg_made: number;
-  fg_attempted: number;
-  fg3_made: number;
-  fg3_attempted: number;
-  ft_made: number;
-  ft_attempted: number;
+  fgMade: number;
+  fgAttempted: number;
+  fg3Made: number;
+  fg3Attempted: number;
+  ftMade: number;
+  ftAttempted: number;
   plus_minus: number;
   starter: boolean;
   period: string;
@@ -34,12 +34,12 @@ interface TeamStats {
   steals: number;
   blocks: number;
   turnovers: number;
-  fg_made: number;
-  fg_attempted: number;
-  fg3_made: number;
-  fg3_attempted: number;
-  ft_made: number;
-  ft_attempted: number;
+  fgMade: number;
+  fgAttempted: number;
+  fg3Made: number;
+  fg3Attempted: number;
+  ftMade: number;
+  ftAttempted: number;
   offensive_possessions: number;
   defensive_possessions: number;
 }
@@ -69,38 +69,37 @@ interface BoxScore {
   teams: Team[];
 }
 
+type PageParams = {
+  gameId: string;
+}
+
 interface Props {
-  params: { gameId: string };
+  params: PageParams;
   searchParams: { [key: string]: string | string[] | undefined };
+}
+
+interface Metadata {
+  title: string;
 }
 
 async function getBoxScore(gameId: string): Promise<BoxScore> {
   // Get the protocol and host from the headers
   const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
   const host = process.env.VERCEL_URL || 'localhost:3000';
-  
-  const res = await fetch(`${protocol}://${host}/api/box-scores/${gameId}`, {
-    next: { revalidate: 30 }, // Revalidate every 30 seconds
-  });
-  
-  if (!res.ok) {
+
+  // Make the request to the API
+  const response = await fetch(`${protocol}://${host}/api/box-scores/${gameId}`);
+  if (!response.ok) {
     throw new Error('Failed to fetch box score');
   }
-  
-  return res.json();
-}
-
-function calculatePercentage(made: number, attempted: number): string {
-  if (attempted === 0) return '0.0';
-  return ((made / attempted) * 100).toFixed(1);
+  return response.json();
 }
 
 export async function generateMetadata(
   { params }: Props
 ): Promise<Metadata> {
   // Get the game data to show team names in the title
-  const gameId = await params.gameId;
-  const boxScore = await getBoxScore(gameId);
+  const boxScore = await getBoxScore(params.gameId);
   return {
     title: `${boxScore.gameInfo.away_team_abbreviation} @ ${boxScore.gameInfo.home_team_abbreviation} - NBA Box Scores`,
   };
@@ -109,18 +108,24 @@ export async function generateMetadata(
 export default async function GamePage(
   { params, searchParams }: Props
 ) {
-  // Validate and process the gameId parameter
-  const gameId = await params.gameId;
-  if (!gameId) {
+  if (!params.gameId) {
     throw new Error('Game ID is required');
   }
 
-  const boxScore = await getBoxScore(gameId);
+  const boxScore = await getBoxScore(params.gameId);
   const { gameInfo, teams } = boxScore;
 
+  console.log('Game info:', gameInfo);
+  console.log('Teams:', teams);
+
   // Find home and away teams
-  const homeTeam = teams.find(team => team.teamId === gameInfo.home_team_abbreviation);
-  const awayTeam = teams.find(team => team.teamId === gameInfo.away_team_abbreviation);
+  const homeTeam = teams.find(team => team.teamId === String(gameInfo.home_team_id));
+  const awayTeam = teams.find(team => team.teamId === String(gameInfo.away_team_id));
+
+  console.log('Found home team:', homeTeam);
+  console.log('Found away team:', awayTeam);
+  console.log('Looking for home team ID:', String(gameInfo.home_team_id));
+  console.log('Looking for away team ID:', String(gameInfo.away_team_id));
 
   if (!homeTeam || !awayTeam) {
     throw new Error('Failed to find team data');
@@ -165,7 +170,7 @@ export default async function GamePage(
               <tbody>
                 {team.players.map((player) => (
                   <tr key={player.entity_id} className="border-b">
-                    <td className="px-4 py-2">{player.player_name}</td>
+                    <td className="px-4 py-2">{player.playerName}</td>
                     <td className="px-4 py-2 text-right">{player.minutes}</td>
                     <td className="px-4 py-2 text-right">{player.points}</td>
                     <td className="px-4 py-2 text-right">{player.rebounds}</td>
@@ -174,21 +179,21 @@ export default async function GamePage(
                     <td className="px-4 py-2 text-right">{player.blocks}</td>
                     <td className="px-4 py-2 text-right">{player.turnovers}</td>
                     <td className="px-4 py-2 text-right">
-                      {player.fg_made}-{player.fg_attempted}
+                      {player.fgMade}-{player.fgAttempted}
                       <span className="text-gray-500 text-sm ml-1">
-                        ({calculatePercentage(player.fg_made, player.fg_attempted)}%)
+                        ({calculatePercentage(player.fgMade, player.fgAttempted)}%)
                       </span>
                     </td>
                     <td className="px-4 py-2 text-right">
-                      {player.fg3_made}-{player.fg3_attempted}
+                      {player.fg3Made}-{player.fg3Attempted}
                       <span className="text-gray-500 text-sm ml-1">
-                        ({calculatePercentage(player.fg3_made, player.fg3_attempted)}%)
+                        ({calculatePercentage(player.fg3Made, player.fg3Attempted)}%)
                       </span>
                     </td>
                     <td className="px-4 py-2 text-right">
-                      {player.ft_made}-{player.ft_attempted}
+                      {player.ftMade}-{player.ftAttempted}
                       <span className="text-gray-500 text-sm ml-1">
-                        ({calculatePercentage(player.ft_made, player.ft_attempted)}%)
+                        ({calculatePercentage(player.ftMade, player.ftAttempted)}%)
                       </span>
                     </td>
                     <td className="px-4 py-2 text-right">{player.plus_minus}</td>
@@ -206,21 +211,21 @@ export default async function GamePage(
                   <td className="px-4 py-2 text-right">{team.blocks}</td>
                   <td className="px-4 py-2 text-right">{team.turnovers}</td>
                   <td className="px-4 py-2 text-right">
-                    {team.fg_made}-{team.fg_attempted}
+                    {team.fgMade}-{team.fgAttempted}
                     <span className="text-gray-500 text-sm ml-1">
-                      ({calculatePercentage(team.fg_made, team.fg_attempted)}%)
+                      ({calculatePercentage(team.fgMade, team.fgAttempted)}%)
                     </span>
                   </td>
                   <td className="px-4 py-2 text-right">
-                    {team.fg3_made}-{team.fg3_attempted}
+                    {team.fg3Made}-{team.fg3Attempted}
                     <span className="text-gray-500 text-sm ml-1">
-                      ({calculatePercentage(team.fg3_made, team.fg3_attempted)}%)
+                      ({calculatePercentage(team.fg3Made, team.fg3Attempted)}%)
                     </span>
                   </td>
                   <td className="px-4 py-2 text-right">
-                    {team.ft_made}-{team.ft_attempted}
+                    {team.ftMade}-{team.ftAttempted}
                     <span className="text-gray-500 text-sm ml-1">
-                      ({calculatePercentage(team.ft_made, team.ft_attempted)}%)
+                      ({calculatePercentage(team.ftMade, team.ftAttempted)}%)
                     </span>
                   </td>
                   <td className="px-4 py-2 text-right">-</td>
@@ -232,4 +237,9 @@ export default async function GamePage(
       ))}
     </div>
   );
+}
+
+function calculatePercentage(made: number, attempted: number): string {
+  if (attempted === 0) return '0.0';
+  return ((made / attempted) * 100).toFixed(1);
 }

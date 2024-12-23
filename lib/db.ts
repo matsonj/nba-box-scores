@@ -80,6 +80,18 @@ export async function queryDb<T = any>(query: string, params: any[] = []): Promi
         if (columnTypes[i].typeId === 13 && value !== null) {
           value = new Date(value.toString());
         }
+        // Convert DuckDB timestamp values to ISO strings
+        if (columnTypes[i].typeId === 12 && value !== null) {
+          value = new Date(Number(value.micros / 1000n)).toISOString();
+        }
+        // Convert BigInt values to numbers for integer types
+        if (columnTypes[i].typeId === 4 && value !== null) {
+          value = Number(value);
+        }
+        // Convert BigInt values to numbers
+        if (typeof value === 'bigint') {
+          value = Number(value);
+        }
         obj[col] = value;
       });
       return obj as T;

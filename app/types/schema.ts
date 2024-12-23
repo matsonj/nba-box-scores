@@ -57,3 +57,11 @@ export interface TeamStats {
   offensive_possessions: number;
   defensive_possessions: number;
 }
+
+export interface Team {
+  teamId: string;
+  teamName: string;
+  teamAbbreviation: string;
+  score: number;
+  players: any[];
+}

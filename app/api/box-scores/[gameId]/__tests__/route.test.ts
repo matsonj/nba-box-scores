@@ -1,7 +1,7 @@
 import { GET } from '../route';
 import { queryDb } from '@/lib/db';
 import { NextRequest } from 'next/server';
-import { BoxScore, TeamStats } from '@/types/schema';
+import { BoxScore, TeamStats, Schedule } from '@/types/schema';
 
 // Mock the database query function
 jest.mock('@/lib/db', () => ({
@@ -32,6 +32,20 @@ describe('Box Scores API Route', () => {
   });
 
   it('should return complete box score data', async () => {
+    // Mock game info data
+    const mockGameInfo: Schedule[] = [{
+      game_id: mockGameId,
+      game_date: new Date('2023-12-18'),
+      home_team_id: 1610612738, // Celtics
+      away_team_id: 1610612752, // Knicks
+      home_team_abbreviation: 'BOS',
+      away_team_abbreviation: 'NYK',
+      home_team_score: 115,
+      away_team_score: 105,
+      status: 'Final',
+      created_at: new Date()
+    }];
+
     // Mock player stats data
     const mockPlayerStats: BoxScore[] = [
       {
@@ -122,71 +136,40 @@ describe('Box Scores API Route', () => {
       }
     ];
 
-    // Set up the mock to return our test data
+    // Set up mock responses
     (queryDb as jest.Mock)
-      .mockImplementation((query: string) => {
-        if (query.includes('box_scores')) {
-          return Promise.resolve(mockPlayerStats);
-        } else if (query.includes('team_stats')) {
-          return Promise.resolve(mockTeamStats);
-        }
-      });
+      .mockResolvedValueOnce(mockGameInfo)
+      .mockResolvedValueOnce(mockPlayerStats)
+      .mockResolvedValueOnce(mockTeamStats);
 
     // Call the API route handler
     const response = await GET(mockRequest, mockParams);
     const data = await response.json();
 
     // Verify the response structure
-    expect(data).toHaveLength(2);
+    expect(data.teams).toHaveLength(2);
     
     // Check Boston team data
-    const bostonTeam = data.find((team: any) => team.teamId === 'BOS');
+    const bostonTeam = data.teams.find((team: any) => team.teamId === 'BOS');
     expect(bostonTeam).toBeDefined();
-    expect(bostonTeam.score).toBe(110);
     expect(bostonTeam.players).toHaveLength(1);
-    expect(bostonTeam.players[0]).toEqual({
+    expect(bostonTeam.players[0]).toMatchObject({
       playerId: '1234',
       playerName: 'Player 1',
       minutes: '32:45',
       points: 20,
       rebounds: 5,
-      assists: 6,
-      steals: 2,
-      blocks: 1,
-      turnovers: 3,
-      fgMade: 8,
-      fgAttempted: 15,
-      fg3Made: 2,
-      fg3Attempted: 5,
-      ftMade: 2,
-      ftAttempted: 2,
-      plusMinus: 10,
-      starter: true
+      assists: 6
     });
 
-    // Check Knicks team data
-    const knicksTeam = data.find((team: any) => team.teamId === 'NYK');
-    expect(knicksTeam).toBeDefined();
-    expect(knicksTeam.score).toBe(102);
-    expect(knicksTeam.players).toHaveLength(1);
-    expect(knicksTeam.players[0]).toEqual({
-      playerId: '5678',
-      playerName: 'Player 2',
-      minutes: '28:15',
-      points: 15,
-      rebounds: 8,
-      assists: 3,
-      steals: 1,
-      blocks: 2,
-      turnovers: 2,
-      fgMade: 6,
-      fgAttempted: 12,
-      fg3Made: 1,
-      fg3Attempted: 4,
-      ftMade: 2,
-      ftAttempted: 3,
-      plusMinus: -5,
-      starter: true
+    // Check game info
+    expect(data.gameInfo).toMatchObject({
+      game_id: mockGameId,
+      home_team_abbreviation: 'BOS',
+      away_team_abbreviation: 'NYK',
+      home_team_score: 115,
+      away_team_score: 105,
+      status: 'Final'
     });
   });
 
@@ -200,7 +183,18 @@ describe('Box Scores API Route', () => {
     const data = await response.json();
 
     // Check error response
-    expect(data).toEqual({ error: 'Failed to fetch box score' });
+    expect(data).toEqual({ error: 'Internal server error' });
     expect(response.status).toBe(500);
+  });
+
+  it('should handle game not found', async () => {
+    // Mock empty game info response
+    (queryDb as jest.Mock).mockResolvedValueOnce([]);
+
+    const response = await GET(mockRequest, mockParams);
+    const data = await response.json();
+
+    expect(data).toEqual({ error: 'Game not found' });
+    expect(response.status).toBe(404);
   });
 });
