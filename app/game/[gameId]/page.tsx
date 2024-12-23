@@ -132,7 +132,7 @@ export default async function GamePage(
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 font-mono">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold mb-4">
           {gameInfo.away_team_abbreviation} @ {gameInfo.home_team_abbreviation}
@@ -153,82 +153,82 @@ export default async function GamePage(
             <table className="min-w-full table-auto">
               <thead>
                 <tr className="bg-gray-200">
-                  <th className="px-4 py-2 text-left">Player</th>
-                  <th className="px-4 py-2 text-right">MIN</th>
-                  <th className="px-4 py-2 text-right">PTS</th>
-                  <th className="px-4 py-2 text-right">REB</th>
-                  <th className="px-4 py-2 text-right">AST</th>
-                  <th className="px-4 py-2 text-right">STL</th>
-                  <th className="px-4 py-2 text-right">BLK</th>
-                  <th className="px-4 py-2 text-right">TO</th>
-                  <th className="px-4 py-2 text-right">FG</th>
-                  <th className="px-4 py-2 text-right">3P</th>
-                  <th className="px-4 py-2 text-right">FT</th>
-                  <th className="px-4 py-2 text-right">+/-</th>
+                  <th className="px-3 py-1 text-left">Player</th>
+                  <th className="px-3 py-1 text-right">MIN</th>
+                  <th className="px-3 py-1 text-right">PTS</th>
+                  <th className="px-3 py-1 text-right">REB</th>
+                  <th className="px-3 py-1 text-right">AST</th>
+                  <th className="px-3 py-1 text-right">STL</th>
+                  <th className="px-3 py-1 text-right">BLK</th>
+                  <th className="px-3 py-1 text-right">TO</th>
+                  <th className="px-3 py-1 text-right">FG</th>
+                  <th className="px-3 py-1 text-right">3P</th>
+                  <th className="px-3 py-1 text-right">FT</th>
+                  <th className="px-3 py-1 text-right">+/-</th>
                 </tr>
               </thead>
               <tbody>
                 {team.players.map((player) => (
                   <tr key={player.entity_id} className="border-b">
-                    <td className="px-4 py-2">{player.playerName}</td>
-                    <td className="px-4 py-2 text-right">{player.minutes}</td>
-                    <td className="px-4 py-2 text-right">{player.points}</td>
-                    <td className="px-4 py-2 text-right">{player.rebounds}</td>
-                    <td className="px-4 py-2 text-right">{player.assists}</td>
-                    <td className="px-4 py-2 text-right">{player.steals}</td>
-                    <td className="px-4 py-2 text-right">{player.blocks}</td>
-                    <td className="px-4 py-2 text-right">{player.turnovers}</td>
-                    <td className="px-4 py-2 text-right">
+                    <td className="px-3 py-1">{player.playerName}</td>
+                    <td className="px-3 py-1 text-right">{player.minutes}</td>
+                    <td className="px-3 py-1 text-right">{player.points}</td>
+                    <td className="px-3 py-1 text-right">{player.rebounds}</td>
+                    <td className="px-3 py-1 text-right">{player.assists}</td>
+                    <td className="px-3 py-1 text-right">{player.steals}</td>
+                    <td className="px-3 py-1 text-right">{player.blocks}</td>
+                    <td className="px-3 py-1 text-right">{player.turnovers}</td>
+                    <td className="px-3 py-1 text-right">
                       {player.fgMade}-{player.fgAttempted}
                       <span className="text-gray-500 text-sm ml-1">
                         ({calculatePercentage(player.fgMade, player.fgAttempted)}%)
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-right">
+                    <td className="px-3 py-1 text-right">
                       {player.fg3Made}-{player.fg3Attempted}
                       <span className="text-gray-500 text-sm ml-1">
                         ({calculatePercentage(player.fg3Made, player.fg3Attempted)}%)
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-right">
+                    <td className="px-3 py-1 text-right">
                       {player.ftMade}-{player.ftAttempted}
                       <span className="text-gray-500 text-sm ml-1">
                         ({calculatePercentage(player.ftMade, player.ftAttempted)}%)
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-right">{player.plus_minus}</td>
+                    <td className="px-3 py-1 text-right">{player.plus_minus}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr className="bg-gray-100 font-bold">
-                  <td className="px-4 py-2">Team Totals</td>
-                  <td className="px-4 py-2 text-right">-</td>
-                  <td className="px-4 py-2 text-right">{team.points}</td>
-                  <td className="px-4 py-2 text-right">{team.rebounds}</td>
-                  <td className="px-4 py-2 text-right">{team.assists}</td>
-                  <td className="px-4 py-2 text-right">{team.steals}</td>
-                  <td className="px-4 py-2 text-right">{team.blocks}</td>
-                  <td className="px-4 py-2 text-right">{team.turnovers}</td>
-                  <td className="px-4 py-2 text-right">
+                  <td className="px-3 py-1">Team Totals</td>
+                  <td className="px-3 py-1 text-right">-</td>
+                  <td className="px-3 py-1 text-right">{team.points}</td>
+                  <td className="px-3 py-1 text-right">{team.rebounds}</td>
+                  <td className="px-3 py-1 text-right">{team.assists}</td>
+                  <td className="px-3 py-1 text-right">{team.steals}</td>
+                  <td className="px-3 py-1 text-right">{team.blocks}</td>
+                  <td className="px-3 py-1 text-right">{team.turnovers}</td>
+                  <td className="px-3 py-1 text-right">
                     {team.fgMade}-{team.fgAttempted}
                     <span className="text-gray-500 text-sm ml-1">
                       ({calculatePercentage(team.fgMade, team.fgAttempted)}%)
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-right">
+                  <td className="px-3 py-1 text-right">
                     {team.fg3Made}-{team.fg3Attempted}
                     <span className="text-gray-500 text-sm ml-1">
                       ({calculatePercentage(team.fg3Made, team.fg3Attempted)}%)
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-right">
+                  <td className="px-3 py-1 text-right">
                     {team.ftMade}-{team.ftAttempted}
                     <span className="text-gray-500 text-sm ml-1">
                       ({calculatePercentage(team.ftMade, team.ftAttempted)}%)
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-right">-</td>
+                  <td className="px-3 py-1 text-right">-</td>
                 </tr>
               </tfoot>
             </table>

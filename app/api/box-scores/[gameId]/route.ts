@@ -1,9 +1,30 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db';
-import { BoxScores, TeamStats, Schedule } from '@/types/schema';
+import { TeamStats, Schedule } from '@/types/schema';
 import { generateSelectQuery, box_scoresColumns, team_statsColumns } from '@/lib/generated/sql-utils';
 
-export const runtime = 'nodejs';
+interface BoxScores {
+  game_id: string;
+  team_id: string;
+  player_id: string;
+  player_name: string;
+  minutes: string;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  fg_made: number;
+  fg_attempted: number;
+  fg3_made: number;
+  fg3_attempted: number;
+  ft_made: number;
+  ft_attempted: number;
+  plus_minus: number;
+  is_starter: boolean;
+  period: string;
+}
 
 interface BoxScoreTeam {
   teamId: string;
@@ -30,6 +51,8 @@ interface BoxScoreTeam {
     starter: boolean;
   }[];
 }
+
+export const runtime = 'nodejs';
 
 export async function GET(
   request: Request,
@@ -61,13 +84,15 @@ export async function GET(
 
     // Get box scores
     const boxScores = await queryDb<BoxScores>(
-      `SELECT DISTINCT team_id FROM main.box_scores WHERE game_id = ?`,
+      `SELECT DISTINCT team_id FROM main.box_scores WHERE game_id = ? AND period = 'FullGame'`,
       [gameId]
     );
     console.log('Distinct team IDs:', boxScores);
 
     const boxScoresData = await queryDb<BoxScores>(
-      `SELECT * FROM main.box_scores WHERE game_id = ?`,
+      `SELECT * FROM main.box_scores 
+       WHERE game_id = ? AND period = 'FullGame'
+       ORDER BY game_id, minutes DESC`,
       [gameId]
     );
 
@@ -131,7 +156,7 @@ export async function GET(
       console.log('Found team:', team?.teamId);
       if (team) {
         team.players.push({
-          playerId: player.entity_id,
+          playerId: player.player_id,
           playerName: player.player_name,
           minutes: player.minutes,
           points: player.points,
@@ -144,10 +169,10 @@ export async function GET(
           fgAttempted: player.fg_attempted,
           fg3Made: player.fg3_made,
           fg3Attempted: player.fg3_attempted,
-          ftMade: player.ft_made,
-          ftAttempted: player.ft_attempted,
-          plusMinus: player.plus_minus,
-          starter: Boolean(player.starter)
+          ftMade: Number(player.ft_made),
+          ftAttempted: Number(player.ft_attempted),
+          plusMinus: Number(player.plus_minus),
+          starter: Boolean(player.is_starter)
         });
         console.log('Added player to team. Team now has', team.players.length, 'players');
       } else {

@@ -50,8 +50,8 @@ export default function Home() {
   }
 
   return (
-    <main className="container mx-auto p-8">
-      <h1 className="text-3xl font-bold mb-8">NBA Schedule</h1>
+    <div className="container mx-auto px-4 py-8 font-mono">
+      <h1 className="text-3xl font-bold mb-8 text-center">NBA Schedule</h1>
       {Object.entries(gamesByDate)
         .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
         .map(([date, games]) => (
@@ -94,6 +94,6 @@ export default function Home() {
             </div>
           </div>
         ))}
-    </main>
+    </div>
   );
 }
