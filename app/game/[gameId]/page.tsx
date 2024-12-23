@@ -97,8 +97,9 @@ function calculatePercentage(made: number, attempted: number): string {
 export async function generateMetadata(
   { params, searchParams }: Props
 ): Promise<Metadata> {
+  const gameId = await params.gameId;
   return {
-    title: `Game ${params.gameId} - NBA Box Scores`,
+    title: `Game ${gameId} - NBA Box Scores`,
   };
 }
 
@@ -106,11 +107,12 @@ export default async function GamePage(
   { params, searchParams }: Props
 ) {
   // Validate and process the gameId parameter
-  if (!params.gameId) {
+  const gameId = await params.gameId;
+  if (!gameId) {
     throw new Error('Game ID is required');
   }
 
-  const boxScore = await getBoxScore(params.gameId);
+  const boxScore = await getBoxScore(gameId);
   const { gameInfo, homeTeam, awayTeam } = boxScore;
 
   return (

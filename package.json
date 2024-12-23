@@ -10,12 +10,13 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "fetch-schedule": "tsx scripts/fetch-schedule.ts",
-    "update-schedule": "tsx scripts/update-schedule.ts",
-    "backfill-db": "tsx scripts/backfill-db.ts",
+    "load-schedule": "tsx scripts/load-schedule.ts",
+    "fetch-box-scores": "tsx scripts/fetch-box-scores.ts",
     "test-db": "tsx scripts/test-db.ts",
     "load-box-scores": "tsx scripts/load-box-scores.ts",
     "query": "tsx scripts/query.ts",
-    "test-box-scores": "tsx scripts/test-box-scores.ts"
+    "test-box-scores": "tsx scripts/test-box-scores.ts",
+    "generate-schemas": "tsx scripts/generate-schemas.ts"
   },
   "dependencies": {
     "@duckdb/node-api": "^1.1.3-alpha.7",

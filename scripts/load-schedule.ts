@@ -5,7 +5,7 @@ import { getConnection, queryDb } from '../lib/db';
 const DATA_DIR = '/Users/jacobmatson/code/nba-box-scores/nba-box-scores/data';
 const SCHEDULE_DIR = path.join(DATA_DIR, 'schedule');
 
-const updateSchedule = async () => {
+const loadSchedule = async () => {
   try {
     // Load completed games from file
     const completedGamesFile = path.join(SCHEDULE_DIR, 'completed-games.json');
@@ -15,16 +15,33 @@ const updateSchedule = async () => {
     const regularSeasonGames = completedGames.filter(game => !game.gameId.startsWith('001'));
     console.log(`Found ${regularSeasonGames.length} regular season games out of ${completedGames.length} total games`);
     
-    // Log the first game to see its structure
-    console.log('First game:', JSON.stringify(regularSeasonGames[0], null, 2));
-
     // Connect to database
     const db = await getConnection();
     if (!db) {
       throw new Error('Failed to connect to database');
     }
 
+    // Drop existing table if it exists
+    console.log('Dropping existing schedule table...');
+    await queryDb('DROP TABLE IF EXISTS main.schedule');
+
+    // Create schedule table
+    console.log('Creating schedule table...');
+    await queryDb(`
+      CREATE TABLE main.schedule (
+        game_id TEXT PRIMARY KEY,
+        game_date TIMESTAMP NOT NULL,
+        home_team_abbreviation TEXT NOT NULL,
+        away_team_abbreviation TEXT NOT NULL,
+        home_team_score INTEGER NOT NULL,
+        away_team_score INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Insert games into database
+    console.log('Inserting games into database...');
     for (const game of regularSeasonGames) {
       try {
         await queryDb(`
@@ -52,20 +69,21 @@ const updateSchedule = async () => {
         if (err.message.includes('UNIQUE constraint failed')) {
           console.log(`Game ${game.gameId} already exists in database`);
         } else {
-          console.error(`Error inserting game ${game.gameId}:`, err);
+          console.error(`Error inserting game ${game.gameId}:`, err.message);
         }
       }
     }
 
-  } catch (err) {
-    console.error('Error in updateSchedule:', err);
+    console.log('Schedule load complete!');
+  } catch (err: any) {
+    console.error('Error:', err.message);
     throw err;
   }
 };
 
 const main = async () => {
   try {
-    await updateSchedule();
+    await loadSchedule();
     console.log('Done!');
   } catch (err) {
     console.error('Fatal error:', err);

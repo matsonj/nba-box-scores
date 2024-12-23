@@ -1,18 +1,20 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { queryDb } from '@/lib/db';
-import { Game, Team } from '@/types';
+import { Team } from '@/types';
+import { Schedule } from '@/types/schema';
+import { Game } from '@/types';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {
     console.log('Fetching schedule from DuckDB...');
-    const result = await queryDb(
+    const result = await queryDb<Schedule>(
       'SELECT * FROM main.schedule'
     );
     
     // Transform the data to include team objects
-    const games = result.map((game: any) => {
+    const games = result.map((game) => {
       const homeTeam: Team = {
         teamId: game.home_team_abbreviation,
         teamName: game.home_team_abbreviation,
@@ -31,7 +33,7 @@ export async function GET(request: NextRequest) {
 
       return {
         game_id: game.game_id,
-        gameDate: game.game_date,
+        gameDate: game.game_date.toISOString(),
         home_team_abbreviation: game.home_team_abbreviation,
         away_team_abbreviation: game.away_team_abbreviation,
         home_team_score: game.home_team_score || 0,
@@ -50,11 +52,8 @@ export async function GET(request: NextRequest) {
     console.error('Error details:', {
       name: err.name,
       message: err.message,
-      stack: err.stack,
+      stack: err.stack
     });
-    return NextResponse.json(
-      { error: `Error fetching schedule: ${err.message}` },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch schedule' }, { status: 500 });
   }
 }

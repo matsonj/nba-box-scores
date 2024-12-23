@@ -1,6 +1,7 @@
 import { GET } from '../route';
 import { queryDb } from '@/lib/db';
-import { NextRequest, Request } from 'next/server';
+import { NextRequest } from 'next/server';
+import { Schedule } from '@/types/schema';
 
 // Mock the database query function
 jest.mock('@/lib/db', () => ({
@@ -26,15 +27,16 @@ describe('Schedule API Route', () => {
 
   it('should return transformed game data', async () => {
     // Mock data that would come from the database
-    const mockDbResponse = [
+    const mockDbResponse: Schedule[] = [
       {
         game_id: '202312180LAL',
-        game_date: '2023-12-18',
+        game_date: new Date('2023-12-18'),
         home_team_abbreviation: 'LAL',
         away_team_abbreviation: 'NYK',
         home_team_score: 115,
         away_team_score: 105,
-        status: 'Final'
+        status: 'Final',
+        created_at: new Date('2024-12-22T17:42:08-08:00')
       }
     ];
 
@@ -50,32 +52,39 @@ describe('Schedule API Route', () => {
 
     // Check the transformed data structure
     expect(data).toHaveLength(1);
-    const game = data[0];
-    
-    // Test each property individually for better error messages
-    expect(game.game_id).toBe('202312180LAL');
-    expect(game.gameDate).toBe('2023-12-18');
-    expect(game.homeTeam).toMatchObject({
-      teamId: 'LAL',
-      teamName: 'LAL',
-      teamAbbreviation: 'LAL',
-      score: 115,
-      players: []
+    expect(data[0]).toEqual({
+      game_id: '202312180LAL',
+      gameDate: new Date('2023-12-18'),
+      home_team_abbreviation: 'LAL',
+      away_team_abbreviation: 'NYK',
+      home_team_score: 115,
+      away_team_score: 105,
+      status: 'Final',
+      homeTeam: {
+        teamId: 'LAL',
+        teamName: 'LAL',
+        teamAbbreviation: 'LAL',
+        score: 115,
+        players: []
+      },
+      awayTeam: {
+        teamId: 'NYK',
+        teamName: 'NYK',
+        teamAbbreviation: 'NYK',
+        score: 105,
+        players: []
+      },
+      boxScoreLoaded: false
     });
-    expect(game.awayTeam).toMatchObject({
-      teamId: 'NYK',
-      teamName: 'NYK',
-      teamAbbreviation: 'NYK',
-      score: 105,
-      players: []
-    });
-    expect(game.status).toBe('Final');
-    expect(game.boxScoreLoaded).toBe(false);
+
+    // Verify database was queried correctly
+    expect(queryDb).toHaveBeenCalledWith('SELECT * FROM main.schedule');
   });
 
   it('should handle database errors', async () => {
     // Mock a database error
-    (queryDb as jest.Mock).mockRejectedValue(new Error('Database error'));
+    const mockError = new Error('Database error');
+    (queryDb as jest.Mock).mockRejectedValue(mockError);
 
     // Create a mock request object
     const mockRequest = new NextRequest('http://localhost:3000/api/schedule');
@@ -84,10 +93,9 @@ describe('Schedule API Route', () => {
     const response = await GET(mockRequest);
     const data = await response.json();
 
-    // Verify error response
-    expect(data).toEqual({
-      error: 'Error fetching schedule: Database error'
-    });
+    // Check error response
+    expect(data).toEqual({ error: 'Failed to fetch schedule' });
+    expect(response.status).toBe(500);
   });
 
   it('should handle empty results', async () => {

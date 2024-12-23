@@ -1,8 +1,35 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db';
-import { Team, PlayerStats } from '@/types';
+import { BoxScores, TeamStats } from '@/types/schema';
+import { generateSelectQuery, box_scoresColumns, team_statsColumns } from '@/lib/generated/sql-utils';
 
 export const runtime = 'nodejs';
+
+interface BoxScoreTeam {
+  teamId: string;
+  teamName: string;
+  teamAbbreviation: string;
+  score: number;
+  players: {
+    playerId: string;
+    playerName: string;
+    minutes: string;
+    points: number;
+    rebounds: number;
+    assists: number;
+    steals: number;
+    blocks: number;
+    turnovers: number;
+    fgMade: number;
+    fgAttempted: number;
+    fg3Made: number;
+    fg3Attempted: number;
+    ftMade: number;
+    ftAttempted: number;
+    plusMinus: number;
+    starter: boolean;
+  }[];
+}
 
 export async function GET(
   request: Request,
@@ -11,109 +38,69 @@ export async function GET(
   try {
     const gameId = params.gameId;
 
-    // Get player stats
-    const playerStats = await queryDb(`
-      SELECT 
-        game_id,
-        team_id,
-        entity_id,
-        player_name,
-        minutes,
-        points,
-        rebounds,
-        assists,
-        steals,
-        blocks,
-        turnovers,
-        fg_made,
-        fg_attempted,
-        fg3_made,
-        fg3_attempted,
-        ft_made,
-        ft_attempted,
-        plus_minus,
-        starter,
-        period
-      FROM box_scores
-      WHERE game_id = $1
-      AND period = 'FullGame'
-      ORDER BY team_id, points DESC
-    `, [gameId]);
+    // Get player stats using schema-based query
+    const playerStats = await queryDb<BoxScores>(
+      generateSelectQuery(
+        'box_scores',
+        box_scoresColumns,
+        'WHERE game_id = $1 AND period = \'FullGame\' ORDER BY team_id, points DESC'
+      ),
+      [gameId]
+    );
 
-    // Get team stats
-    const teamStats = await queryDb(`
-      SELECT 
-        game_id,
-        team_id,
-        period,
-        minutes,
-        points,
-        rebounds,
-        assists,
-        steals,
-        blocks,
-        turnovers,
-        fg_made,
-        fg_attempted,
-        fg3_made,
-        fg3_attempted,
-        ft_made,
-        ft_attempted,
-        offensive_possessions,
-        defensive_possessions
-      FROM team_stats
-      WHERE game_id = $1
-      AND period = 'FullGame'
-    `, [gameId]);
+    // Get team stats using schema-based query
+    const teamStats = await queryDb<TeamStats>(
+      generateSelectQuery(
+        'team_stats',
+        team_statsColumns,
+        'WHERE game_id = $1 AND period = \'FullGame\''
+      ),
+      [gameId]
+    );
 
-    // Get game info from schedule
-    const gameInfo = await queryDb(`
-      SELECT 
-        game_id,
-        game_date,
-        home_team_id,
-        away_team_id,
-        home_team_score,
-        away_team_score,
-        status
-      FROM schedule
-      WHERE game_id = $1
-    `, [gameId]);
-
-    if (gameInfo.length === 0) {
-      return NextResponse.json({ error: 'Game not found' }, { status: 404 });
-    }
-
-    const game = gameInfo[0];
-    
     // Group players by team
-    const homeTeamPlayers = playerStats.filter((p: PlayerStats) => p.team_id === game.home_team_id);
-    const awayTeamPlayers = playerStats.filter((p: PlayerStats) => p.team_id === game.away_team_id);
-    
-    // Find team stats
-    const homeTeamStats = teamStats.find((t: any) => t.team_id === game.home_team_id) || {};
-    const awayTeamStats = teamStats.find((t: any) => t.team_id === game.away_team_id) || {};
+    const teams = new Map<string, BoxScoreTeam>();
+    playerStats.forEach((player) => {
+      if (!teams.has(player.team_id)) {
+        const teamStat = teamStats.find(t => t.team_id === player.team_id);
+        teams.set(player.team_id, {
+          teamId: player.team_id,
+          teamName: player.team_id,
+          teamAbbreviation: player.team_id,
+          score: teamStat?.points || 0,
+          players: []
+        });
+      }
 
-    const boxScore = {
-      gameInfo: game,
-      homeTeam: {
-        ...homeTeamStats,
-        teamId: game.home_team_id,
-        players: homeTeamPlayers,
-      },
-      awayTeam: {
-        ...awayTeamStats,
-        teamId: game.away_team_id,
-        players: awayTeamPlayers,
-      },
-    };
+      const team = teams.get(player.team_id)!;
+      team.players.push({
+        playerId: player.entity_id,
+        playerName: player.player_name,
+        minutes: player.minutes,
+        points: player.points,
+        rebounds: player.rebounds,
+        assists: player.assists,
+        steals: player.steals,
+        blocks: player.blocks,
+        turnovers: player.turnovers,
+        fgMade: player.fg_made,
+        fgAttempted: player.fg_attempted,
+        fg3Made: player.fg3_made,
+        fg3Attempted: player.fg3_attempted,
+        ftMade: player.ft_made,
+        ftAttempted: player.ft_attempted,
+        plusMinus: player.plus_minus,
+        starter: player.starter === 1
+      });
+    });
 
-    return NextResponse.json(boxScore);
+    // Convert teams map to array and return response
+    return NextResponse.json(Array.from(teams.values()));
 
   } catch (error) {
-    console.error('Error fetching box score:', error);
+    console.error('Error:', error);
     return NextResponse.json(
-      { error: 'Error fetching box score' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
