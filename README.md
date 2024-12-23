@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NBA Box Scores
 
-## Getting Started
+A Next.js application for fetching, storing, and analyzing NBA box score data. This project provides a comprehensive pipeline for collecting game schedules and box scores, storing them in a DuckDB database, and presenting the data through a web interface.
+
+## Project Overview
+
+This application allows you to:
+- Fetch NBA game schedules and box scores
+- Store game data in a DuckDB database
+- Generate and maintain data schemas
+- Query and analyze game statistics
+- View data through a web interface
+
+## Data Pipeline
+
+The data pipeline consists of several steps that must be executed in order:
+
+1. **Fetch Game Schedule**
+```bash
+npm run fetch-schedule
+```
+
+2. **Load Schedule into Database**
+```bash
+npm run load-schedule
+```
+
+3. **Fetch Box Scores**
+```bash
+npm run fetch-box-scores
+```
+
+4. **Load Box Scores into Database**
+```bash
+npm run load-box-scores
+```
+
+5. **Generate Schemas (Optional)**
+```bash
+npm run generate-schemas
+```
+Only needed when there are changes to the underlying data schema.
+
+## Application Pages
+
+The application consists of two main pages:
+
+### Home Page (`app/page.tsx`)
+The home page displays a chronological list of NBA games with their scores and status. It:
+- Fetches both schedule and box score data in parallel
+- Groups games by date for easy navigation
+- Shows game status, period information, and scores
+- Provides links to detailed box scores for each game
+
+### Game Details Page (`app/game/[gameId]/page.tsx`)
+This dynamic route shows detailed statistics for a specific game. Features include:
+- Complete box score with player statistics
+- Team totals and shooting percentages
+- Player performance metrics (points, rebounds, assists, etc.)
+- Starter vs bench player differentiation
+- Period-by-period scoring breakdown
+
+## Development
 
 First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a custom font for Vercel.
