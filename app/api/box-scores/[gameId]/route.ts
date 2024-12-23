@@ -27,7 +27,7 @@ interface BoxScores {
 }
 
 interface BoxScoreTeam {
-  teamId: string;
+  teamId: number;
   teamName: string;
   teamAbbreviation: string;
   score: number;
@@ -125,14 +125,14 @@ export async function GET(
 
     // Get box scores
     console.log('Fetching team stats...');
-    const periodScores = await queryDb<TeamStats>(
+    const teamStats = await queryDb<TeamStats>(
       `SELECT team_id, period, points 
        FROM main.team_stats 
        WHERE game_id = ? AND period != 'FullGame'
        ORDER BY team_id, CAST(period AS INTEGER)`,
       [gameId]
     );
-    console.log('Period scores:', periodScores);
+    console.log('Team stats:', teamStats);
 
     const boxScoresData = await queryDb<BoxScores>(
       `SELECT * FROM main.box_scores 
@@ -150,7 +150,7 @@ export async function GET(
 
     // Create team lookup for home and away teams
     const homeTeam: BoxScoreTeam = {
-      teamId: String(gameInfo[0].home_team_id),
+      teamId: Number(gameInfo[0].home_team_id),
       teamName: getTeamName(gameInfo[0].home_team_abbreviation),
       teamAbbreviation: gameInfo[0].home_team_abbreviation,
       score: Number(gameInfo[0].home_team_score),
@@ -158,7 +158,7 @@ export async function GET(
     };
 
     const awayTeam: BoxScoreTeam = {
-      teamId: String(gameInfo[0].away_team_id),
+      teamId: Number(gameInfo[0].away_team_id),
       teamName: getTeamName(gameInfo[0].away_team_abbreviation),
       teamAbbreviation: gameInfo[0].away_team_abbreviation,
       score: Number(gameInfo[0].away_team_score),
@@ -166,17 +166,17 @@ export async function GET(
     };
 
     // Map team_id to home/away team
-    const teamMap = new Map<string, BoxScoreTeam>();
+    const teamMap = new Map<number, BoxScoreTeam>();
     
     // Get box scores team IDs
     const boxScoreTeamIds = [...new Set(boxScoresData.map(p => p.team_id))];
     console.log('Box score team IDs:', boxScoreTeamIds);
-    console.log('Home team ID:', String(gameInfo[0].home_team_id));
-    console.log('Away team ID:', String(gameInfo[0].away_team_id));
+    console.log('Home team ID:', gameInfo[0].home_team_id);
+    console.log('Away team ID:', gameInfo[0].away_team_id);
 
     // Map teams based on team IDs
-    teamMap.set(String(gameInfo[0].home_team_id), homeTeam);
-    teamMap.set(String(gameInfo[0].away_team_id), awayTeam);
+    teamMap.set(Number(gameInfo[0].home_team_id), homeTeam);
+    teamMap.set(Number(gameInfo[0].away_team_id), awayTeam);
 
     // Add players to their respective teams
     boxScoresData.forEach((player) => {
@@ -186,7 +186,7 @@ export async function GET(
         minutes: player.minutes,
         points: player.points
       });
-      const team = teamMap.get(player.team_id);
+      const team = teamMap.get(Number(player.team_id));
       console.log('Found team:', team?.teamId);
       if (team) {
         team.players.push({
@@ -213,6 +213,13 @@ export async function GET(
         console.log('No team found for player', player.player_name, 'with team ID', player.team_id);
       }
     });
+
+    // Map team IDs to period scores
+    const periodScores = teamStats.map(periodScore => ({
+      teamId: Number(periodScore.team_id),
+      period: periodScore.period,
+      points: Number(periodScore.points)
+    }));
 
     // Convert teams map to array and return response
     const teams = [homeTeam, awayTeam];
@@ -260,11 +267,7 @@ export async function GET(
           starter: Boolean(player.starter)
         }))
       })),
-      periodScores: periodScores.map(periodScore => ({
-        teamId: periodScore.team_id,
-        period: periodScore.period,
-        points: Number(periodScore.points)
-      }))
+      periodScores: periodScores
     };
 
     console.log('API Response:', {

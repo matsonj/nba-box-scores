@@ -21,12 +21,12 @@ export async function GET() {
         acc[score.game_id] = [];
       }
       acc[score.game_id].push({
-        teamId: score.team_id,
+        teamId: Number(score.team_id),
         period: score.period,
         points: Number(score.points)
       });
       return acc;
-    }, {} as Record<string, { teamId: string; period: string; points: number; }[]>);
+    }, {} as Record<string, { teamId: number; period: string; points: number; }[]>);
 
     return NextResponse.json(scoresByGame);
   } catch (error) {

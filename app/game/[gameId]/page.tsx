@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 interface PlayerStats {
   gameId: string;
-  teamId: string;
+  teamId: number;
   entityId: string;
   playerName: string;
   minutes: string;
@@ -26,7 +26,7 @@ interface PlayerStats {
 
 interface TeamStats {
   game_id: string;
-  team_id: string;
+  team_id: number;
   period: string;
   minutes: string;
   points: number;
@@ -46,7 +46,7 @@ interface TeamStats {
 }
 
 interface Team extends TeamStats {
-  teamId: string;
+  teamId: number;
   teamName: string;
   teamAbbreviation: string;
   score: number;
@@ -56,8 +56,8 @@ interface Team extends TeamStats {
 interface Game {
   game_id: string;
   game_date: string;
-  home_team_id: string;
-  away_team_id: string;
+  home_team_id: number;
+  away_team_id: number;
   home_team_score: number;
   away_team_score: number;
   status: string;
@@ -122,13 +122,13 @@ export default async function GamePage(
   console.log('Teams:', teams);
 
   // Find home and away teams
-  const homeTeam = teams.find(team => team.teamId === String(gameInfo.home_team_id));
-  const awayTeam = teams.find(team => team.teamId === String(gameInfo.away_team_id));
+  const homeTeam = teams.find(team => team.teamId === gameInfo.home_team_id);
+  const awayTeam = teams.find(team => team.teamId === gameInfo.away_team_id);
 
   console.log('Found home team:', homeTeam);
   console.log('Found away team:', awayTeam);
-  console.log('Looking for home team ID:', String(gameInfo.home_team_id));
-  console.log('Looking for away team ID:', String(gameInfo.away_team_id));
+  console.log('Looking for home team ID:', gameInfo.home_team_id);
+  console.log('Looking for away team ID:', gameInfo.away_team_id);
 
   if (!homeTeam || !awayTeam) {
     throw new Error('Failed to find team data');

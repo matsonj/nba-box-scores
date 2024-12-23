@@ -64,6 +64,10 @@ export default function Home() {
         console.log('Grouping games by date...');
         const games: Record<string, ScheduleWithBoxScore[]> = {};
         gamesWithBoxScores.forEach((game: ScheduleWithBoxScore) => {
+          if (!game.game_date) {
+            console.error('Game date is missing:', game);
+            return;
+          }
           const gameDate = format(parseISO(game.game_date.toString()), 'yyyy-MM-dd');
           if (!games[gameDate]) {
             games[gameDate] = [];
@@ -130,18 +134,18 @@ export default function Home() {
                             <tbody>
                               <tr>
                                 <td className="text-left">{game.away_team_abbreviation}</td>
-                                {Array.from(new Set(game.periodScores.map(ps => ps.period))).map(period => (
+                                {Array.from(new Set(game.periodScores.map(ps => ps.period))).sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
                                   <td key={period} className="text-center">
-                                    {game.periodScores.find(ps => ps.period === period && ps.teamId === game.away_team_id.toString())?.points || '-'}
+                                    {game.periodScores.find(ps => parseInt(ps.period) === parseInt(period) && ps.teamId === game.away_team_id)?.points || '-'}
                                   </td>
                                 ))}
                                 <td className="text-center font-semibold">{game.away_team_score}</td>
                               </tr>
                               <tr>
                                 <td className="text-left">{game.home_team_abbreviation}</td>
-                                {Array.from(new Set(game.periodScores.map(ps => ps.period))).map(period => (
+                                {Array.from(new Set(game.periodScores.map(ps => ps.period))).sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
                                   <td key={period} className="text-center">
-                                    {game.periodScores.find(ps => ps.period === period && ps.teamId === game.home_team_id.toString())?.points || '-'}
+                                    {game.periodScores.find(ps => parseInt(ps.period) === parseInt(period) && ps.teamId === game.home_team_id)?.points || '-'}
                                   </td>
                                 ))}
                                 <td className="text-center font-semibold">{game.home_team_score}</td>

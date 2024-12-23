@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     // Transform the data to match the expected format
     const transformedResult = result.map((game: Schedule) => ({
       game_id: game.game_id,
-      gameDate: game.game_date,
+      game_date: game.game_date,
       home_team_id: game.home_team_id,
       away_team_id: game.away_team_id,
       home_team_abbreviation: game.home_team_abbreviation,

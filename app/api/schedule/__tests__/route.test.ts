@@ -56,7 +56,7 @@ describe('Schedule API Route', () => {
     expect(data).toHaveLength(1);
     expect(data[0]).toEqual({
       game_id: '202312180LAL',
-      gameDate: mockDbResponse[0].game_date,
+      game_date: mockDbResponse[0].game_date,
       home_team_id: 1610612747,
       away_team_id: 1610612752,
       home_team_abbreviation: 'LAL',

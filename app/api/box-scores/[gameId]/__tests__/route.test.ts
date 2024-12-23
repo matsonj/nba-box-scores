@@ -50,7 +50,7 @@ describe('Box Scores API Route', () => {
     const mockPlayerStats: BoxScore[] = [
       {
         game_id: mockGameId,
-        team_id: '1610612738',  
+        team_id: 1610612738,  
         entity_id: '1234',
         player_name: 'Player 1',
         minutes: '32:45',
@@ -72,7 +72,7 @@ describe('Box Scores API Route', () => {
       },
       {
         game_id: mockGameId,
-        team_id: '1610612752',  
+        team_id: 1610612752,  
         entity_id: '5678',
         player_name: 'Player 2',
         minutes: '28:15',
@@ -98,7 +98,7 @@ describe('Box Scores API Route', () => {
     const mockTeamStats: TeamStats[] = [
       {
         game_id: mockGameId,
-        team_id: '1610612738',  
+        team_id: 1610612738,  
         period: 'FullGame',
         minutes: '240:00',
         points: 110,
@@ -117,7 +117,7 @@ describe('Box Scores API Route', () => {
       },
       {
         game_id: mockGameId,
-        team_id: '1610612752',  
+        team_id: 1610612752,  
         period: 'FullGame',
         minutes: '240:00',
         points: 102,
@@ -153,14 +153,14 @@ describe('Box Scores API Route', () => {
     expect(data.teams).toHaveLength(2);
     
     // Check Boston team data
-    const bostonTeam = data.teams.find((team: any) => team.teamId === '1610612738');
+    const bostonTeam = data.teams.find((team: any) => team.teamId === 1610612738);
     expect(bostonTeam).toBeDefined();
     expect(bostonTeam.teamName).toBe('Boston Celtics');
     expect(bostonTeam.teamAbbreviation).toBe('BOS');
     expect(bostonTeam.score).toBe(115);
 
     // Check New York team data
-    const knicksTeam = data.teams.find((team: any) => team.teamId === '1610612752');
+    const knicksTeam = data.teams.find((team: any) => team.teamId === 1610612752);
     expect(knicksTeam).toBeDefined();
     expect(knicksTeam.teamName).toBe('New York Knicks');
     expect(knicksTeam.teamAbbreviation).toBe('NYK');
@@ -168,8 +168,8 @@ describe('Box Scores API Route', () => {
 
     // Check period scores
     expect(data.periodScores).toHaveLength(2);
-    const bostonPeriodScore = data.periodScores.find((score: any) => score.teamId === '1610612738');
-    const knicksPeriodScore = data.periodScores.find((score: any) => score.teamId === '1610612752');
+    const bostonPeriodScore = data.periodScores.find((score: any) => score.teamId === 1610612738);
+    const knicksPeriodScore = data.periodScores.find((score: any) => score.teamId === 1610612752);
     expect(bostonPeriodScore).toBeDefined();
     expect(knicksPeriodScore).toBeDefined();
     expect(bostonPeriodScore.period).toBe('FullGame');
