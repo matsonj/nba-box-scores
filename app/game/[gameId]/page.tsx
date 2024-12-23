@@ -60,12 +60,13 @@ interface Game {
   home_team_score: number;
   away_team_score: number;
   status: string;
+  home_team_abbreviation: string;
+  away_team_abbreviation: string;
 }
 
 interface BoxScore {
   gameInfo: Game;
-  homeTeam: Team;
-  awayTeam: Team;
+  teams: Team[];
 }
 
 interface Props {
@@ -95,11 +96,13 @@ function calculatePercentage(made: number, attempted: number): string {
 }
 
 export async function generateMetadata(
-  { params, searchParams }: Props
+  { params }: Props
 ): Promise<Metadata> {
+  // Get the game data to show team names in the title
   const gameId = await params.gameId;
+  const boxScore = await getBoxScore(gameId);
   return {
-    title: `Game ${gameId} - NBA Box Scores`,
+    title: `${boxScore.gameInfo.away_team_abbreviation} @ ${boxScore.gameInfo.home_team_abbreviation} - NBA Box Scores`,
   };
 }
 
@@ -113,13 +116,21 @@ export default async function GamePage(
   }
 
   const boxScore = await getBoxScore(gameId);
-  const { gameInfo, homeTeam, awayTeam } = boxScore;
+  const { gameInfo, teams } = boxScore;
+
+  // Find home and away teams
+  const homeTeam = teams.find(team => team.teamId === gameInfo.home_team_abbreviation);
+  const awayTeam = teams.find(team => team.teamId === gameInfo.away_team_abbreviation);
+
+  if (!homeTeam || !awayTeam) {
+    throw new Error('Failed to find team data');
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold mb-4">
-          {gameInfo.away_team_id} @ {gameInfo.home_team_id}
+          {gameInfo.away_team_abbreviation} @ {gameInfo.home_team_abbreviation}
         </h1>
         <p className="text-xl mb-2">
           {format(parseISO(gameInfo.game_date), 'MMMM d, yyyy')}

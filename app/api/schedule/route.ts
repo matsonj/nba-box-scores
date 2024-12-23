@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
       return {
         game_id: game.game_id,
-        gameDate: game.game_date.toISOString(),
+        gameDate: new Date(game.game_date).toISOString(),
         home_team_abbreviation: game.home_team_abbreviation,
         away_team_abbreviation: game.away_team_abbreviation,
         home_team_score: game.home_team_score || 0,
