@@ -31,6 +31,8 @@ const loadSchedule = async () => {
       CREATE TABLE main.schedule (
         game_id TEXT PRIMARY KEY,
         game_date TIMESTAMP NOT NULL,
+        home_team_id INTEGER NOT NULL,
+        away_team_id INTEGER NOT NULL,
         home_team_abbreviation TEXT NOT NULL,
         away_team_abbreviation TEXT NOT NULL,
         home_team_score INTEGER NOT NULL,
@@ -40,24 +42,28 @@ const loadSchedule = async () => {
       )
     `);
 
-    // Insert games into database
-    console.log('Inserting games into database...');
+    // Insert games into schedule table
+    console.log('Inserting games into schedule table...');
     for (const game of regularSeasonGames) {
       try {
         await queryDb(`
           INSERT INTO main.schedule (
             game_id,
             game_date,
+            home_team_id,
+            away_team_id,
             home_team_abbreviation,
             away_team_abbreviation,
             home_team_score,
             away_team_score,
             status
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         `,
         [
           game.gameId,
           new Date(game.gameDateEst),
+          game.homeTeam.teamId,
+          game.awayTeam.teamId,
           game.homeTeam.teamTricode,
           game.awayTeam.teamTricode,
           game.homeTeam.score,

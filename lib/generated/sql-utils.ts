@@ -31,6 +31,8 @@ export type BoxScoresColumn = typeof box_scoresColumns[number];
 export const scheduleColumns = [
   "game_id",
   "game_date",
+  "home_team_id",
+  "away_team_id",
   "home_team_abbreviation",
   "away_team_abbreviation",
   "home_team_score",

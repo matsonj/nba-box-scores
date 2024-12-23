@@ -27,6 +27,8 @@ export interface BoxScores {
 export interface Schedule {
   game_id: string;
   game_date: Date;
+  home_team_id: number;
+  away_team_id: number;
   home_team_abbreviation: string;
   away_team_abbreviation: string;
   home_team_score: number;
