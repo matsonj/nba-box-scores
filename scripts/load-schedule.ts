@@ -15,6 +15,9 @@ const loadSchedule = async () => {
     const regularSeasonGames = completedGames.filter(game => !game.gameId.startsWith('001'));
     console.log(`Found ${regularSeasonGames.length} regular season games out of ${completedGames.length} total games`);
     
+    // Log first game for debugging
+    console.log('First game data:', JSON.stringify(regularSeasonGames[0], null, 2));
+
     // Connect to database
     const db = await getConnection();
     if (!db) {
@@ -61,7 +64,7 @@ const loadSchedule = async () => {
         `,
         [
           game.gameId,
-          new Date(game.gameDateEst),
+          game.gameDateTimeUTC,
           game.homeTeam.teamId,
           game.awayTeam.teamId,
           game.homeTeam.teamTricode,
@@ -71,6 +74,34 @@ const loadSchedule = async () => {
           game.gameStatusText
         ]);
         console.log(`Inserted game ${game.gameId} into database`);
+
+        // Insert period scores if available
+        if (game.homeTeam.periods && game.awayTeam.periods) {
+          for (let i = 0; i < game.homeTeam.periods.length; i++) {
+            // Home team period score
+            await queryDb(`
+              INSERT INTO main.period_scores (game_id, team_id, period, score)
+              VALUES ($1, $2, $3, $4)
+            `, [
+              game.gameId,
+              game.homeTeam.teamId,
+              i + 1,
+              game.homeTeam.periods[i].score
+            ]);
+
+            // Away team period score
+            await queryDb(`
+              INSERT INTO main.period_scores (game_id, team_id, period, score)
+              VALUES ($1, $2, $3, $4)
+            `, [
+              game.gameId,
+              game.awayTeam.teamId,
+              i + 1,
+              game.awayTeam.periods[i].score
+            ]);
+          }
+          console.log(`Inserted period scores for game ${game.gameId}`);
+        }
       } catch (err: any) {
         if (err.message.includes('UNIQUE constraint failed')) {
           console.log(`Game ${game.gameId} already exists in database`);

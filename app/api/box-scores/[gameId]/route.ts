@@ -41,12 +41,12 @@ interface BoxScoreTeam {
     steals: number;
     blocks: number;
     turnovers: number;
-    fgMade: number;
-    fgAttempted: number;
-    fg3Made: number;
-    fg3Attempted: number;
-    ftMade: number;
-    ftAttempted: number;
+    fieldGoalsMade: number;
+    fieldGoalsAttempted: number;
+    threePointersMade: number;
+    threePointersAttempted: number;
+    freeThrowsMade: number;
+    freeThrowsAttempted: number;
     plusMinus: number;
     starter: boolean;
   }[];
@@ -54,14 +54,53 @@ interface BoxScoreTeam {
 
 export const runtime = 'nodejs';
 
+// Helper function to convert abbreviations to full team names
+function getTeamName(abbreviation: string): string {
+  const teamNames: { [key: string]: string } = {
+    'ATL': 'Atlanta Hawks',
+    'BOS': 'Boston Celtics',
+    'BKN': 'Brooklyn Nets',
+    'CHA': 'Charlotte Hornets',
+    'CHI': 'Chicago Bulls',
+    'CLE': 'Cleveland Cavaliers',
+    'DAL': 'Dallas Mavericks',
+    'DEN': 'Denver Nuggets',
+    'DET': 'Detroit Pistons',
+    'GSW': 'Golden State Warriors',
+    'HOU': 'Houston Rockets',
+    'IND': 'Indiana Pacers',
+    'LAC': 'Los Angeles Clippers',
+    'LAL': 'Los Angeles Lakers',
+    'MEM': 'Memphis Grizzlies',
+    'MIA': 'Miami Heat',
+    'MIL': 'Milwaukee Bucks',
+    'MIN': 'Minnesota Timberwolves',
+    'NOP': 'New Orleans Pelicans',
+    'NYK': 'New York Knicks',
+    'OKC': 'Oklahoma City Thunder',
+    'ORL': 'Orlando Magic',
+    'PHI': 'Philadelphia 76ers',
+    'PHX': 'Phoenix Suns',
+    'POR': 'Portland Trail Blazers',
+    'SAC': 'Sacramento Kings',
+    'SAS': 'San Antonio Spurs',
+    'TOR': 'Toronto Raptors',
+    'UTA': 'Utah Jazz',
+    'WAS': 'Washington Wizards'
+  };
+  return teamNames[abbreviation] || abbreviation;
+}
+
 export async function GET(
   request: Request,
   { params }: { params: { gameId: string } }
 ) {
   try {
-    const { gameId } = await params;
+    const { gameId } = params;
+    console.log('Box scores API called for game:', gameId);
 
     // Get game info from schedule
+    console.log('Fetching game info from schedule...');
     const gameInfo = await queryDb<Schedule>(
       `SELECT 
         game_id,
@@ -77,17 +116,23 @@ export async function GET(
       FROM main.schedule WHERE game_id = ?`, 
       [gameId]
     );
+    console.log('Game info:', gameInfo[0]);
 
     if (gameInfo.length === 0) {
+      console.log('Game not found in schedule');
       return NextResponse.json({ error: 'Game not found' }, { status: 404 });
     }
 
     // Get box scores
-    const boxScores = await queryDb<BoxScores>(
-      `SELECT DISTINCT team_id FROM main.box_scores WHERE game_id = ? AND period = 'FullGame'`,
+    console.log('Fetching team stats...');
+    const periodScores = await queryDb<TeamStats>(
+      `SELECT team_id, period, points 
+       FROM main.team_stats 
+       WHERE game_id = ? AND period != 'FullGame'
+       ORDER BY team_id, CAST(period AS INTEGER)`,
       [gameId]
     );
-    console.log('Distinct team IDs:', boxScores);
+    console.log('Period scores:', periodScores);
 
     const boxScoresData = await queryDb<BoxScores>(
       `SELECT * FROM main.box_scores 
@@ -103,21 +148,10 @@ export async function GET(
     console.log('Home team abbreviation:', gameInfo[0].home_team_abbreviation);
     console.log('Away team abbreviation:', gameInfo[0].away_team_abbreviation);
 
-    // Get team stats using schema-based query
-    const teamStats = await queryDb<TeamStats>(
-      `SELECT * FROM main.team_stats WHERE game_id = ? AND period = 'FullGame'`,
-      [gameId]
-    );
-
-    console.log('Team stats:', teamStats);
-    console.log('Box scores team IDs:', [...new Set(boxScoresData.map(p => p.team_id))]);
-    console.log('Looking for home team:', gameInfo[0].home_team_abbreviation);
-    console.log('Looking for away team:', gameInfo[0].away_team_abbreviation);
-
     // Create team lookup for home and away teams
     const homeTeam: BoxScoreTeam = {
       teamId: String(gameInfo[0].home_team_id),
-      teamName: gameInfo[0].home_team_abbreviation,
+      teamName: getTeamName(gameInfo[0].home_team_abbreviation),
       teamAbbreviation: gameInfo[0].home_team_abbreviation,
       score: Number(gameInfo[0].home_team_score),
       players: []
@@ -125,7 +159,7 @@ export async function GET(
 
     const awayTeam: BoxScoreTeam = {
       teamId: String(gameInfo[0].away_team_id),
-      teamName: gameInfo[0].away_team_abbreviation,
+      teamName: getTeamName(gameInfo[0].away_team_abbreviation),
       teamAbbreviation: gameInfo[0].away_team_abbreviation,
       score: Number(gameInfo[0].away_team_score),
       players: []
@@ -159,18 +193,18 @@ export async function GET(
           playerId: player.player_id,
           playerName: player.player_name,
           minutes: player.minutes,
-          points: player.points,
-          rebounds: player.rebounds,
-          assists: player.assists,
-          steals: player.steals,
-          blocks: player.blocks,
-          turnovers: player.turnovers,
-          fgMade: player.fg_made,
-          fgAttempted: player.fg_attempted,
-          fg3Made: player.fg3_made,
-          fg3Attempted: player.fg3_attempted,
-          ftMade: Number(player.ft_made),
-          ftAttempted: Number(player.ft_attempted),
+          points: Number(player.points),
+          rebounds: Number(player.rebounds),
+          assists: Number(player.assists),
+          steals: Number(player.steals),
+          blocks: Number(player.blocks),
+          turnovers: Number(player.turnovers),
+          fieldGoalsMade: Number(player.fg_made),
+          fieldGoalsAttempted: Number(player.fg_attempted),
+          threePointersMade: Number(player.fg3_made),
+          threePointersAttempted: Number(player.fg3_attempted),
+          freeThrowsMade: Number(player.ft_made),
+          freeThrowsAttempted: Number(player.ft_attempted),
           plusMinus: Number(player.plus_minus),
           starter: Boolean(player.is_starter)
         });
@@ -216,15 +250,20 @@ export async function GET(
           steals: Number(player.steals),
           blocks: Number(player.blocks),
           turnovers: Number(player.turnovers),
-          fgMade: Number(player.fgMade),
-          fgAttempted: Number(player.fgAttempted),
-          fg3Made: Number(player.fg3Made),
-          fg3Attempted: Number(player.fg3Attempted),
-          ftMade: Number(player.ftMade),
-          ftAttempted: Number(player.ftAttempted),
+          fieldGoalsMade: Number(player.fieldGoalsMade),
+          fieldGoalsAttempted: Number(player.fieldGoalsAttempted),
+          threePointersMade: Number(player.threePointersMade),
+          threePointersAttempted: Number(player.threePointersAttempted),
+          freeThrowsMade: Number(player.freeThrowsMade),
+          freeThrowsAttempted: Number(player.freeThrowsAttempted),
           plusMinus: Number(player.plusMinus),
           starter: Boolean(player.starter)
         }))
+      })),
+      periodScores: periodScores.map(periodScore => ({
+        teamId: periodScore.team_id,
+        period: periodScore.period,
+        points: Number(periodScore.points)
       }))
     };
 
@@ -233,13 +272,15 @@ export async function GET(
       teams: response.teams.map(t => ({
         teamId: t.teamId,
         playerCount: t.players.length
-      }))
+      })),
+      periodScores: response.periodScores
     });
     
+    console.log('Sending response:', response);
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error in box scores API:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,9 +1,10 @@
 import { format, parseISO } from 'date-fns';
+import Link from 'next/link';
 
 interface PlayerStats {
-  game_id: string;
-  team_id: string;
-  entity_id: string;
+  gameId: string;
+  teamId: string;
+  entityId: string;
   playerName: string;
   minutes: string;
   points: number;
@@ -12,13 +13,13 @@ interface PlayerStats {
   steals: number;
   blocks: number;
   turnovers: number;
-  fgMade: number;
-  fgAttempted: number;
-  fg3Made: number;
-  fg3Attempted: number;
-  ftMade: number;
-  ftAttempted: number;
-  plus_minus: number;
+  fieldGoalsMade: number;
+  fieldGoalsAttempted: number;
+  threePointersMade: number;
+  threePointersAttempted: number;
+  freeThrowsMade: number;
+  freeThrowsAttempted: number;
+  plusMinus: number;
   starter: boolean;
   period: string;
 }
@@ -74,7 +75,7 @@ type PageParams = {
 }
 
 interface Props {
-  params: PageParams;
+  params: Promise<PageParams>;
   searchParams: { [key: string]: string | string[] | undefined };
 }
 
@@ -96,10 +97,11 @@ async function getBoxScore(gameId: string): Promise<BoxScore> {
 }
 
 export async function generateMetadata(
-  { params }: Props
+  { params }: { params: Promise<PageParams> }
 ): Promise<Metadata> {
   // Get the game data to show team names in the title
-  const boxScore = await getBoxScore(params.gameId);
+  const resolvedParams = await params;
+  const boxScore = await getBoxScore(resolvedParams.gameId);
   return {
     title: `${boxScore.gameInfo.away_team_abbreviation} @ ${boxScore.gameInfo.home_team_abbreviation} - NBA Box Scores`,
   };
@@ -108,11 +110,12 @@ export async function generateMetadata(
 export default async function GamePage(
   { params, searchParams }: Props
 ) {
-  if (!params.gameId) {
+  const resolvedParams = await params;
+  if (!resolvedParams.gameId) {
     throw new Error('Game ID is required');
   }
 
-  const boxScore = await getBoxScore(params.gameId);
+  const boxScore = await getBoxScore(resolvedParams.gameId);
   const { gameInfo, teams } = boxScore;
 
   console.log('Game info:', gameInfo);
@@ -132,114 +135,198 @@ export default async function GamePage(
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 font-mono">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-4">
-          {gameInfo.away_team_abbreviation} @ {gameInfo.home_team_abbreviation}
-        </h1>
-        <p className="text-xl mb-2">
-          {format(parseISO(gameInfo.game_date), 'MMMM d, yyyy')}
-        </p>
-        <p className="text-2xl font-bold">
-          {gameInfo.away_team_score} - {gameInfo.home_team_score}
-        </p>
-        <p className="text-gray-600">{gameInfo.status}</p>
-      </div>
-
-      {[awayTeam, homeTeam].map((team) => (
-        <div key={team.teamId} className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">{team.teamName}</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full table-auto">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="px-3 py-1 text-left">Player</th>
-                  <th className="px-3 py-1 text-right">MIN</th>
-                  <th className="px-3 py-1 text-right">PTS</th>
-                  <th className="px-3 py-1 text-right">REB</th>
-                  <th className="px-3 py-1 text-right">AST</th>
-                  <th className="px-3 py-1 text-right">STL</th>
-                  <th className="px-3 py-1 text-right">BLK</th>
-                  <th className="px-3 py-1 text-right">TO</th>
-                  <th className="px-3 py-1 text-right">FG</th>
-                  <th className="px-3 py-1 text-right">3P</th>
-                  <th className="px-3 py-1 text-right">FT</th>
-                  <th className="px-3 py-1 text-right">+/-</th>
-                </tr>
-              </thead>
-              <tbody>
-                {team.players.map((player) => (
-                  <tr key={player.entity_id} className="border-b">
-                    <td className="px-3 py-1">{player.playerName}</td>
-                    <td className="px-3 py-1 text-right">{player.minutes}</td>
-                    <td className="px-3 py-1 text-right">{player.points}</td>
-                    <td className="px-3 py-1 text-right">{player.rebounds}</td>
-                    <td className="px-3 py-1 text-right">{player.assists}</td>
-                    <td className="px-3 py-1 text-right">{player.steals}</td>
-                    <td className="px-3 py-1 text-right">{player.blocks}</td>
-                    <td className="px-3 py-1 text-right">{player.turnovers}</td>
-                    <td className="px-3 py-1 text-right">
-                      {player.fgMade}-{player.fgAttempted}
-                      <span className="text-gray-500 text-sm ml-1">
-                        ({calculatePercentage(player.fgMade, player.fgAttempted)}%)
-                      </span>
-                    </td>
-                    <td className="px-3 py-1 text-right">
-                      {player.fg3Made}-{player.fg3Attempted}
-                      <span className="text-gray-500 text-sm ml-1">
-                        ({calculatePercentage(player.fg3Made, player.fg3Attempted)}%)
-                      </span>
-                    </td>
-                    <td className="px-3 py-1 text-right">
-                      {player.ftMade}-{player.ftAttempted}
-                      <span className="text-gray-500 text-sm ml-1">
-                        ({calculatePercentage(player.ftMade, player.ftAttempted)}%)
-                      </span>
-                    </td>
-                    <td className="px-3 py-1 text-right">{player.plus_minus}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="bg-gray-100 font-bold">
-                  <td className="px-3 py-1">Team Totals</td>
-                  <td className="px-3 py-1 text-right">-</td>
-                  <td className="px-3 py-1 text-right">{team.points}</td>
-                  <td className="px-3 py-1 text-right">{team.rebounds}</td>
-                  <td className="px-3 py-1 text-right">{team.assists}</td>
-                  <td className="px-3 py-1 text-right">{team.steals}</td>
-                  <td className="px-3 py-1 text-right">{team.blocks}</td>
-                  <td className="px-3 py-1 text-right">{team.turnovers}</td>
-                  <td className="px-3 py-1 text-right">
-                    {team.fgMade}-{team.fgAttempted}
-                    <span className="text-gray-500 text-sm ml-1">
-                      ({calculatePercentage(team.fgMade, team.fgAttempted)}%)
-                    </span>
-                  </td>
-                  <td className="px-3 py-1 text-right">
-                    {team.fg3Made}-{team.fg3Attempted}
-                    <span className="text-gray-500 text-sm ml-1">
-                      ({calculatePercentage(team.fg3Made, team.fg3Attempted)}%)
-                    </span>
-                  </td>
-                  <td className="px-3 py-1 text-right">
-                    {team.ftMade}-{team.ftAttempted}
-                    <span className="text-gray-500 text-sm ml-1">
-                      ({calculatePercentage(team.ftMade, team.ftAttempted)}%)
-                    </span>
-                  </td>
-                  <td className="px-3 py-1 text-right">-</td>
-                </tr>
-              </tfoot>
-            </table>
+    <div className="container mx-auto px-4 py-8 font-mono print:p-2 print:max-w-none">
+      <div className="relative">
+        <Link href="/" className="absolute left-0 top-0 text-2xl text-gray-600 hover:text-black print:hidden">←</Link>
+        <div className="text-center mb-8 print:mb-4">
+          <div className="text-2xl font-bold mb-2 print:text-xl">
+            <span className={gameInfo.away_team_score > gameInfo.home_team_score ? "" : "text-gray-500 print:text-black"}>
+              {gameInfo.away_team_score > gameInfo.home_team_score ? "* " : ""}
+              {gameInfo.away_team_abbreviation} {gameInfo.away_team_score}
+            </span>
+            <span className="text-gray-500 print:text-black"> @ </span>
+            <span className={gameInfo.home_team_score > gameInfo.away_team_score ? "" : "text-gray-500 print:text-black"}>
+              {gameInfo.home_team_score} {gameInfo.home_team_abbreviation}
+              {gameInfo.home_team_score > gameInfo.away_team_score ? " *" : ""}
+            </span>
           </div>
+          <p className="text-lg text-gray-600 print:text-sm print:text-black">
+            {format(parseISO(gameInfo.game_date), 'MMMM d, yyyy • h:mm a')}
+          </p>
         </div>
-      ))}
+
+        {[awayTeam, homeTeam].map((team) => (
+          <div key={team.teamId} className="mb-8 print:mb-4">
+            <h2 className="text-xl font-bold mb-4 print:text-lg print:mb-2">{team.teamName}</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-auto print:text-xs">
+                <thead>
+                  <tr className="bg-gray-200 print:bg-transparent print:border-b">
+                    <th className="px-3 py-1 text-left print:px-2">Player</th>
+                    <th className="px-3 py-1 text-right print:px-2">MIN</th>
+                    <th className="px-3 py-1 text-right print:px-2">PTS</th>
+                    <th className="px-3 py-1 text-right print:px-2">REB</th>
+                    <th className="px-3 py-1 text-right print:px-2">AST</th>
+                    <th className="px-3 py-1 text-right print:px-2">STL</th>
+                    <th className="px-3 py-1 text-right print:px-2">BLK</th>
+                    <th className="px-3 py-1 text-right print:px-2">TO</th>
+                    <th className="px-3 py-1 text-right print:px-2">FG</th>
+                    <th className="px-3 py-1 text-right print:px-2">FG%</th>
+                    <th className="px-3 py-1 text-right print:px-2">3P</th>
+                    <th className="px-3 py-1 text-right print:px-2">3P%</th>
+                    <th className="px-3 py-1 text-right print:px-2">FT</th>
+                    <th className="px-3 py-1 text-right print:px-2">FT%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {team.players.map((player) => (
+                    <tr key={player.entityId} className="border-b print:border-dotted">
+                      <td className="px-3 py-1 print:px-2 print:py-0.5">{player.playerName}</td>
+                      <td className="px-3 py-1 text-right print:px-2 print:py-0.5">{player.minutes}</td>
+                      <td className="px-3 py-1 text-right print:px-2 print:py-0.5">{player.points}</td>
+                      <td className="px-3 py-1 text-right print:px-2 print:py-0.5">{player.rebounds}</td>
+                      <td className="px-3 py-1 text-right print:px-2 print:py-0.5">{player.assists}</td>
+                      <td className="px-3 py-1 text-right print:px-2 print:py-0.5">{player.steals}</td>
+                      <td className="px-3 py-1 text-right print:px-2 print:py-0.5">{player.blocks}</td>
+                      <td className="px-3 py-1 text-right print:px-2 print:py-0.5">{player.turnovers}</td>
+                      <td className="px-3 py-1 text-right print:px-2 print:py-0.5">
+                        {player.fieldGoalsMade}-{player.fieldGoalsAttempted}
+                      </td>
+                      <td className="px-3 py-1 text-right print:px-2 print:py-0.5">
+                        {calculatePercentage(player.fieldGoalsMade, player.fieldGoalsAttempted)}
+                      </td>
+                      <td className="px-3 py-1 text-right print:px-2 print:py-0.5">
+                        {player.threePointersMade}-{player.threePointersAttempted}
+                      </td>
+                      <td className="px-3 py-1 text-right print:px-2 print:py-0.5">
+                        {calculatePercentage(player.threePointersMade, player.threePointersAttempted)}
+                      </td>
+                      <td className="px-3 py-1 text-right print:px-2 print:py-0.5">
+                        {player.freeThrowsMade}-{player.freeThrowsAttempted}
+                      </td>
+                      <td className="px-3 py-1 text-right print:px-2 print:py-0.5">
+                        {calculatePercentage(player.freeThrowsMade, player.freeThrowsAttempted)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 font-bold print:border-t print:text-xs">
+                    <td className="px-3 py-1 print:px-2 print:py-0.5">Team Totals</td>
+                    <td className="px-3 py-1 text-right print:px-2 print:py-0.5">{calculateTeamTotals(team.players).minutes}</td>
+                    <td className="px-3 py-1 text-right print:px-2 print:py-0.5">{calculateTeamTotals(team.players).points}</td>
+                    <td className="px-3 py-1 text-right print:px-2 print:py-0.5">{calculateTeamTotals(team.players).rebounds}</td>
+                    <td className="px-3 py-1 text-right print:px-2 print:py-0.5">{calculateTeamTotals(team.players).assists}</td>
+                    <td className="px-3 py-1 text-right print:px-2 print:py-0.5">{calculateTeamTotals(team.players).steals}</td>
+                    <td className="px-3 py-1 text-right print:px-2 print:py-0.5">{calculateTeamTotals(team.players).blocks}</td>
+                    <td className="px-3 py-1 text-right print:px-2 print:py-0.5">{calculateTeamTotals(team.players).turnovers}</td>
+                    <td className="px-3 py-1 text-right print:px-2 print:py-0.5">
+                      {calculateTeamTotals(team.players).fieldGoalsMade}-{calculateTeamTotals(team.players).fieldGoalsAttempted}
+                    </td>
+                    <td className="px-3 py-1 text-right print:px-2 print:py-0.5">
+                      {calculatePercentage(calculateTeamTotals(team.players).fieldGoalsMade, calculateTeamTotals(team.players).fieldGoalsAttempted)}
+                    </td>
+                    <td className="px-3 py-1 text-right print:px-2 print:py-0.5">
+                      {calculateTeamTotals(team.players).threePointersMade}-{calculateTeamTotals(team.players).threePointersAttempted}
+                    </td>
+                    <td className="px-3 py-1 text-right print:px-2 print:py-0.5">
+                      {calculatePercentage(calculateTeamTotals(team.players).threePointersMade, calculateTeamTotals(team.players).threePointersAttempted)}
+                    </td>
+                    <td className="px-3 py-1 text-right print:px-2 print:py-0.5">
+                      {calculateTeamTotals(team.players).freeThrowsMade}-{calculateTeamTotals(team.players).freeThrowsAttempted}
+                    </td>
+                    <td className="px-3 py-1 text-right print:px-2 print:py-0.5">
+                      {calculatePercentage(calculateTeamTotals(team.players).freeThrowsMade, calculateTeamTotals(team.players).freeThrowsAttempted)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
 function calculatePercentage(made: number, attempted: number): string {
-  if (attempted === 0) return '0.0';
-  return ((made / attempted) * 100).toFixed(1);
+  if (attempted === 0) return '.000';
+  const percentage = made / attempted;
+  return percentage >= 1 ? '1.000' : percentage.toFixed(3).substring(1);
+}
+
+function parseMinutes(timeStr: string): number {
+  const [minutes, seconds] = timeStr.split(':').map(Number);
+  return minutes * 60 + seconds;
+}
+
+function formatMinutes(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function calculateTeamTotals(players: PlayerStats[]): {
+  minutes: string;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  fieldGoalsMade: number;
+  fieldGoalsAttempted: number;
+  threePointersMade: number;
+  threePointersAttempted: number;
+  freeThrowsMade: number;
+  freeThrowsAttempted: number;
+} {
+  const totals = players.reduce((acc, player) => {
+    const seconds = parseMinutes(player.minutes);
+    return {
+      seconds: acc.seconds + seconds,
+      points: acc.points + player.points,
+      rebounds: acc.rebounds + player.rebounds,
+      assists: acc.assists + player.assists,
+      steals: acc.steals + player.steals,
+      blocks: acc.blocks + player.blocks,
+      turnovers: acc.turnovers + player.turnovers,
+      fieldGoalsMade: acc.fieldGoalsMade + player.fieldGoalsMade,
+      fieldGoalsAttempted: acc.fieldGoalsAttempted + player.fieldGoalsAttempted,
+      threePointersMade: acc.threePointersMade + player.threePointersMade,
+      threePointersAttempted: acc.threePointersAttempted + player.threePointersAttempted,
+      freeThrowsMade: acc.freeThrowsMade + player.freeThrowsMade,
+      freeThrowsAttempted: acc.freeThrowsAttempted + player.freeThrowsAttempted,
+    };
+  }, {
+    seconds: 0,
+    points: 0,
+    rebounds: 0,
+    assists: 0,
+    steals: 0,
+    blocks: 0,
+    turnovers: 0,
+    fieldGoalsMade: 0,
+    fieldGoalsAttempted: 0,
+    threePointersMade: 0,
+    threePointersAttempted: 0,
+    freeThrowsMade: 0,
+    freeThrowsAttempted: 0,
+  });
+
+  return {
+    minutes: formatMinutes(totals.seconds),
+    points: totals.points,
+    rebounds: totals.rebounds,
+    assists: totals.assists,
+    steals: totals.steals,
+    blocks: totals.blocks,
+    turnovers: totals.turnovers,
+    fieldGoalsMade: totals.fieldGoalsMade,
+    fieldGoalsAttempted: totals.fieldGoalsAttempted,
+    threePointersMade: totals.threePointersMade,
+    threePointersAttempted: totals.threePointersAttempted,
+    freeThrowsMade: totals.freeThrowsMade,
+    freeThrowsAttempted: totals.freeThrowsAttempted,
+  };
 }

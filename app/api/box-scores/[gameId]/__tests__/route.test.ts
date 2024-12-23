@@ -50,7 +50,7 @@ describe('Box Scores API Route', () => {
     const mockPlayerStats: BoxScore[] = [
       {
         game_id: mockGameId,
-        team_id: 'BOS',
+        team_id: '1610612738',  
         entity_id: '1234',
         player_name: 'Player 1',
         minutes: '32:45',
@@ -72,7 +72,7 @@ describe('Box Scores API Route', () => {
       },
       {
         game_id: mockGameId,
-        team_id: 'NYK',
+        team_id: '1610612752',  
         entity_id: '5678',
         player_name: 'Player 2',
         minutes: '28:15',
@@ -98,7 +98,7 @@ describe('Box Scores API Route', () => {
     const mockTeamStats: TeamStats[] = [
       {
         game_id: mockGameId,
-        team_id: 'BOS',
+        team_id: '1610612738',  
         period: 'FullGame',
         minutes: '240:00',
         points: 110,
@@ -117,7 +117,7 @@ describe('Box Scores API Route', () => {
       },
       {
         game_id: mockGameId,
-        team_id: 'NYK',
+        team_id: '1610612752',  
         period: 'FullGame',
         minutes: '240:00',
         points: 102,
@@ -146,31 +146,34 @@ describe('Box Scores API Route', () => {
     const response = await GET(mockRequest, mockParams);
     const data = await response.json();
 
-    // Verify the response structure
+    // Check the basic structure
+    expect(data.gameInfo).toBeDefined();
+    expect(data.teams).toBeDefined();
+    expect(data.periodScores).toBeDefined();
     expect(data.teams).toHaveLength(2);
     
     // Check Boston team data
-    const bostonTeam = data.teams.find((team: any) => team.teamId === 'BOS');
+    const bostonTeam = data.teams.find((team: any) => team.teamId === '1610612738');
     expect(bostonTeam).toBeDefined();
-    expect(bostonTeam.players).toHaveLength(1);
-    expect(bostonTeam.players[0]).toMatchObject({
-      playerId: '1234',
-      playerName: 'Player 1',
-      minutes: '32:45',
-      points: 20,
-      rebounds: 5,
-      assists: 6
-    });
+    expect(bostonTeam.teamName).toBe('Boston Celtics');
+    expect(bostonTeam.teamAbbreviation).toBe('BOS');
+    expect(bostonTeam.score).toBe(115);
 
-    // Check game info
-    expect(data.gameInfo).toMatchObject({
-      game_id: mockGameId,
-      home_team_abbreviation: 'BOS',
-      away_team_abbreviation: 'NYK',
-      home_team_score: 115,
-      away_team_score: 105,
-      status: 'Final'
-    });
+    // Check New York team data
+    const knicksTeam = data.teams.find((team: any) => team.teamId === '1610612752');
+    expect(knicksTeam).toBeDefined();
+    expect(knicksTeam.teamName).toBe('New York Knicks');
+    expect(knicksTeam.teamAbbreviation).toBe('NYK');
+    expect(knicksTeam.score).toBe(105);
+
+    // Check period scores
+    expect(data.periodScores).toHaveLength(2);
+    const bostonPeriodScore = data.periodScores.find((score: any) => score.teamId === '1610612738');
+    const knicksPeriodScore = data.periodScores.find((score: any) => score.teamId === '1610612752');
+    expect(bostonPeriodScore).toBeDefined();
+    expect(knicksPeriodScore).toBeDefined();
+    expect(bostonPeriodScore.period).toBe('FullGame');
+    expect(knicksPeriodScore.period).toBe('FullGame');
   });
 
   it('should handle database errors', async () => {

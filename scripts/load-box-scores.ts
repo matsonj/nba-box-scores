@@ -231,7 +231,7 @@ const loadBoxScores = async () => {
               fg_attempted: parseInt(player.FG2A || '0') + parseInt(player.FG3A || '0'),
               fg3_made: parseInt(player.FG3M || '0'),
               fg3_attempted: parseInt(player.FG3A || '0'),
-              ft_made: parseInt(player.FTM || '0'),
+              ft_made: parseInt(player.FtPoints || '0'),
               ft_attempted: parseInt(player.FTA || '0'),
               plus_minus: parseInt(player.PlusMinus || '0'),
               starter: player.Starter ? 1 : 0,
@@ -263,7 +263,7 @@ const loadBoxScores = async () => {
             fg_attempted: parseInt(teamPeriodStats.FG2A || '0') + parseInt(teamPeriodStats.FG3A || '0'),
             fg3_made: parseInt(teamPeriodStats.FG3M || '0'),
             fg3_attempted: parseInt(teamPeriodStats.FG3A || '0'),
-            ft_made: parseInt(teamPeriodStats.FTM || '0'),
+            ft_made: parseInt(teamPeriodStats.FtPoints || '0'),
             ft_attempted: parseInt(teamPeriodStats.FTA || '0'),
             offensive_possessions: parseInt(teamPeriodStats.OffPoss || '0'),
             defensive_possessions: parseInt(teamPeriodStats.DefPoss || '0')

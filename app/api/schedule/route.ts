@@ -1,64 +1,51 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { queryDb } from '@/lib/db';
-import { Team } from '@/types';
 import { Schedule } from '@/types/schema';
-import { Game } from '@/types';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {
     console.log('Fetching schedule from DuckDB...');
-    const result = await queryDb<Schedule>(
-      `SELECT * FROM main.schedule`
-    );
+    const result = await queryDb('SELECT * FROM main.schedule');
     
     console.log('Raw query result:', result[0]);
-    
-    // Transform the data to include team objects
-    const games = result.map((game) => {
-      const homeTeam: Team = {
+    console.log('Total games:', result.length);
+
+    // Transform the data to match the expected format
+    const transformedResult = result.map((game: Schedule) => ({
+      game_id: game.game_id,
+      gameDate: game.game_date,
+      home_team_id: game.home_team_id,
+      away_team_id: game.away_team_id,
+      home_team_abbreviation: game.home_team_abbreviation,
+      away_team_abbreviation: game.away_team_abbreviation,
+      home_team_score: game.home_team_score,
+      away_team_score: game.away_team_score,
+      status: game.status,
+      homeTeam: {
         teamId: game.home_team_abbreviation,
         teamName: game.home_team_abbreviation,
         teamAbbreviation: game.home_team_abbreviation,
-        score: Number(game.home_team_score) || 0,
+        score: game.home_team_score,
         players: []
-      };
-
-      const awayTeam: Team = {
+      },
+      awayTeam: {
         teamId: game.away_team_abbreviation,
         teamName: game.away_team_abbreviation,
         teamAbbreviation: game.away_team_abbreviation,
-        score: Number(game.away_team_score) || 0,
+        score: game.away_team_score,
         players: []
-      };
+      },
+      boxScoreLoaded: false
+    }));
 
-      return {
-        game_id: game.game_id,
-        gameDate: game.game_date,
-        home_team_id: Number(game.home_team_id),
-        away_team_id: Number(game.away_team_id),
-        home_team_abbreviation: game.home_team_abbreviation,
-        away_team_abbreviation: game.away_team_abbreviation,
-        home_team_score: Number(game.home_team_score),
-        away_team_score: Number(game.away_team_score),
-        status: game.status,
-        homeTeam,
-        awayTeam,
-        boxScoreLoaded: false,
-        created_at: game.created_at
-      } as Game;
-    });
-
-    console.log('Successfully fetched games:', games.length);
-    return NextResponse.json(games);
+    return NextResponse.json(transformedResult);
   } catch (error) {
-    const err = error as Error;
-    console.error('Error details:', {
-      name: err.name,
-      message: err.message,
-      stack: err.stack
-    });
-    return NextResponse.json({ error: 'Failed to fetch schedule' }, { status: 500 });
+    console.error('Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch schedule' },
+      { status: 500 }
+    );
   }
 }
