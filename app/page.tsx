@@ -148,7 +148,10 @@ export default function Home() {
                                 <td className="text-left">{game.away_team_abbreviation}</td>
                                 {uniquePeriods.sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
                                   <td key={period} className="text-center">
-                                    {periodScores.find(ps => parseInt(ps.period) === parseInt(period) && ps.teamId === game.away_team_id)?.points || '-'}
+                                    {periodScores.find(ps => 
+                                      parseInt(ps.period) === parseInt(period) && 
+                                      String(ps.teamId) === String(game.away_team_id)
+                                    )?.points || '-'}
                                   </td>
                                 ))}
                                 <td className="text-center font-semibold">{game.away_team_score}</td>
@@ -157,7 +160,10 @@ export default function Home() {
                                 <td className="text-left">{game.home_team_abbreviation}</td>
                                 {uniquePeriods.sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
                                   <td key={period} className="text-center">
-                                    {periodScores.find(ps => parseInt(ps.period) === parseInt(period) && ps.teamId === game.home_team_id)?.points || '-'}
+                                    {periodScores.find(ps => 
+                                      parseInt(ps.period) === parseInt(period) && 
+                                      String(ps.teamId) === String(game.home_team_id)
+                                    )?.points || '-'}
                                   </td>
                                 ))}
                                 <td className="text-center font-semibold">{game.home_team_score}</td>

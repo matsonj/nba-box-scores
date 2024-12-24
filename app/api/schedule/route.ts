@@ -16,7 +16,7 @@ export async function GET() {
     console.log('Total games:', result.length);
 
     // Transform the data to match the expected format
-    const transformedResult = result.map((game: Schedule) => ({
+    const transformedResult = (result as Schedule[]).map((game: Schedule) => ({
       game_id: game.game_id,
       game_date: game.game_date,
       home_team_id: game.home_team_id,

@@ -12,7 +12,7 @@ const loadSchedule = async () => {
     const completedGames = JSON.parse(await fs.readFile(completedGamesFile, 'utf-8'));
     
     // Filter out preseason games (starting with 001)
-    const regularSeasonGames = completedGames.filter(game => !game.gameId.startsWith('001'));
+    const regularSeasonGames = completedGames.filter((game: { gameId: string }) => !game.gameId.startsWith('001'));
     console.log(`Found ${regularSeasonGames.length} regular season games out of ${completedGames.length} total games`);
     
     // Log first game for debugging
@@ -51,11 +51,17 @@ const loadSchedule = async () => {
     
     for (let i = 0; i < regularSeasonGames.length; i += BATCH_SIZE) {
       const batch = regularSeasonGames.slice(i, i + BATCH_SIZE);
-      const values = batch.map((_, index) => 
+      const values = batch.map((_: unknown, index: number) =>
         `($${index * 9 + 1}, $${index * 9 + 2}, $${index * 9 + 3}, $${index * 9 + 4}, $${index * 9 + 5}, $${index * 9 + 6}, $${index * 9 + 7}, $${index * 9 + 8}, $${index * 9 + 9})`
       ).join(',');
 
-      const params = batch.flatMap(game => [
+      const params = batch.flatMap((game: { 
+        gameId: string,
+        gameDateTimeUTC: string,
+        homeTeam: { teamId: string, teamTricode: string, score: number, periods: { score: number }[] },
+        awayTeam: { teamId: string, teamTricode: string, score: number, periods: { score: number }[] },
+        gameStatusText: string
+      }) => [
         game.gameId,
         game.gameDateTimeUTC,
         game.homeTeam.teamId,
@@ -84,7 +90,11 @@ const loadSchedule = async () => {
         console.log(`Inserted batch of ${batch.length} games (${i + 1} to ${i + batch.length} of ${regularSeasonGames.length})`);
 
         // Batch insert period scores
-        const periodScoresBatch = batch.flatMap(game => {
+        const periodScoresBatch = batch.flatMap((game: { 
+          gameId: string,
+          homeTeam: { teamId: string, periods?: { score: number }[] },
+          awayTeam: { teamId: string, periods?: { score: number }[] }
+        }) => {
           if (!game.homeTeam.periods || !game.awayTeam.periods) return [];
           
           const scores = [];
@@ -108,11 +118,11 @@ const loadSchedule = async () => {
         });
 
         if (periodScoresBatch.length > 0) {
-          const periodValues = periodScoresBatch.map((_, index) => 
+          const periodValues = periodScoresBatch.map((score: { gameId: string, teamId: string, period: number, score: number }, index: number) =>
             `($${index * 4 + 1}, $${index * 4 + 2}, $${index * 4 + 3}, $${index * 4 + 4})`
           ).join(',');
 
-          const periodParams = periodScoresBatch.flatMap(score => [
+          const periodParams = periodScoresBatch.flatMap((score: { gameId: string, teamId: string, period: number, score: number }) => [
             score.gameId,
             score.teamId,
             score.period,

@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db';
 import { TeamStats, Schedule } from '@/types/schema';
 
@@ -92,12 +92,11 @@ function getTeamName(abbreviation: string): string {
 }
 
 export async function GET(
-  request: Request,
-  { params }: { params: { gameId: string } }
+  request: NextRequest,
+  { params }: { params: any } // eslint-disable-line @typescript-eslint/no-explicit-any
 ) {
   try {
-    const { gameId } = params;
-
+    const gameId = params.gameId;
     console.log(`Fetching box scores for game ${gameId}...`);
 
     // Get all data in parallel
@@ -155,16 +154,18 @@ export async function GET(
       teamId: Number(gameInfo[0].home_team_id),
       teamName: getTeamName(gameInfo[0].home_team_abbreviation),
       teamAbbreviation: gameInfo[0].home_team_abbreviation,
-      score: Number(gameInfo[0].home_team_score),
-      players: []
+      score: gameInfo[0].home_team_score,
+      players: [],
+      periodScores: {}
     };
 
     const awayTeam: BoxScoreTeam = {
       teamId: Number(gameInfo[0].away_team_id),
       teamName: getTeamName(gameInfo[0].away_team_abbreviation),
       teamAbbreviation: gameInfo[0].away_team_abbreviation,
-      score: Number(gameInfo[0].away_team_score),
-      players: []
+      score: gameInfo[0].away_team_score,
+      players: [],
+      periodScores: {}
     };
 
     // Map team_id to home/away team
@@ -267,7 +268,8 @@ export async function GET(
           freeThrowsAttempted: Number(player.freeThrowsAttempted),
           plusMinus: Number(player.plusMinus),
           starter: player.starter
-        }))
+        })),
+        periodScores: team.periodScores
       })),
       periodScores: periodScores
     };

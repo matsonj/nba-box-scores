@@ -16,4 +16,4 @@ export interface Game {
   created_at: string;
 }
 
-export { Team };
+export type { Team };

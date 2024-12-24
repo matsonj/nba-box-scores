@@ -19,8 +19,11 @@ const nextConfig = {
   },
   // Add experimental features to support native modules
   experimental: {
-    serverComponentsExternalPackages: ['@duckdb/node-api'],
+    serverActions: {
+      bodySizeLimit: '2mb'
+    }
   },
+  serverExternalPackages: ['@duckdb/node-api']
 };
 
 module.exports = nextConfig;

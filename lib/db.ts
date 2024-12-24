@@ -2,13 +2,13 @@ import { DuckDBInstance } from '@duckdb/node-api';
 
 // Create a singleton database connection
 let db: DuckDBInstance | null = null;
-let conn: any | null = null;
-let connectionPromise: Promise<any> | null = null;
+let conn: any | null = null; // eslint-disable-line @typescript-eslint/no-explicit-any
+let connectionPromise: Promise<any> | null = null; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 // Connection timeout (5 seconds)
 const CONNECTION_TIMEOUT = 5000;
 
-export async function getConnection(): Promise<any> {
+export async function getConnection(): Promise<any> { // eslint-disable-line @typescript-eslint/no-explicit-any
   try {
     // Return existing connection if it exists and is valid
     if (conn) {
@@ -60,7 +60,7 @@ export async function getConnection(): Promise<any> {
   }
 }
 
-export async function queryDb<T = any>(query: string, params: any[] = []): Promise<T[]> {
+export async function queryDb<T>(query: string, params: (string | number | null)[] = []): Promise<T[]> {
   let retries = 2;
   while (retries >= 0) {
     try {
@@ -98,16 +98,16 @@ export async function queryDb<T = any>(query: string, params: any[] = []): Promi
       const columnTypes = reader.columnTypes();
       
       // Convert array rows to objects with column names
-      return rows.map((row: any) => {
-        const obj: any = {};
-        columnNames.forEach((col, i) => {
+      return rows.map((row: unknown[]) => {
+        const obj: { [key: string]: unknown } = {};
+        columnNames.forEach((col: string, i: number) => {
           let value = row[i];
           // Convert DuckDB timestamp values to ISO strings
-          if (columnTypes[i].typeId === 12 && value !== null) {
-            value = new Date(Number(value.micros / 1000n)).toISOString();
+          if (columnTypes[i].typeId === 12 && value !== null && value !== undefined && typeof value === 'object' && 'micros' in value) {
+            value = new Date(Number((value as { micros: bigint }).micros / 1000n)).toISOString();
           }
           // Convert BigInt values to numbers for integer types
-          if (columnTypes[i].typeId === 4 && value !== null) {
+          if (columnTypes[i].typeId === 4 && value !== null && value !== undefined) {
             value = Number(value);
           }
           // Convert BigInt values to numbers
