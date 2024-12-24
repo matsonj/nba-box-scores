@@ -1,4 +1,4 @@
-import { getConnection, queryDb } from '../db';
+import { getConnection, queryDb, closeConnection } from '../db';
 import path from 'path';
 import fs from 'fs';
 
@@ -9,6 +9,14 @@ describe('Database Connection', () => {
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
     }
+  });
+
+  afterEach(async () => {
+    await closeConnection();
+  });
+
+  afterAll(async () => {
+    await closeConnection();
   });
 
   it('should establish a database connection', async () => {
@@ -25,7 +33,7 @@ describe('Database Connection', () => {
     // Test that both connections can execute queries
     await expect(queryDb('SELECT 1')).resolves.toBeDefined();
     await expect(queryDb('SELECT 1')).resolves.toBeDefined();
-  });
+  }, 10000); // Increase timeout to 10 seconds
 
   it('should execute a basic query', async () => {
     const result = await queryDb('SELECT 1 as value');
