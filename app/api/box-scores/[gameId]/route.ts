@@ -101,55 +101,60 @@ export async function GET(
 
     console.log(`Fetching box scores for game ${gameId}...`);
 
-    // Get game info from schedule
-    console.log('Fetching game info from schedule...');
-    const gameInfo = await queryDb<Schedule>(
-      `SELECT 
-        game_id,
-        game_date,
-        CAST(home_team_id AS INTEGER) as home_team_id,
-        CAST(away_team_id AS INTEGER) as away_team_id,
-        home_team_abbreviation,
-        away_team_abbreviation,
-        CAST(home_team_score AS INTEGER) as home_team_score,
-        CAST(away_team_score AS INTEGER) as away_team_score,
-        status,
-        created_at
-      FROM main.schedule WHERE game_id = ?`, 
-      [gameId]
-    );
-    console.log('Game info:', gameInfo[0]);
+    // Get all data in parallel
+    const [gameInfo, boxScoresData, teamStats] = await Promise.all([
+      // Game info query
+      queryDb<Schedule>(
+        `SELECT 
+          game_id,
+          game_date,
+          CAST(home_team_id AS INTEGER) as home_team_id,
+          CAST(away_team_id AS INTEGER) as away_team_id,
+          home_team_abbreviation,
+          away_team_abbreviation,
+          CAST(home_team_score AS INTEGER) as home_team_score,
+          CAST(away_team_score AS INTEGER) as away_team_score,
+          status,
+          created_at
+        FROM main.schedule WHERE game_id = ?`, 
+        [gameId]
+      ),
+      // Box scores query with optimized starter detection
+      queryDb<BoxScores>(
+        `SELECT 
+          bs.*,
+          COALESCE(bs_starters.starter, 0) as starter
+        FROM main.box_scores bs
+        LEFT JOIN (
+          SELECT entity_id, 1 as starter
+          FROM main.box_scores
+          WHERE game_id = ? AND period = '1'
+          GROUP BY entity_id
+          HAVING MAX(CASE WHEN starter = 1 THEN 1 ELSE 0 END) = 1
+        ) bs_starters ON bs.entity_id = bs_starters.entity_id
+        WHERE bs.game_id = ? AND bs.period = 'FullGame'
+        ORDER BY bs.minutes DESC`,
+        [gameId, gameId]
+      ),
+      // Team stats query
+      queryDb<TeamStats>(
+        `SELECT team_id, period, points 
+         FROM main.team_stats 
+         WHERE game_id = ? AND period != 'FullGame'
+         ORDER BY team_id, CAST(period AS INTEGER)`,
+        [gameId]
+      )
+    ]);
 
     if (gameInfo.length === 0) {
       console.log('Game not found in schedule');
       return NextResponse.json({ error: 'Game not found' }, { status: 404 });
     }
 
-    // Get box scores
-    console.log('Fetching team stats...');
-    const teamStats = await queryDb<TeamStats>(
-      `SELECT team_id, period, points 
-       FROM main.team_stats 
-       WHERE game_id = ? AND period != 'FullGame'
-       ORDER BY team_id, CAST(period AS INTEGER)`,
-      [gameId]
-    );
-    console.log('Team stats:', teamStats);
+    console.log('Game info:', gameInfo[0]);
 
-    const boxScoresData = await queryDb<BoxScores>(
-      `WITH starters AS (
-        SELECT DISTINCT entity_id
-        FROM main.box_scores
-        WHERE game_id = ? AND period = '1' AND starter = 1
-      )
-      SELECT bs.*, 
-        CASE WHEN s.entity_id IS NOT NULL THEN 1 ELSE 0 END as starter
-      FROM main.box_scores bs
-      LEFT JOIN starters s ON bs.entity_id = s.entity_id
-      WHERE bs.game_id = ? AND bs.period = 'FullGame'
-      ORDER BY bs.minutes DESC`,
-      [gameId, gameId]
-    );
+    // Get box scores
+    console.log('Team stats:', teamStats);
 
     console.log('Box scores sample:', boxScoresData[0]);
     console.log('Team IDs from box scores:', [...new Set(boxScoresData.map(p => p.team_id))]);
