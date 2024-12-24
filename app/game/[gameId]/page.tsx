@@ -178,7 +178,7 @@ export default async function GamePage(
                     <th className="px-3 py-1 text-right print:px-2">FT%</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody key={`players-${team.teamId}`}>
                   {team.players.map((player) => (
                     <tr key={player.entityId} className="border-b print:border-dotted">
                       <td className="px-3 py-1 print:px-2 print:py-0.5">{player.playerName}{player.starter ? ' *' : ''}</td>

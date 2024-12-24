@@ -15,14 +15,11 @@ export async function getConnection(): Promise<any> {
     // Return existing connection if it exists and is valid
     if (conn) {
       try {
-        // Test the connection with a simple query
         await conn.query('SELECT 1');
         return conn;
       } catch (error) {
         console.log('Existing connection invalid, creating new connection...');
-        conn = null;
-        db = null;
-        connectionPromise = null;
+        await closeConnection();
       }
     }
 
@@ -34,12 +31,16 @@ export async function getConnection(): Promise<any> {
     // Create a new connection
     connectionPromise = (async () => {
       try {
+        if (!process.env.MOTHERDUCK_TOKEN) {
+          throw new Error('MOTHERDUCK_TOKEN environment variable is not set');
+        }
+
         // Use MotherDuck connection string with token from environment
         const connectionString = `md:nba_box_scores?MOTHERDUCK_TOKEN=${process.env.MOTHERDUCK_TOKEN}`;
         
         // Create a new DuckDB instance with timeout
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Connection timeout')), CONNECTION_TIMEOUT);
+          setTimeout(() => reject(new Error('Database connection timeout')), CONNECTION_TIMEOUT);
         });
 
         db = await Promise.race([DuckDBInstance.create(connectionString), timeoutPromise]) as DuckDBInstance;
@@ -49,13 +50,14 @@ export async function getConnection(): Promise<any> {
         return conn;
       } catch (error) {
         connectionPromise = null;
+        console.error('Failed to connect to database:', error instanceof Error ? error.message : 'Unknown error');
         throw error;
       }
     })();
 
     return connectionPromise;
   } catch (error) {
-    console.error('Error connecting to database:', error);
+    console.error('Database connection error:', error instanceof Error ? error.message : 'Unknown error');
     throw error;
   }
 }
@@ -154,7 +156,15 @@ async function closeConnection() {
 
 // Handle serverless function cleanup
 if (process.env.VERCEL) {
-  process.on('beforeExit', closeConnection);
+  process.on('beforeExit', async () => {
+    await closeConnection();
+  });
+  
+  // Also handle SIGTERM signal which Vercel sends
+  process.on('SIGTERM', async () => {
+    await closeConnection();
+    process.exit(0);
+  });
 }
 
 // Ensure we close the connection when the process exits
