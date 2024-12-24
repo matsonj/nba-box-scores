@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db';
 import { TeamStats, Schedule } from '@/types/schema';
 import { generateSelectQuery, box_scoresColumns, team_statsColumns } from '@/lib/generated/sql-utils';
-import { getCache, setCache } from '@/lib/cache';
 
 interface BoxScores {
   game_id: string;
@@ -95,18 +94,10 @@ function getTeamName(abbreviation: string): string {
 
 export async function GET(
   request: Request,
-  context: { params: { gameId: string } }
+  { params }: { params: { gameId: string } }
 ) {
   try {
-    const gameId = await context.params.gameId;
-
-    // Check cache first
-    const cacheKey = `box-scores-${gameId}`;
-    const cached = getCache(cacheKey);
-    if (cached) {
-      console.log(`Returning cached box scores data for game ${gameId}`);
-      return NextResponse.json(cached);
-    }
+    const { gameId } = params;
 
     console.log(`Fetching box scores for game ${gameId}...`);
 
@@ -299,7 +290,6 @@ export async function GET(
     });
     
     console.log('Sending response:', response);
-    setCache(cacheKey, response);
     return NextResponse.json(response);
 
   } catch (error) {

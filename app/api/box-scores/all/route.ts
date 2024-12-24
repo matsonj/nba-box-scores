@@ -1,20 +1,11 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db';
 import { TeamStats } from '@/types/schema';
-import { getCache, setCache } from '@/lib/cache';
 
 export const runtime = 'nodejs';
 
 export async function GET() {
   try {
-    // Check cache first
-    const cacheKey = 'all-box-scores';
-    const cached = getCache(cacheKey);
-    if (cached) {
-      console.log('Returning cached box scores data');
-      return NextResponse.json(cached);
-    }
-
     console.log('Fetching all period scores...');
     const periodScores = await queryDb<TeamStats>(
       `SELECT game_id, team_id, period, points 
@@ -36,9 +27,6 @@ export async function GET() {
       });
       return acc;
     }, {} as Record<string, { teamId: number; period: string; points: number; }[]>);
-
-    // Cache the result
-    setCache(cacheKey, scoresByGame);
 
     return NextResponse.json(scoresByGame);
   } catch (error) {
