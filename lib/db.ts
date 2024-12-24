@@ -13,19 +13,14 @@ export async function getConnection(): Promise<any> {
       return conn;
     }
 
-    const dbPath = path.join(process.cwd(), 'data', 'nba.db');
+    // Use MotherDuck connection string with token from environment
+    const connectionString = `md:nba_box_scores?MOTHERDUCK_TOKEN=${process.env.MOTHERDUCK_TOKEN}`;
     
-    // Check if database file exists and log its size
-    if (fs.existsSync(dbPath)) {
-      const stats = fs.statSync(dbPath);
-      console.log('Database file size:', stats.size, 'bytes');
-    }
-
     // Create a new DuckDB instance
-    db = await DuckDBInstance.create(dbPath);
+    db = await DuckDBInstance.create(connectionString);
     conn = await db.connect();
     
-    console.log('Successfully connected to database');
+    console.log('Successfully connected to MotherDuck database');
     return conn;
   } catch (error) {
     console.error('Error connecting to database:', error);
