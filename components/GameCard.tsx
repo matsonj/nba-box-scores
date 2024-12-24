@@ -44,7 +44,7 @@ export default function GameCard({ game }: GameCardProps) {
   const awayTeamClass = game.away_team_score > game.home_team_score ? 'font-bold' : '';
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+    <div className="bg-white rounded-lg shadow-md p-4 mb-4 relative">
       <div className="flex justify-between items-center cursor-pointer" onClick={handleExpandClick}>
         <div className="flex-1">
           <div className={awayTeamClass}>

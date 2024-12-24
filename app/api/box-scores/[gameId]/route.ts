@@ -95,10 +95,10 @@ function getTeamName(abbreviation: string): string {
 
 export async function GET(
   request: Request,
-  { params }: { params: { gameId: string } }
+  context: { params: { gameId: string } }
 ) {
   try {
-    const { gameId } = params;
+    const gameId = await context.params.gameId;
 
     // Check cache first
     const cacheKey = `box-scores-${gameId}`;

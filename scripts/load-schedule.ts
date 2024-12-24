@@ -45,9 +45,28 @@ const loadSchedule = async () => {
       )
     `);
 
-    // Insert games into schedule table
+    // Insert games into schedule table in batches
     console.log('Inserting games into schedule table...');
-    for (const game of regularSeasonGames) {
+    const BATCH_SIZE = 100;
+    
+    for (let i = 0; i < regularSeasonGames.length; i += BATCH_SIZE) {
+      const batch = regularSeasonGames.slice(i, i + BATCH_SIZE);
+      const values = batch.map((_, index) => 
+        `($${index * 9 + 1}, $${index * 9 + 2}, $${index * 9 + 3}, $${index * 9 + 4}, $${index * 9 + 5}, $${index * 9 + 6}, $${index * 9 + 7}, $${index * 9 + 8}, $${index * 9 + 9})`
+      ).join(',');
+
+      const params = batch.flatMap(game => [
+        game.gameId,
+        game.gameDateTimeUTC,
+        game.homeTeam.teamId,
+        game.awayTeam.teamId,
+        game.homeTeam.teamTricode,
+        game.awayTeam.teamTricode,
+        game.homeTeam.score,
+        game.awayTeam.score,
+        game.gameStatusText
+      ]);
+
       try {
         await queryDb(`
           INSERT INTO main.schedule (
@@ -60,54 +79,55 @@ const loadSchedule = async () => {
             home_team_score,
             away_team_score,
             status
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        `,
-        [
-          game.gameId,
-          game.gameDateTimeUTC,
-          game.homeTeam.teamId,
-          game.awayTeam.teamId,
-          game.homeTeam.teamTricode,
-          game.awayTeam.teamTricode,
-          game.homeTeam.score,
-          game.awayTeam.score,
-          game.gameStatusText
-        ]);
-        console.log(`Inserted game ${game.gameId} into database`);
+          ) VALUES ${values}
+        `, params);
+        console.log(`Inserted batch of ${batch.length} games (${i + 1} to ${i + batch.length} of ${regularSeasonGames.length})`);
 
-        // Insert period scores if available
-        if (game.homeTeam.periods && game.awayTeam.periods) {
-          for (let i = 0; i < game.homeTeam.periods.length; i++) {
+        // Batch insert period scores
+        const periodScoresBatch = batch.flatMap(game => {
+          if (!game.homeTeam.periods || !game.awayTeam.periods) return [];
+          
+          const scores = [];
+          for (let p = 0; p < game.homeTeam.periods.length; p++) {
             // Home team period score
-            await queryDb(`
-              INSERT INTO main.period_scores (game_id, team_id, period, score)
-              VALUES ($1, $2, $3, $4)
-            `, [
-              game.gameId,
-              game.homeTeam.teamId,
-              i + 1,
-              game.homeTeam.periods[i].score
-            ]);
-
+            scores.push({
+              gameId: game.gameId,
+              teamId: game.homeTeam.teamId,
+              period: p + 1,
+              score: game.homeTeam.periods[p].score
+            });
             // Away team period score
-            await queryDb(`
-              INSERT INTO main.period_scores (game_id, team_id, period, score)
-              VALUES ($1, $2, $3, $4)
-            `, [
-              game.gameId,
-              game.awayTeam.teamId,
-              i + 1,
-              game.awayTeam.periods[i].score
-            ]);
+            scores.push({
+              gameId: game.gameId,
+              teamId: game.awayTeam.teamId,
+              period: p + 1,
+              score: game.awayTeam.periods[p].score
+            });
           }
-          console.log(`Inserted period scores for game ${game.gameId}`);
+          return scores;
+        });
+
+        if (periodScoresBatch.length > 0) {
+          const periodValues = periodScoresBatch.map((_, index) => 
+            `($${index * 4 + 1}, $${index * 4 + 2}, $${index * 4 + 3}, $${index * 4 + 4})`
+          ).join(',');
+
+          const periodParams = periodScoresBatch.flatMap(score => [
+            score.gameId,
+            score.teamId,
+            score.period,
+            score.score
+          ]);
+
+          await queryDb(`
+            INSERT INTO main.period_scores (game_id, team_id, period, score)
+            VALUES ${periodValues}
+          `, periodParams);
+          console.log(`Inserted period scores for batch of ${batch.length} games`);
         }
       } catch (err: any) {
-        if (err.message.includes('UNIQUE constraint failed')) {
-          console.log(`Game ${game.gameId} already exists in database`);
-        } else {
-          console.error(`Error inserting game ${game.gameId}:`, err.message);
-        }
+        console.error(`Error inserting batch starting at game ${i}:`, err.message);
+        throw err;
       }
     }
 
