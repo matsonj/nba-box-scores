@@ -1,6 +1,5 @@
 import { GET } from '../route';
 import { queryDb } from '@/lib/db';
-import { NextRequest } from 'next/server';
 import { TeamStats } from '@/types/schema';
 
 // Mock the database query function
@@ -16,7 +15,6 @@ jest.mock('next/server', () => ({
       ...options
     })),
   },
-  NextRequest: jest.fn().mockImplementation((request) => request),
 }));
 
 describe('Box Scores All API Route', () => {
@@ -72,9 +70,6 @@ describe('Box Scores All API Route', () => {
 
     // Set up the mock to return our test data
     (queryDb as jest.Mock).mockResolvedValue(mockDbResponse);
-
-    // Create a mock request object
-    const mockRequest = new NextRequest('http://localhost:3000/api/box-scores/all');
 
     // Call the API route handler
     const response = await GET();
