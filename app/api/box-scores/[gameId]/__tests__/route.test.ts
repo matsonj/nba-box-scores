@@ -193,8 +193,11 @@ describe('Box Scores API Route', () => {
   });
 
   it('should handle game not found', async () => {
-    // Mock empty game info response
-    (queryDb as jest.Mock).mockResolvedValueOnce([]);
+    // Mock empty game info response for all three parallel queries
+    (queryDb as jest.Mock)
+      .mockResolvedValueOnce([]) // game info
+      .mockResolvedValueOnce([]) // box scores
+      .mockResolvedValueOnce([]); // team stats
 
     const response = await GET(mockRequest, mockParams);
     const data = await response.json();

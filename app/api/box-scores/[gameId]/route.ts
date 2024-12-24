@@ -120,34 +120,22 @@ export async function GET(
       ),
       // Box scores query with optimized starter detection
       queryDb<BoxScores>(
-        `SELECT 
-          bs.*,
-          COALESCE(bs_starters.starter, 0) as starter
-        FROM main.box_scores bs
-        LEFT JOIN (
-          SELECT entity_id, 1 as starter
-          FROM main.box_scores
-          WHERE game_id = ? AND period = '1'
-          GROUP BY entity_id
-          HAVING MAX(CASE WHEN starter = 1 THEN 1 ELSE 0 END) = 1
-        ) bs_starters ON bs.entity_id = bs_starters.entity_id
-        WHERE bs.game_id = ? AND bs.period = 'FullGame'
-        ORDER BY bs.minutes DESC`,
-        [gameId, gameId]
+        `SELECT * FROM main.box_scores WHERE game_id = ? AND period = 'FullGame'`,
+        [gameId]
       ),
       // Team stats query
       queryDb<TeamStats>(
-        `SELECT team_id, period, points 
-         FROM main.team_stats 
-         WHERE game_id = ? AND period != 'FullGame'
-         ORDER BY team_id, CAST(period AS INTEGER)`,
+        `SELECT * FROM main.team_stats WHERE game_id = ?`,
         [gameId]
       )
     ]);
 
-    if (gameInfo.length === 0) {
-      console.log('Game not found in schedule');
-      return NextResponse.json({ error: 'Game not found' }, { status: 404 });
+    // Check if game exists
+    if (!gameInfo || gameInfo.length === 0) {
+      return NextResponse.json(
+        { error: 'Game not found' },
+        { status: 404 }
+      );
     }
 
     console.log('Game info:', gameInfo[0]);
