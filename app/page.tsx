@@ -5,6 +5,7 @@ import { format, parseISO } from 'date-fns';
 import Link from 'next/link';
 import { Schedule } from './types/schema';
 import { ScheduleWithBoxScore } from './types/extended';
+import { useRouter } from 'next/navigation';
 
 // Helper function to format period numbers
 function formatPeriod(period: string, allPeriods: string[]): string {
@@ -24,7 +25,9 @@ function formatPeriod(period: string, allPeriods: string[]): string {
 export default function Home() {
   const [gamesByDate, setGamesByDate] = useState<Record<string, ScheduleWithBoxScore[]>>({});
   const [loading, setLoading] = useState(true);
+  const [loadingGames, setLoadingGames] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     const fetchGames = async () => {
@@ -110,12 +113,20 @@ export default function Home() {
             {games.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
                 {games.map((game) => (
-                  <Link
+                  <div
                     key={game.game_id}
-                    href={`/game/${game.game_id}`}
-                    className="block"
+                    onClick={() => {
+                      setLoadingGames(prev => new Set([...prev, game.game_id]));
+                      router.push(`/game/${game.game_id}`);
+                    }}
+                    className="block cursor-pointer"
                   >
-                    <div className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow">
+                    <div className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow relative">
+                      {loadingGames.has(game.game_id) && (
+                        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                        </div>
+                      )}
                       {/* Period scores */}
                       {game.boxScoreLoaded && game.periodScores && (() => {
                         const periodScores = game.periodScores;
@@ -159,7 +170,7 @@ export default function Home() {
                         );
                       })()}
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             ) : (
