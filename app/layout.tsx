@@ -14,7 +14,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-gray-100 min-h-screen">
-        {children}
+        <header className="fixed top-0 left-0 right-0 bg-white shadow-md z-50">
+          <div className="container mx-auto px-4 py-4">
+            <h1 className="text-2xl font-bold text-center">NBA Box Scores</h1>
+          </div>
+        </header>
+        <main className="pt-16">
+          {children}
+        </main>
       </body>
     </html>
   )
