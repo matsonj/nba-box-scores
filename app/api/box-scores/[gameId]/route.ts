@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db';
 import { TeamStats, Schedule } from '@/types/schema';
 import { generateSelectQuery, box_scoresColumns, team_statsColumns } from '@/lib/generated/sql-utils';
+import { getCache, setCache } from '@/lib/cache';
 
 interface BoxScores {
   game_id: string;
@@ -50,13 +51,14 @@ interface BoxScoreTeam {
     plusMinus: number;
     starter: boolean;
   }[];
+  periodScores: Record<string, number>;
 }
 
 export const runtime = 'nodejs';
 
 // Helper function to convert abbreviations to full team names
 function getTeamName(abbreviation: string): string {
-  const teamNames: { [key: string]: string } = {
+  const teamNames: Record<string, string> = {
     'ATL': 'Atlanta Hawks',
     'BOS': 'Boston Celtics',
     'BKN': 'Brooklyn Nets',
@@ -97,7 +99,16 @@ export async function GET(
 ) {
   try {
     const { gameId } = params;
-    console.log('Box scores API called for game:', gameId);
+
+    // Check cache first
+    const cacheKey = `box-scores-${gameId}`;
+    const cached = getCache(cacheKey);
+    if (cached) {
+      console.log(`Returning cached box scores data for game ${gameId}`);
+      return NextResponse.json(cached);
+    }
+
+    console.log(`Fetching box scores for game ${gameId}...`);
 
     // Get game info from schedule
     console.log('Fetching game info from schedule...');
@@ -288,6 +299,7 @@ export async function GET(
     });
     
     console.log('Sending response:', response);
+    setCache(cacheKey, response);
     return NextResponse.json(response);
 
   } catch (error) {

@@ -1,11 +1,20 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { queryDb } from '@/lib/db';
 import { Schedule } from '@/types/schema';
+import { getCache, setCache } from '@/lib/cache';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check cache first
+    const cacheKey = 'schedule';
+    const cached = getCache(cacheKey);
+    if (cached) {
+      console.log('Returning cached schedule data');
+      return NextResponse.json(cached);
+    }
+
     console.log('Fetching schedule from DuckDB...');
     const result = await queryDb(`
       SELECT * FROM main.schedule 
@@ -42,6 +51,9 @@ export async function GET(request: NextRequest) {
       },
       boxScoreLoaded: false
     }));
+
+    // Cache the transformed result
+    setCache(cacheKey, transformedResult);
 
     return NextResponse.json(transformedResult);
   } catch (error) {
