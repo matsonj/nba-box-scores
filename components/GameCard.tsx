@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Game } from '../types';
+import { Player } from '../app/types/schema';
 import BoxScore from './BoxScore';
 
 interface GameCardProps {
@@ -23,10 +24,10 @@ export default function GameCard({ game }: GameCardProps) {
 
         // Update game with box score data
         game.homeTeam.players = data.playerStats.filter(
-          (player: any) => player.team_abbreviation === game.homeTeam.teamAbbreviation
+          (player: Player) => player.team_abbreviation === game.homeTeam.teamAbbreviation
         );
         game.awayTeam.players = data.playerStats.filter(
-          (player: any) => player.team_abbreviation === game.awayTeam.teamAbbreviation
+          (player: Player) => player.team_abbreviation === game.awayTeam.teamAbbreviation
         );
         game.boxScoreLoaded = true;
 
