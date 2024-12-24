@@ -117,15 +117,18 @@ export default function Home() {
                   >
                     <div className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow">
                       {/* Period scores */}
-                      {game.boxScoreLoaded && game.periodScores && (
+                      {game.boxScoreLoaded && game.periodScores && (() => {
+                        const periodScores = game.periodScores;
+                        const uniquePeriods = Array.from(new Set(periodScores.map(ps => ps.period)));
+                        return (
                         <div className="w-full">
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="text-gray-600">
                                 <th className="text-left">Team</th>
-                                {Array.from(new Set(game.periodScores.map(ps => ps.period))).map(period => (
+                                {uniquePeriods.map(period => (
                                   <th key={period} className="text-center w-8">
-                                    {formatPeriod(period, Array.from(new Set(game.periodScores.map(ps => ps.period))))}
+                                    {formatPeriod(period, uniquePeriods)}
                                   </th>
                                 ))}
                                 <th className="text-center w-8">T</th>
@@ -134,18 +137,18 @@ export default function Home() {
                             <tbody>
                               <tr>
                                 <td className="text-left">{game.away_team_abbreviation}</td>
-                                {Array.from(new Set(game.periodScores.map(ps => ps.period))).sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
+                                {uniquePeriods.sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
                                   <td key={period} className="text-center">
-                                    {game.periodScores.find(ps => parseInt(ps.period) === parseInt(period) && ps.teamId === game.away_team_id)?.points || '-'}
+                                    {periodScores.find(ps => parseInt(ps.period) === parseInt(period) && ps.teamId === game.away_team_id)?.points || '-'}
                                   </td>
                                 ))}
                                 <td className="text-center font-semibold">{game.away_team_score}</td>
                               </tr>
                               <tr>
                                 <td className="text-left">{game.home_team_abbreviation}</td>
-                                {Array.from(new Set(game.periodScores.map(ps => ps.period))).sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
+                                {uniquePeriods.sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
                                   <td key={period} className="text-center">
-                                    {game.periodScores.find(ps => parseInt(ps.period) === parseInt(period) && ps.teamId === game.home_team_id)?.points || '-'}
+                                    {periodScores.find(ps => parseInt(ps.period) === parseInt(period) && ps.teamId === game.home_team_id)?.points || '-'}
                                   </td>
                                 ))}
                                 <td className="text-center font-semibold">{game.home_team_score}</td>
@@ -153,7 +156,8 @@ export default function Home() {
                             </tbody>
                           </table>
                         </div>
-                      )}
+                        );
+                      })()}
                     </div>
                   </Link>
                 ))}

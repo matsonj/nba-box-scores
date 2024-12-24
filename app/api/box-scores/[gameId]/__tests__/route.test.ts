@@ -1,7 +1,7 @@
 import { GET } from '../route';
 import { queryDb } from '@/lib/db';
 import { NextRequest } from 'next/server';
-import { BoxScore, TeamStats, Schedule } from '@/types/schema';
+import { BoxScores, TeamStats, Schedule } from '@/types/schema';
 
 // Mock the database query function
 jest.mock('@/lib/db', () => ({
@@ -47,7 +47,7 @@ describe('Box Scores API Route', () => {
     }];
 
     // Mock player stats data
-    const mockPlayerStats: BoxScore[] = [
+    const mockPlayerStats: BoxScores[] = [
       {
         game_id: mockGameId,
         team_id: 1610612738,  
@@ -67,7 +67,7 @@ describe('Box Scores API Route', () => {
         ft_made: 2,
         ft_attempted: 2,
         plus_minus: 10,
-        starter: true,
+        starter: 1,
         period: 'FullGame'
       },
       {
@@ -89,7 +89,7 @@ describe('Box Scores API Route', () => {
         ft_made: 2,
         ft_attempted: 3,
         plus_minus: -5,
-        starter: true,
+        starter: 1,
         period: 'FullGame'
       }
     ];
@@ -113,7 +113,8 @@ describe('Box Scores API Route', () => {
         fg3_attempted: 32,
         ft_made: 14,
         ft_attempted: 18,
-        plus_minus: 8
+        offensive_possessions: 100,
+        defensive_possessions: 98
       },
       {
         game_id: mockGameId,
@@ -132,7 +133,8 @@ describe('Box Scores API Route', () => {
         fg3_attempted: 28,
         ft_made: 16,
         ft_attempted: 20,
-        plus_minus: -8
+        offensive_possessions: 98,
+        defensive_possessions: 100
       }
     ];
 

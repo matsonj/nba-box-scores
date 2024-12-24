@@ -278,7 +278,7 @@ const loadBoxScores = async () => {
 
       console.log(`Processed box score for game ${gameId}`);
     } catch (error) {
-      console.error(`Error processing ${file}: ${error.message}`);
+      console.error(`Error processing ${file}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
