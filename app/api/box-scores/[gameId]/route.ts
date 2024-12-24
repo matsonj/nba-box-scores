@@ -22,7 +22,7 @@ interface BoxScores {
   ft_made: number;
   ft_attempted: number;
   plus_minus: number;
-  is_starter: boolean;
+  starter: boolean;
   period: string;
 }
 
@@ -135,10 +135,18 @@ export async function GET(
     console.log('Team stats:', teamStats);
 
     const boxScoresData = await queryDb<BoxScores>(
-      `SELECT * FROM main.box_scores 
-       WHERE game_id = ? AND period = 'FullGame'
-       ORDER BY game_id, minutes DESC`,
-      [gameId]
+      `WITH starters AS (
+        SELECT DISTINCT entity_id
+        FROM main.box_scores
+        WHERE game_id = ? AND period = '1' AND starter = 1
+      )
+      SELECT bs.*, 
+        CASE WHEN s.entity_id IS NOT NULL THEN 1 ELSE 0 END as starter
+      FROM main.box_scores bs
+      LEFT JOIN starters s ON bs.entity_id = s.entity_id
+      WHERE bs.game_id = ? AND bs.period = 'FullGame'
+      ORDER BY bs.minutes DESC`,
+      [gameId, gameId]
     );
 
     console.log('Box scores sample:', boxScoresData[0]);
@@ -206,7 +214,7 @@ export async function GET(
           freeThrowsMade: Number(player.ft_made),
           freeThrowsAttempted: Number(player.ft_attempted),
           plusMinus: Number(player.plus_minus),
-          starter: Boolean(player.is_starter)
+          starter: Boolean(player.starter)
         });
         console.log('Added player to team. Team now has', team.players.length, 'players');
       } else {
@@ -264,7 +272,7 @@ export async function GET(
           freeThrowsMade: Number(player.freeThrowsMade),
           freeThrowsAttempted: Number(player.freeThrowsAttempted),
           plusMinus: Number(player.plusMinus),
-          starter: Boolean(player.starter)
+          starter: player.starter
         }))
       })),
       periodScores: periodScores
