@@ -1,5 +1,7 @@
 import { DuckDBInstance } from '@duckdb/node-api';
 
+process.env.HOME = '/tmp';
+
 // Create a singleton database connection
 let db: DuckDBInstance | null = null;
 let conn: any | null = null; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -34,28 +36,46 @@ export async function getConnection(): Promise<any> { // eslint-disable-line @ty
         }
 
         // Use MotherDuck connection string with token from environment
-        const connectionString = `md:nba_box_scores?MOTHERDUCK_TOKEN=${process.env.MOTHERDUCK_TOKEN}`;
+        const connectionString = `md:nba_box_scores?motherduck_token=${process.env.MOTHERDUCK_TOKEN}`;
         
         // Create a new DuckDB instance with timeout
         const timeoutPromise = new Promise((_, reject) => {
           setTimeout(() => reject(new Error('Database connection timeout')), CONNECTION_TIMEOUT);
         });
 
-        db = await Promise.race([DuckDBInstance.create(connectionString), timeoutPromise]) as DuckDBInstance;
+        try {
+          // Try using @duckdb/node-api first
+          console.log('Attempting to connect using @duckdb/node-api...');
+          const { DuckDBInstance } = await import('@duckdb/node-api');
+          db = await Promise.race([DuckDBInstance.create(connectionString), timeoutPromise]) as DuckDBInstance;
+          console.log('Successfully connected using @duckdb/node-api');
+        } catch {
+          // Expected in Vercel environment
+          console.log('Using duckdb-lambda-x86 (this is normal in Vercel environment)');
+          const duckdb = await import('duckdb-lambda-x86');
+          const database = new duckdb.Database(connectionString, { allow_unsigned_extensions: true });
+          db = database as unknown as DuckDBInstance;
+        }
+
         conn = await db.connect();
         
-        console.log('Successfully connected to MotherDuck database');
+        // Test the connection
+        await conn.query('SELECT 1');
+        console.log('Database connection test successful');
         return conn;
       } catch (error) {
         connectionPromise = null;
         console.error('Failed to connect to database:', error instanceof Error ? error.message : 'Unknown error');
+        console.error('Error stack:', error instanceof Error ? error.stack : 'Unknown error');
         throw error;
       }
     })();
 
     return connectionPromise;
   } catch (error) {
+    connectionPromise = null;
     console.error('Database connection error:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Error stack:', error instanceof Error ? error.stack : 'Unknown error');
     throw error;
   }
 }
@@ -119,7 +139,8 @@ export async function queryDb<T>(query: string, params: (string | number | null)
         return obj as T;
       });
     } catch (error) {
-      console.error(`Error executing query (${retries} retries left):`, error);
+      console.error(`Error executing query (${retries} retries left):`, error instanceof Error ? error.message : 'Unknown error');
+      console.error('Error stack:', error instanceof Error ? error.stack : 'Unknown error');
       if (retries === 0) throw error;
       
       // Reset connection on error
@@ -144,7 +165,8 @@ export async function closeConnection() {
     connectionPromise = null;
     console.log('Database connection closed');
   } catch (error) {
-    console.error('Error closing database connection:', error);
+    console.error('Error closing database connection:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Error stack:', error instanceof Error ? error.stack : 'Unknown error');
   }
 }
 
