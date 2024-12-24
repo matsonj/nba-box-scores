@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
-import Link from 'next/link';
 import { Schedule } from './types/schema';
 import { ScheduleWithBoxScore } from './types/extended';
 import { useRouter } from 'next/navigation';

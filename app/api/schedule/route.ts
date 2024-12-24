@@ -1,10 +1,10 @@
-import { NextResponse, NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db';
 import { Schedule } from '@/types/schema';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('Fetching schedule from DuckDB...');
     const result = await queryDb(`

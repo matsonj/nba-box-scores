@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db';
 import { TeamStats, Schedule } from '@/types/schema';
-import { generateSelectQuery, box_scoresColumns, team_statsColumns } from '@/lib/generated/sql-utils';
 
 interface BoxScores {
   game_id: string;

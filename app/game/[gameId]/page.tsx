@@ -76,7 +76,6 @@ type PageParams = {
 
 interface Props {
   params: Promise<PageParams>;
-  searchParams: { [key: string]: string | string[] | undefined };
 }
 
 interface Metadata {
@@ -108,7 +107,7 @@ export async function generateMetadata(
 }
 
 export default async function GamePage(
-  { params, searchParams }: Props
+  { params }: Props
 ) {
   const resolvedParams = await params;
   if (!resolvedParams.gameId) {

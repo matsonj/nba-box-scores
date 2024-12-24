@@ -1,6 +1,4 @@
-import { DuckDBInstance, DuckDBTypeId } from '@duckdb/node-api';
-import path from 'path';
-import fs from 'fs';
+import { DuckDBInstance } from '@duckdb/node-api';
 
 // Create a singleton database connection
 let db: DuckDBInstance | null = null;
@@ -17,7 +15,7 @@ export async function getConnection(): Promise<any> {
       try {
         await conn.query('SELECT 1');
         return conn;
-      } catch (error) {
+      } catch {
         console.log('Existing connection invalid, creating new connection...');
         await closeConnection();
       }
@@ -135,22 +133,18 @@ export async function queryDb<T = any>(query: string, params: any[] = []): Promi
 }
 
 // Close connection when possible
-async function closeConnection() {
-  if (conn) {
-    try {
-      await conn.close();
+export async function closeConnection() {
+  try {
+    if (conn) {
       conn = null;
-    } catch (error) {
-      console.error('Error closing connection:', error);
     }
-  }
-  if (db) {
-    try {
-      await db.close();
+    if (db) {
       db = null;
-    } catch (error) {
-      console.error('Error closing database:', error);
     }
+    connectionPromise = null;
+    console.log('Database connection closed');
+  } catch (error) {
+    console.error('Error closing database connection:', error);
   }
 }
 
@@ -159,22 +153,4 @@ if (process.env.VERCEL) {
   process.on('beforeExit', async () => {
     await closeConnection();
   });
-  
-  // Also handle SIGTERM signal which Vercel sends
-  process.on('SIGTERM', async () => {
-    await closeConnection();
-    process.exit(0);
-  });
 }
-
-// Ensure we close the connection when the process exits
-process.on('exit', () => {
-  if (conn) {
-    try {
-      conn.close();
-      console.log('Database connection closed');
-    } catch (error) {
-      console.error('Error closing database connection:', error);
-    }
-  }
-});
