@@ -1,10 +1,7 @@
-import { DuckDBInstance } from '@duckdb/node-api';
 import type { Database } from 'duckdb-lambda-x86';
 
-type DuckDBInstanceType = DuckDBInstance | Database;
-
 // Create a singleton database connection
-let db: DuckDBInstanceType | null = null;
+let db: Database | null = null;
 let conn: any | null = null; // eslint-disable-line @typescript-eslint/no-explicit-any
 let connectionPromise: Promise<any> | null = null; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -44,14 +41,9 @@ export async function getConnection(): Promise<any> { // eslint-disable-line @ty
           setTimeout(() => reject(new Error('Database connection timeout')), CONNECTION_TIMEOUT);
         });
 
-        if (process.env.VERCEL) {
-          const { Database } = await import('duckdb-lambda-x86');
-          const db_instance = await Promise.race([new Database(connectionString), timeoutPromise]) as Database;
-          db = db_instance;
-        } else {
-          const db_instance = await Promise.race([DuckDBInstance.create(connectionString), timeoutPromise]) as DuckDBInstance;
-          db = db_instance;
-        }
+        const { Database } = await import('duckdb-lambda-x86');
+        const db_instance = await Promise.race([Promise.resolve(new Database(connectionString)), timeoutPromise]) as Database;
+        db = db_instance;
         conn = await db.connect();
         
         console.log('Successfully connected to MotherDuck database');
