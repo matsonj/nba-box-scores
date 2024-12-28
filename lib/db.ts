@@ -1,12 +1,9 @@
-import type { Database } from 'duckdb-lambda-x86';
+import type { DuckDBInstance } from '@duckdb/node-api';
 
 // Create a singleton database connection
-let db: Database | null = null;
+let db: DuckDBInstance | null = null;
 let conn: any | null = null; // eslint-disable-line @typescript-eslint/no-explicit-any
 let connectionPromise: Promise<any> | null = null; // eslint-disable-line @typescript-eslint/no-explicit-any
-
-// Connection timeout (5 seconds)
-const CONNECTION_TIMEOUT = 5000;
 
 export async function getConnection(): Promise<any> { // eslint-disable-line @typescript-eslint/no-explicit-any
   try {
@@ -34,16 +31,16 @@ export async function getConnection(): Promise<any> { // eslint-disable-line @ty
         }
 
         // Use MotherDuck connection string with token from environment
-        const connectionString = `md:nba_box_scores?MOTHERDUCK_TOKEN=${process.env.MOTHERDUCK_TOKEN}`;
+        const connectionString = `md:nba_box_scores?motherduck_token=${process.env.MOTHERDUCK_TOKEN}`;
         
-        // Create a new DuckDB instance with timeout
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Database connection timeout')), CONNECTION_TIMEOUT);
-        });
+        // Dynamically import DuckDB
+        const { DuckDBInstance } = await import('@duckdb/node-api');
 
-        const { Database } = await import('duckdb-lambda-x86');
-        const db_instance = await Promise.race([Promise.resolve(new Database(connectionString)), timeoutPromise]) as Database;
-        db = db_instance;
+        // Set HOME env for DuckDB if needed
+        process.env.HOME = '/tmp';
+
+        // Create the DB with MotherDuck connection string
+        db = await DuckDBInstance.create(connectionString);
         conn = await db.connect();
         
         console.log('Successfully connected to MotherDuck database');
@@ -63,6 +60,10 @@ export async function getConnection(): Promise<any> { // eslint-disable-line @ty
 }
 
 export async function queryDb<T>(query: string, params: (string | number | null)[] = []): Promise<T[]> {
+  if (!query) {
+    return [];
+  }
+
   let retries = 2;
   while (retries >= 0) {
     try {
@@ -74,11 +75,15 @@ export async function queryDb<T>(query: string, params: (string | number | null)
       console.log('Executing query:', query);
       console.log('Parameters:', params);
 
-      // Prepare and execute the query
+      // Prepare and execute the query with parameters
       const stmt = await connection.prepare(query);
+      
+      // Bind parameters if any
       for (let i = 0; i < params.length; i++) {
         const param = params[i];
-        if (typeof param === 'string') {
+        if (param === null) {
+          stmt.bindNull(i + 1);
+        } else if (typeof param === 'string') {
           stmt.bindVarchar(i + 1, param);
         } else if (typeof param === 'number') {
           if (Number.isInteger(param)) {
@@ -86,14 +91,10 @@ export async function queryDb<T>(query: string, params: (string | number | null)
           } else {
             stmt.bindDouble(i + 1, param);
           }
-        } else if (param === null) {
-          stmt.bindNull(i + 1);
-        } else {
-          throw new Error(`Unsupported parameter type: ${typeof param}`);
         }
       }
 
-      // Execute the query and get all rows
+      // Execute and return results
       const reader = await stmt.runAndReadAll();
       const rows = reader.getRows();
       const columnNames = reader.columnNames();
