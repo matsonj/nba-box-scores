@@ -1,3 +1,5 @@
+"use server";
+
 import type { DuckDBInstance } from '@duckdb/node-api';
 
 // Create a singleton database connection
