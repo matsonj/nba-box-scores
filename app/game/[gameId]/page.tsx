@@ -1,6 +1,7 @@
 import { format, parseISO } from 'date-fns';
 import Link from 'next/link';
 import BoxScoreTable from './BoxScoreTable';
+import { headers } from 'next/headers';
 
 interface PlayerStats {
   gameId: string;
@@ -76,7 +77,7 @@ type PageParams = {
 }
 
 interface Props {
-  params: Promise<PageParams>;
+  params: PageParams;
 }
 
 interface Metadata {
@@ -84,38 +85,35 @@ interface Metadata {
 }
 
 async function getBoxScore(gameId: string): Promise<BoxScore> {
-  // Get the protocol and host from the headers
+  const headersList = await headers();
   const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
-  const host = process.env.VERCEL_URL || 'localhost:3000';
-
-  // Make the request to the API
-  const response = await fetch(`${protocol}://${host}/api/box-scores/${gameId}`);
+  const host = headersList.get('host') || 'localhost:3000';
+  
+  const response = await fetch(`${protocol}://${host}/api/box-scores/${gameId}`, {
+    cache: 'no-store',
+    next: { revalidate: 0 }
+  });
   if (!response.ok) {
+    console.error('Failed to fetch box score:', await response.text());
     throw new Error('Failed to fetch box score');
   }
   return response.json();
 }
 
 export async function generateMetadata(
-  { params }: { params: Promise<PageParams> }
+  { params }: Props
 ): Promise<Metadata> {
-  // Get the game data to show team names in the title
-  const resolvedParams = await params;
-  const boxScore = await getBoxScore(resolvedParams.gameId);
   return {
-    title: `${boxScore.gameInfo.away_team_abbreviation} @ ${boxScore.gameInfo.home_team_abbreviation} - NBA Box Scores`,
+    title: `Game ${params.gameId} - NBA Box Scores`,
   };
 }
 
-export default async function GamePage(
-  { params }: Props
-) {
-  const resolvedParams = await params;
-  if (!resolvedParams.gameId) {
+export default async function GamePage({ params }: Props) {
+  if (!params.gameId) {
     throw new Error('Game ID is required');
   }
 
-  const boxScore = await getBoxScore(resolvedParams.gameId);
+  const boxScore = await getBoxScore(params.gameId);
   const { gameInfo, teams } = boxScore;
 
   console.log('Game info:', gameInfo);

@@ -100,6 +100,7 @@ export async function GET(
     console.log(`Fetching box scores for game ${gameId}...`);
 
     // Get all data in parallel
+    console.log('Starting parallel queries...');
     const [gameInfo, boxScoresData, teamStats] = await Promise.all([
       // Game info query
       queryDb<Schedule>(
@@ -114,19 +115,28 @@ export async function GET(
           CAST(away_team_score AS INTEGER) as away_team_score,
           status,
           created_at
-        FROM main.schedule WHERE game_id = ?`, 
+        FROM nba_box_scores.main.schedule WHERE game_id = ?`, 
         [gameId]
-      ),
+      ).catch(err => {
+        console.error('Error fetching game info:', err);
+        throw new Error(`Failed to fetch game info: ${err.message}`);
+      }),
       // Box scores query with optimized starter detection
       queryDb<BoxScores>(
-        `SELECT * FROM main.box_scores WHERE game_id = ? AND period = 'FullGame'`,
+        `SELECT * FROM nba_box_scores.main.box_scores WHERE game_id = ? AND period = 'FullGame'`,
         [gameId]
-      ),
+      ).catch(err => {
+        console.error('Error fetching box scores:', err);
+        throw new Error(`Failed to fetch box scores: ${err.message}`);
+      }),
       // Team stats query
       queryDb<TeamStats>(
-        `SELECT * FROM main.team_stats WHERE game_id = ?`,
+        `SELECT * FROM nba_box_scores.main.team_stats WHERE game_id = ?`,
         [gameId]
-      )
+      ).catch(err => {
+        console.error('Error fetching team stats:', err);
+        throw new Error(`Failed to fetch team stats: ${err.message}`);
+      })
     ]);
 
     // Check if game exists

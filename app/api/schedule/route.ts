@@ -8,7 +8,7 @@ export async function GET() {
   try {
     console.log('Fetching schedule from DuckDB...');
     const result = await queryDb<Schedule>(`
-      SELECT * FROM main.schedule 
+      SELECT * FROM nba_box_scores.main.schedule 
       WHERE game_id NOT LIKE '006%'
     `);
     
