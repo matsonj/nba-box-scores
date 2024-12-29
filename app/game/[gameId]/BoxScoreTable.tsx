@@ -83,6 +83,12 @@ function calculateTeamTotals(players: PlayerStats[]) {
 }
 
 export default function BoxScoreTable({ players, teamName }: BoxScoreTableProps) {
+  const sortedPlayers = [...players].sort((a, b) => {
+    const aMinutes = parseMinutes(a.minutes);
+    const bMinutes = parseMinutes(b.minutes);
+    return bMinutes - aMinutes;
+  });
+
   return (
     <div className="mb-8 print:mb-4">
       <h2 className="text-xl font-bold mb-4 print:text-lg print:mb-2">{teamName}</h2>
@@ -107,7 +113,7 @@ export default function BoxScoreTable({ players, teamName }: BoxScoreTableProps)
             </tr>
           </thead>
           <tbody>
-            {players.map((player) => (
+            {sortedPlayers.map((player) => (
               <tr key={player.entityId} className="border-b print:border-dotted">
                 <td className="px-3 py-1 print:px-2 print:py-0.5">{player.playerName}{player.starter ? ' *' : ''}</td>
                 <td className="px-3 py-1 text-right print:px-2 print:py-0.5">{player.minutes}</td>
