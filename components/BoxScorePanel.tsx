@@ -96,8 +96,13 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
 
   const handleClose = () => {
     setIsVisible(false);
-    // Wait for the animation to complete before calling onClose
-    setTimeout(onClose, 300);
+    // Reset all state variables
+    setTimeout(() => {
+      setHomeTeam(null);
+      setAwayTeam(null);
+      setGameInfo(null);
+      onClose();
+    }, 300);
   };
 
   if (!gameId) return null;
