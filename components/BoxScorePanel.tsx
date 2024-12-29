@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import BoxScore from './BoxScore';
 import { Team, Player, Schedule } from '@/app/types/schema';
-import { useSchedule } from '@/context/ScheduleContext';
 
 interface BoxScorePanelProps {
   gameId: string | null;
@@ -33,8 +32,6 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
   const [awayTeam, setAwayTeam] = useState<Team | null>(null);
   const [gameInfo, setGameInfo] = useState<Schedule | null>(null);
   const [isVisible, setIsVisible] = useState(false);
-
-  const { scheduleData } = useSchedule();
 
   useEffect(() => {
     if (gameId) {
