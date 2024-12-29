@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 export async function GET() {
   try {
     console.log('Fetching schedule from DuckDB...');
-    const result = await queryDb(`
+    const result = await queryDb<Schedule>(`
       SELECT * FROM main.schedule 
       WHERE game_id NOT LIKE '006%'
     `);
@@ -16,7 +16,7 @@ export async function GET() {
     console.log('Total games:', result.length);
 
     // Transform the data to match the expected format
-    const transformedResult = (result as Schedule[]).map((game: Schedule) => ({
+    const transformedResult = result.map((game) => ({
       game_id: game.game_id,
       game_date: game.game_date,
       home_team_id: game.home_team_id,

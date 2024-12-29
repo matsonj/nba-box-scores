@@ -1,4 +1,4 @@
-import { getConnection, queryDb } from '../lib/db';
+import { queryDb } from '../lib/db';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -53,7 +53,7 @@ function escapeString(str: string): string {
   return str.replace(/'/g, "''");
 }
 
-async function insertBoxScoreBatch(conn: any, rows: BoxScoreRow[]) {
+async function insertBoxScoreBatch(rows: BoxScoreRow[]) {
   if (rows.length === 0) return;
 
   const values = rows.map(row => `(
@@ -79,7 +79,7 @@ async function insertBoxScoreBatch(conn: any, rows: BoxScoreRow[]) {
     '${row.period}'
   )`).join(',\n');
 
-  await conn.run(`
+  await queryDb(`
     INSERT INTO box_scores (
       game_id, team_id, entity_id, player_name, minutes,
       points, rebounds, assists, steals, blocks, turnovers,
@@ -89,7 +89,7 @@ async function insertBoxScoreBatch(conn: any, rows: BoxScoreRow[]) {
   `);
 }
 
-async function insertTeamStatsBatch(conn: any, rows: TeamStatsRow[]) {
+async function insertTeamStatsBatch(rows: TeamStatsRow[]) {
   if (rows.length === 0) return;
 
   const values = rows.map(row => `(
@@ -113,7 +113,7 @@ async function insertTeamStatsBatch(conn: any, rows: TeamStatsRow[]) {
     ${row.defensive_possessions}
   )`).join(',\n');
 
-  await conn.run(`
+  await queryDb(`
     INSERT INTO team_stats (
       game_id, team_id, period, minutes,
       points, rebounds, assists, steals, blocks, turnovers,
@@ -130,10 +130,8 @@ const loadBoxScores = async () => {
 
   console.log(`Found ${jsonFiles.length} box score files to process`);
 
-  const conn = await getConnection();
-
   // Drop existing tables and create new ones
-  await conn.run(`
+  await queryDb(`
     DROP TABLE IF EXISTS box_scores;
     DROP TABLE IF EXISTS team_stats;
 
@@ -239,7 +237,7 @@ const loadBoxScores = async () => {
             });
 
             if (boxScoreBatch.length >= BATCH_SIZE) {
-              await insertBoxScoreBatch(conn, boxScoreBatch);
+              await insertBoxScoreBatch(boxScoreBatch);
               boxScoreBatch = [];
             }
           }
@@ -270,7 +268,7 @@ const loadBoxScores = async () => {
           });
 
           if (teamStatsBatch.length >= BATCH_SIZE) {
-            await insertTeamStatsBatch(conn, teamStatsBatch);
+            await insertTeamStatsBatch(teamStatsBatch);
             teamStatsBatch = [];
           }
         }
@@ -284,10 +282,10 @@ const loadBoxScores = async () => {
 
   // Insert any remaining rows
   if (boxScoreBatch.length > 0) {
-    await insertBoxScoreBatch(conn, boxScoreBatch);
+    await insertBoxScoreBatch(boxScoreBatch);
   }
   if (teamStatsBatch.length > 0) {
-    await insertTeamStatsBatch(conn, teamStatsBatch);
+    await insertTeamStatsBatch(teamStatsBatch);
   }
 
   console.log('Finished loading box scores');

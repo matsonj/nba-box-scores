@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { getConnection, queryDb } from '../lib/db';
+import { queryDb } from '../lib/db';
 
 const DATA_DIR = '/Users/jacobmatson/code/nba-box-scores/nba-box-scores/data';
 const SCHEDULE_DIR = path.join(DATA_DIR, 'schedule');
@@ -17,12 +17,6 @@ const loadSchedule = async () => {
     
     // Log first game for debugging
     console.log('First game data:', JSON.stringify(regularSeasonGames[0], null, 2));
-
-    // Connect to database
-    const db = await getConnection();
-    if (!db) {
-      throw new Error('Failed to connect to database');
-    }
 
     // Drop existing table if it exists
     console.log('Dropping existing schedule table...');

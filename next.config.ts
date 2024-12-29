@@ -1,13 +1,23 @@
-import type { NextConfig } from "next";
+import { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  reactStrictMode: true,
-  serverExternalPackages: ["@duckdb/node-api"],
   webpack: (config, { isServer }) => {
-    // Exclude native modules from webpack build
+    // Add duckdb-lambda-x86 to externals for both client and server
     if (isServer) {
       config.externals = [...(config.externals as string[]), 'duckdb-lambda-x86'];
+    } else {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        'duckdb-lambda-x86': false,
+      };
     }
+
+    // Ensure we can load .node files
+    config.module.rules.push({
+      test: /\.node$/,
+      use: 'node-loader',
+    });
+
     return config;
   },
 };
