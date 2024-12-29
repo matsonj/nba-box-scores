@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { Schedule } from './types/schema';
 import { ScheduleWithBoxScore } from './types/extended';
-import { useRouter } from 'next/navigation';
+import BoxScorePanel from '@/components/BoxScorePanel';
 
 // Helper function to format period numbers
 function formatPeriod(period: string, allPeriods: string[]): string {
@@ -24,9 +24,9 @@ function formatPeriod(period: string, allPeriods: string[]): string {
 export default function Home() {
   const [gamesByDate, setGamesByDate] = useState<Record<string, ScheduleWithBoxScore[]>>({});
   const [loading, setLoading] = useState(true);
-  const [loadingGames, setLoadingGames] = useState<Set<string>>(new Set());
+  const [loadingGames] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
-  const router = useRouter();
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchGames = async () => {
@@ -111,69 +111,64 @@ export default function Home() {
             {games.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
                 {games.map((game) => (
-                  <div
-                    key={game.game_id}
-                    onClick={() => {
-                      setLoadingGames(prev => new Set([...prev, game.game_id]));
-                      router.push(`/game/${game.game_id}`);
-                    }}
-                    className="block cursor-pointer"
+                  <div 
+                    key={game.game_id} 
+                    className="bg-white rounded-lg shadow-md p-4 mb-4 cursor-pointer hover:shadow-lg transition-shadow relative"
+                    onClick={() => setSelectedGameId(game.game_id)}
                   >
-                    <div className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow relative">
-                      {loadingGames.has(game.game_id) && (
-                        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                        </div>
-                      )}
-                      {/* Period scores */}
-                      {game.boxScoreLoaded && game.periodScores && (() => {
-                        const periodScores = game.periodScores;
-                        const uniquePeriods = Array.from(new Set(periodScores.map(ps => ps.period)));
-                        return (
-                        <div className="w-full">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="text-gray-600">
-                                <th className="text-left">Team</th>
-                                {uniquePeriods.map(period => (
-                                  <th key={period} className="text-center w-8">
-                                    {formatPeriod(period, uniquePeriods)}
-                                  </th>
-                                ))}
-                                <th className="text-center w-8">T</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr>
-                                <td className="text-left">{game.away_team_abbreviation}</td>
-                                {uniquePeriods.sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
-                                  <td key={period} className="text-center">
-                                    {periodScores.find(ps => 
-                                      parseInt(ps.period) === parseInt(period) && 
-                                      String(ps.teamId) === String(game.away_team_id)
-                                    )?.points || '-'}
-                                  </td>
-                                ))}
-                                <td className="text-center font-semibold">{game.away_team_score}</td>
-                              </tr>
-                              <tr>
-                                <td className="text-left">{game.home_team_abbreviation}</td>
-                                {uniquePeriods.sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
-                                  <td key={period} className="text-center">
-                                    {periodScores.find(ps => 
-                                      parseInt(ps.period) === parseInt(period) && 
-                                      String(ps.teamId) === String(game.home_team_id)
-                                    )?.points || '-'}
-                                  </td>
-                                ))}
-                                <td className="text-center font-semibold">{game.home_team_score}</td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                        );
-                      })()}
-                    </div>
+                    {loadingGames.has(game.game_id) && (
+                      <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                      </div>
+                    )}
+                    {/* Period scores */}
+                    {game.boxScoreLoaded && game.periodScores && (() => {
+                      const periodScores = game.periodScores;
+                      const uniquePeriods = Array.from(new Set(periodScores.map(ps => ps.period)));
+                      return (
+                      <div className="w-full">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="text-gray-600">
+                              <th className="text-left">Team</th>
+                              {uniquePeriods.map(period => (
+                                <th key={period} className="text-center w-8">
+                                  {formatPeriod(period, uniquePeriods)}
+                                </th>
+                              ))}
+                              <th className="text-center w-8">T</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td className="text-left">{game.away_team_abbreviation}</td>
+                              {uniquePeriods.sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
+                                <td key={period} className="text-center">
+                                  {periodScores.find(ps => 
+                                    parseInt(ps.period) === parseInt(period) && 
+                                    String(ps.teamId) === String(game.away_team_id)
+                                  )?.points || '-'}
+                                </td>
+                              ))}
+                              <td className="text-center font-semibold">{game.away_team_score}</td>
+                            </tr>
+                            <tr>
+                              <td className="text-left">{game.home_team_abbreviation}</td>
+                              {uniquePeriods.sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
+                                <td key={period} className="text-center">
+                                  {periodScores.find(ps => 
+                                    parseInt(ps.period) === parseInt(period) && 
+                                    String(ps.teamId) === String(game.home_team_id)
+                                  )?.points || '-'}
+                                </td>
+                              ))}
+                              <td className="text-center font-semibold">{game.home_team_score}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      );
+                    })()}
                   </div>
                 ))}
               </div>
@@ -182,6 +177,10 @@ export default function Home() {
             )}
           </div>
         ))}
+      <BoxScorePanel 
+        gameId={selectedGameId} 
+        onClose={() => setSelectedGameId(null)} 
+      />
     </div>
   );
 }

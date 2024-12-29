@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { Team } from '@/types';
+import { Team } from '@/app/types/schema';
 
 interface BoxScoreProps {
   homeTeam: Team;
@@ -9,20 +8,21 @@ interface BoxScoreProps {
 }
 
 export default function BoxScore({ homeTeam, awayTeam }: BoxScoreProps) {
-  const [selectedPeriod, setSelectedPeriod] = useState('FullGame');
-  const periods = ['FullGame', '1', '2', '3', '4'];
-
   const renderTeamStats = (team: Team) => {
     if (!team.players || team.players.length === 0) {
       return <div>No player stats available</div>;
     }
 
-    // For now, just show all players when not in FullGame mode
-    const periodPlayers = selectedPeriod === 'FullGame' ? team.players : team.players;
-
-    if (periodPlayers.length === 0) {
-      return <div>No stats available for this period</div>;
-    }
+    // Sort players by minutes played (descending)
+    const sortedPlayers = [...team.players].sort((a, b) => {
+      // Convert minutes string (e.g., "12:34") to total seconds for comparison
+      const getSeconds = (min: string) => {
+        if (!min) return 0;
+        const [minutes, seconds] = min.split(':').map(Number);
+        return (minutes || 0) * 60 + (seconds || 0);
+      };
+      return getSeconds(b.minutes) - getSeconds(a.minutes);
+    });
 
     return (
       <div>
@@ -42,11 +42,10 @@ export default function BoxScore({ homeTeam, awayTeam }: BoxScoreProps) {
                 <th className="px-4 py-2 text-right">FG</th>
                 <th className="px-4 py-2 text-right">3P</th>
                 <th className="px-4 py-2 text-right">FT</th>
-                <th className="px-4 py-2 text-right">+/-</th>
               </tr>
             </thead>
             <tbody>
-              {periodPlayers.map((player, index) => (
+              {sortedPlayers.map((player, index) => (
                 <tr key={player.playerName} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                   <td className="px-4 py-2">{player.playerName}</td>
                   <td className="px-4 py-2 text-right">{player.minutes}</td>
@@ -59,7 +58,6 @@ export default function BoxScore({ homeTeam, awayTeam }: BoxScoreProps) {
                   <td className="px-4 py-2 text-right">{player.fieldGoalsMade}-{player.fieldGoalsAttempted}</td>
                   <td className="px-4 py-2 text-right">{player.threePointersMade}-{player.threePointersAttempted}</td>
                   <td className="px-4 py-2 text-right">{player.freeThrowsMade}-{player.freeThrowsAttempted}</td>
-                  <td className="px-4 py-2 text-right">{player.plusMinus}</td>
                 </tr>
               ))}
             </tbody>
@@ -70,26 +68,9 @@ export default function BoxScore({ homeTeam, awayTeam }: BoxScoreProps) {
   };
 
   return (
-    <div>
-      <div className="mb-4">
-        <label htmlFor="period" className="mr-2">Period:</label>
-        <select
-          id="period"
-          value={selectedPeriod}
-          onChange={(e) => setSelectedPeriod(e.target.value)}
-          className="border rounded px-2 py-1"
-        >
-          {periods.map((period) => (
-            <option key={period} value={period}>
-              {period === 'FullGame' ? 'Full Game' : `Quarter ${period}`}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="space-y-8">
-        {renderTeamStats(awayTeam)}
-        {renderTeamStats(homeTeam)}
-      </div>
+    <div className="space-y-8">
+      {renderTeamStats(awayTeam)}
+      {renderTeamStats(homeTeam)}
     </div>
   );
 }
