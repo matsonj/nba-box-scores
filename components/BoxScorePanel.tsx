@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import BoxScore from './BoxScore';
 import { Team, Player, Schedule } from '@/app/types/schema';
 
@@ -130,7 +130,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
                 {homeTeam.score > awayTeam.score && ' *'}
               </h2>
               <p className="text-gray-600 text-center mt-2">
-                {format(parseISO(gameInfo.game_date), 'MMMM d, yyyy')} • {gameInfo.game_time}
+                {format(new Date(gameInfo.game_date), 'MMMM d, yyyy • h:mm a')}
               </p>
             </div>
           )}
