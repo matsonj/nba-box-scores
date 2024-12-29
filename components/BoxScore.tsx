@@ -26,10 +26,10 @@ export default function BoxScore({ homeTeam, awayTeam }: BoxScoreProps) {
 
     return (
       <div>
-        <h3 className="font-bold text-lg mb-2">{team.teamAbbreviation}</h3>
-        <div className="overflow-x-auto">
+        <h3 className="font-bold text-lg mb-2">{team.teamName}</h3>
+        <div className="overflow-x-auto relative">
           <table className="min-w-full table-auto">
-            <thead>
+            <thead className="bg-white sticky top-0 z-10">
               <tr className="bg-gray-100">
                 <th className="px-4 py-2 text-left">Player</th>
                 <th className="px-4 py-2 text-right">MIN</th>

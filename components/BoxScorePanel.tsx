@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { format, parseISO } from 'date-fns';
 import BoxScore from './BoxScore';
 import { Team, Player, Schedule } from '@/app/types/schema';
 
@@ -29,6 +30,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
   const [loading, setLoading] = useState(false);
   const [homeTeam, setHomeTeam] = useState<Team | null>(null);
   const [awayTeam, setAwayTeam] = useState<Team | null>(null);
+  const [gameInfo, setGameInfo] = useState<Schedule | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -81,6 +83,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
 
         setHomeTeam(convertedHomeTeam);
         setAwayTeam(convertedAwayTeam);
+        setGameInfo(data.gameInfo);
       } catch (error) {
         console.error('Error fetching box score:', error);
       } finally {
@@ -118,8 +121,19 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
           </button>
         </div>
         
-        <div className="p-6">
-          <h2 className="text-xl font-bold mb-4">Box Score</h2>
+        <div className="p-6 md:text-base text-[50%]">
+          {homeTeam && awayTeam && gameInfo && (
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-center">
+                {awayTeam.score > homeTeam.score && '* '}
+                {awayTeam.score} {awayTeam.teamAbbreviation} - {homeTeam.teamAbbreviation} {homeTeam.score}
+                {homeTeam.score > awayTeam.score && ' *'}
+              </h2>
+              <p className="text-gray-600 text-center mt-2">
+                {format(parseISO(gameInfo.game_date), 'MMMM d, yyyy')} • {gameInfo.game_time}
+              </p>
+            </div>
+          )}
           
           {loading ? (
             <div className="flex justify-center items-center h-64">
