@@ -1,7 +1,10 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import Link from 'next/link';
 import BoxScoreTable from './BoxScoreTable';
-import { headers } from 'next/headers';
+import { BoxScore } from '@/types/schema';
 
 interface PlayerStats {
   gameId: string;
@@ -72,48 +75,34 @@ interface BoxScore {
   teams: Team[];
 }
 
-type PageParams = {
-  gameId: string;
-}
+export default function GamePage({ params }: { params: { gameId: string } }) {
+  const [boxScore, setBoxScore] = useState<BoxScore | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-interface Props {
-  params: PageParams;
-}
+  useEffect(() => {
+    const fetchBoxScore = async () => {
+      try {
+        const response = await fetch(`/api/box-scores/${params.gameId}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch box score');
+        }
+        const data = await response.json();
+        setBoxScore(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch box score');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-interface Metadata {
-  title: string;
-}
+    fetchBoxScore();
+  }, [params.gameId]);
 
-async function getBoxScore(gameId: string): Promise<BoxScore> {
-  const headersList = await headers();
-  const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
-  const host = headersList.get('host') || 'localhost:3000';
-  
-  const response = await fetch(`${protocol}://${host}/api/box-scores/${gameId}`, {
-    cache: 'no-store',
-    next: { revalidate: 0 }
-  });
-  if (!response.ok) {
-    console.error('Failed to fetch box score:', await response.text());
-    throw new Error('Failed to fetch box score');
-  }
-  return response.json();
-}
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (!boxScore) return <div>No data available</div>;
 
-export async function generateMetadata(
-  { params }: Props
-): Promise<Metadata> {
-  return {
-    title: `Game ${params.gameId} - NBA Box Scores`,
-  };
-}
-
-export default async function GamePage({ params }: Props) {
-  if (!params.gameId) {
-    throw new Error('Game ID is required');
-  }
-
-  const boxScore = await getBoxScore(params.gameId);
   const { gameInfo, teams } = boxScore;
 
   console.log('Game info:', gameInfo);
