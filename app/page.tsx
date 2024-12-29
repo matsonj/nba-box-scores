@@ -5,6 +5,7 @@ import { format, parseISO } from 'date-fns';
 import { Schedule } from './types/schema';
 import { ScheduleWithBoxScore } from './types/extended';
 import BoxScorePanel from '@/components/BoxScorePanel';
+import { ScheduleProvider } from '@/context/ScheduleContext';
 
 // Helper function to format period numbers
 function formatPeriod(period: string, allPeriods: string[]): string {
@@ -100,87 +101,89 @@ export default function Home() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 font-mono">
-      {Object.entries(gamesByDate)
-        .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
-        .map(([date, games]) => (
-          <div key={date} className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">
-              {format(parseISO(date), 'MMMM d, yyyy')}
-            </h2>
-            {games.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
-                {games.map((game) => (
-                  <div 
-                    key={game.game_id} 
-                    className="bg-white rounded-lg shadow-md p-4 mb-4 cursor-pointer hover:shadow-lg transition-shadow relative"
-                    onClick={() => setSelectedGameId(game.game_id)}
-                  >
-                    {loadingGames.has(game.game_id) && (
-                      <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                      </div>
-                    )}
-                    {/* Period scores */}
-                    {game.boxScoreLoaded && game.periodScores && (() => {
-                      const periodScores = game.periodScores;
-                      const uniquePeriods = Array.from(new Set(periodScores.map(ps => ps.period)));
-                      return (
-                      <div className="w-full">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="text-gray-600">
-                              <th className="text-left">Team</th>
-                              {uniquePeriods.map(period => (
-                                <th key={period} className="text-center w-8">
-                                  {formatPeriod(period, uniquePeriods)}
-                                </th>
-                              ))}
-                              <th className="text-center w-8">T</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <td className="text-left">{game.away_team_abbreviation}</td>
-                              {uniquePeriods.sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
-                                <td key={period} className="text-center">
-                                  {periodScores.find(ps => 
-                                    parseInt(ps.period) === parseInt(period) && 
-                                    String(ps.teamId) === String(game.away_team_id)
-                                  )?.points || '-'}
-                                </td>
-                              ))}
-                              <td className="text-center font-semibold">{game.away_team_score}</td>
-                            </tr>
-                            <tr>
-                              <td className="text-left">{game.home_team_abbreviation}</td>
-                              {uniquePeriods.sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
-                                <td key={period} className="text-center">
-                                  {periodScores.find(ps => 
-                                    parseInt(ps.period) === parseInt(period) && 
-                                    String(ps.teamId) === String(game.home_team_id)
-                                  )?.points || '-'}
-                                </td>
-                              ))}
-                              <td className="text-center font-semibold">{game.home_team_score}</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                      );
-                    })()}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-gray-500 text-center py-4">No games</div>
-            )}
-          </div>
-        ))}
-      <BoxScorePanel 
-        gameId={selectedGameId} 
-        onClose={() => setSelectedGameId(null)} 
-      />
-    </div>
+    <ScheduleProvider>
+      <div className="container mx-auto px-4 py-8 font-mono">
+        {Object.entries(gamesByDate)
+          .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
+          .map(([date, games]) => (
+            <div key={date} className="mb-8">
+              <h2 className="text-xl font-semibold mb-4">
+                {format(parseISO(date), 'MMMM d, yyyy')}
+              </h2>
+              {games.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
+                  {games.map((game) => (
+                    <div 
+                      key={game.game_id} 
+                      className="bg-white rounded-lg shadow-md p-4 mb-4 cursor-pointer hover:shadow-lg transition-shadow relative"
+                      onClick={() => setSelectedGameId(game.game_id)}
+                    >
+                      {loadingGames.has(game.game_id) && (
+                        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                        </div>
+                      )}
+                      {/* Period scores */}
+                      {game.boxScoreLoaded && game.periodScores && (() => {
+                        const periodScores = game.periodScores;
+                        const uniquePeriods = Array.from(new Set(periodScores.map(ps => ps.period)));
+                        return (
+                        <div className="w-full">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="text-gray-600">
+                                <th className="text-left">Team</th>
+                                {uniquePeriods.map(period => (
+                                  <th key={period} className="text-center w-8">
+                                    {formatPeriod(period, uniquePeriods)}
+                                  </th>
+                                ))}
+                                <th className="text-center w-8">T</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <td className="text-left">{game.away_team_abbreviation}</td>
+                                {uniquePeriods.sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
+                                  <td key={period} className="text-center">
+                                    {periodScores.find(ps => 
+                                      parseInt(ps.period) === parseInt(period) && 
+                                      String(ps.teamId) === String(game.away_team_id)
+                                    )?.points || '-'}
+                                  </td>
+                                ))}
+                                <td className="text-center font-semibold">{game.away_team_score}</td>
+                              </tr>
+                              <tr>
+                                <td className="text-left">{game.home_team_abbreviation}</td>
+                                {uniquePeriods.sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
+                                  <td key={period} className="text-center">
+                                    {periodScores.find(ps => 
+                                      parseInt(ps.period) === parseInt(period) && 
+                                      String(ps.teamId) === String(game.home_team_id)
+                                    )?.points || '-'}
+                                  </td>
+                                ))}
+                                <td className="text-center font-semibold">{game.home_team_score}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                        );
+                      })()}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-gray-500 text-center py-4">No games</div>
+              )}
+            </div>
+          ))}
+        <BoxScorePanel 
+          gameId={selectedGameId} 
+          onClose={() => setSelectedGameId(null)} 
+        />
+      </div>
+    </ScheduleProvider>
   );
 }

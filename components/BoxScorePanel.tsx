@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import BoxScore from './BoxScore';
 import { Team, Player, Schedule } from '@/app/types/schema';
+import { useSchedule } from '@/context/ScheduleContext';
 
 interface BoxScorePanelProps {
   gameId: string | null;
@@ -26,12 +27,19 @@ interface BoxScoreResponse {
   }[];
 }
 
+interface ExtendedSchedule extends Schedule {
+  homeTeam: Team;
+  awayTeam: Team;
+}
+
 export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
   const [loading, setLoading] = useState(false);
   const [homeTeam, setHomeTeam] = useState<Team | null>(null);
   const [awayTeam, setAwayTeam] = useState<Team | null>(null);
-  const [gameInfo, setGameInfo] = useState<Schedule | null>(null);
+  const [gameInfo, setGameInfo] = useState<ExtendedSchedule | null>(null);
   const [isVisible, setIsVisible] = useState(false);
+
+  const { scheduleData } = useSchedule();
 
   useEffect(() => {
     if (gameId) {
@@ -40,6 +48,17 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
       setIsVisible(false);
     }
   }, [gameId]);
+
+  useEffect(() => {
+    if (gameId) {
+      const gameInfo = scheduleData.find(game => game.game_id === gameId) as ExtendedSchedule;
+      if (gameInfo) {
+        setGameInfo(gameInfo);
+        setHomeTeam(gameInfo.homeTeam);
+        setAwayTeam(gameInfo.awayTeam);
+      }
+    }
+  }, [gameId, scheduleData]);
 
   useEffect(() => {
     if (!gameId) return;
@@ -83,7 +102,6 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
 
         setHomeTeam(convertedHomeTeam);
         setAwayTeam(convertedAwayTeam);
-        setGameInfo(data.gameInfo);
       } catch (error) {
         console.error('Error fetching box score:', error);
       } finally {

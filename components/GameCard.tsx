@@ -1,16 +1,24 @@
 import { useState } from 'react';
 import { Game } from '@/app/types';
-import { Player } from '@/app/types/schema';
+import { Player, Schedule, Team } from '@/app/types/schema';
 import BoxScore from './BoxScore';
+import { useSchedule } from '@/context/ScheduleContext';
 
 interface GameCardProps {
   game: Game;
+}
+
+interface ExtendedSchedule extends Schedule {
+  homeTeam: Team;
+  awayTeam: Team;
 }
 
 export default function GameCard({ game }: GameCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const { scheduleData } = useSchedule();
 
   const handleExpandClick = async () => {
     if (!game.boxScoreLoaded && !loading) {
@@ -22,6 +30,13 @@ export default function GameCard({ game }: GameCardProps) {
         }
         const data = await response.json();
 
+        const gameInfo = scheduleData.find(game => game.game_id === game.game_id) as ExtendedSchedule;
+        if (gameInfo) {
+          game.homeTeam = gameInfo.homeTeam;
+          game.awayTeam = gameInfo.awayTeam;
+          game.boxScoreLoaded = true;
+        }
+
         // Update game with box score data
         game.homeTeam.players = data.playerStats.filter(
           (player: Player & { team_abbreviation: string }) => player.team_abbreviation === game.homeTeam.teamAbbreviation
@@ -29,7 +44,6 @@ export default function GameCard({ game }: GameCardProps) {
         game.awayTeam.players = data.playerStats.filter(
           (player: Player & { team_abbreviation: string }) => player.team_abbreviation === game.awayTeam.teamAbbreviation
         );
-        game.boxScoreLoaded = true;
 
         setError('');
       } catch (err) {
