@@ -27,16 +27,11 @@ interface BoxScoreResponse {
   }[];
 }
 
-interface ExtendedSchedule extends Schedule {
-  homeTeam: Team;
-  awayTeam: Team;
-}
-
 export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
   const [loading, setLoading] = useState(false);
   const [homeTeam, setHomeTeam] = useState<Team | null>(null);
   const [awayTeam, setAwayTeam] = useState<Team | null>(null);
-  const [gameInfo, setGameInfo] = useState<ExtendedSchedule | null>(null);
+  const [gameInfo, setGameInfo] = useState<Schedule | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
   const { scheduleData } = useSchedule();
@@ -48,17 +43,6 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
       setIsVisible(false);
     }
   }, [gameId]);
-
-  useEffect(() => {
-    if (gameId) {
-      const gameInfo = scheduleData.find(game => game.game_id === gameId) as ExtendedSchedule;
-      if (gameInfo) {
-        setGameInfo(gameInfo);
-        setHomeTeam(gameInfo.homeTeam);
-        setAwayTeam(gameInfo.awayTeam);
-      }
-    }
-  }, [gameId, scheduleData]);
 
   useEffect(() => {
     if (!gameId) return;
@@ -102,6 +86,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
 
         setHomeTeam(convertedHomeTeam);
         setAwayTeam(convertedAwayTeam);
+        setGameInfo(data.gameInfo);
       } catch (error) {
         console.error('Error fetching box score:', error);
       } finally {
@@ -145,15 +130,15 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
               <h2 className="md:text-2xl text-lg text-center">
                 {awayTeam.score > homeTeam.score ? (
                   <>
-                    <span className="font-bold">* {awayTeam.teamName} {awayTeam.score} {awayTeam.teamAbbreviation}</span>
+                    <span className="font-bold">* {awayTeam.teamAbbreviation} {awayTeam.score}</span>
                     {' - '}
-                    <span>{homeTeam.teamName} {homeTeam.score} {homeTeam.teamAbbreviation}</span>
+                    <span>{homeTeam.teamAbbreviation} {homeTeam.score}</span>
                   </>
                 ) : (
                   <>
-                    <span>{awayTeam.teamName} {awayTeam.score} {awayTeam.teamAbbreviation}</span>
+                    <span>{awayTeam.teamAbbreviation} {awayTeam.score}</span>
                     {' - '}
-                    <span className="font-bold">{homeTeam.teamName} {homeTeam.score} {homeTeam.teamAbbreviation} *</span>
+                    <span className="font-bold">{homeTeam.teamAbbreviation} {homeTeam.score} *</span>
                   </>
                 )}
               </h2>
