@@ -124,12 +124,22 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
         <div className="p-6 md:text-base text-[50%]">
           {homeTeam && awayTeam && gameInfo && (
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-center">
-                {awayTeam.score > homeTeam.score && '* '}
-                {awayTeam.score} {awayTeam.teamAbbreviation} - {homeTeam.teamAbbreviation} {homeTeam.score}
-                {homeTeam.score > awayTeam.score && ' *'}
+              <h2 className="md:text-2xl text-lg text-center">
+                {awayTeam.score > homeTeam.score ? (
+                  <>
+                    <span className="font-bold">* {awayTeam.score} {awayTeam.teamAbbreviation}</span>
+                    {' - '}
+                    <span>{homeTeam.teamAbbreviation} {homeTeam.score}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{awayTeam.score} {awayTeam.teamAbbreviation}</span>
+                    {' - '}
+                    <span className="font-bold">{homeTeam.teamAbbreviation} {homeTeam.score} *</span>
+                  </>
+                )}
               </h2>
-              <p className="text-gray-600 text-center mt-2">
+              <p className="text-gray-600 text-center mt-2 md:text-base text-sm">
                 {format(new Date(gameInfo.game_date), 'MMMM d, yyyy • h:mm a')}
               </p>
             </div>
