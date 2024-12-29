@@ -145,15 +145,15 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
               <h2 className="md:text-2xl text-lg text-center">
                 {awayTeam.score > homeTeam.score ? (
                   <>
-                    <span className="font-bold">* {awayTeam.score} {awayTeam.teamAbbreviation}</span>
+                    <span className="font-bold">* {awayTeam.teamName} {awayTeam.score} {awayTeam.teamAbbreviation}</span>
                     {' - '}
-                    <span>{homeTeam.teamAbbreviation} {homeTeam.score}</span>
+                    <span>{homeTeam.teamName} {homeTeam.score} {homeTeam.teamAbbreviation}</span>
                   </>
                 ) : (
                   <>
-                    <span>{awayTeam.score} {awayTeam.teamAbbreviation}</span>
+                    <span>{awayTeam.teamName} {awayTeam.score} {awayTeam.teamAbbreviation}</span>
                     {' - '}
-                    <span className="font-bold">{homeTeam.teamAbbreviation} {homeTeam.score} *</span>
+                    <span className="font-bold">{homeTeam.teamName} {homeTeam.score} {homeTeam.teamAbbreviation} *</span>
                   </>
                 )}
               </h2>
