@@ -93,6 +93,12 @@ select game.gameId, game.awayTeam.teamId, unnest(boxScore.stats.away.\"4\") as b
 create or replace table bs_away_5 as 
 select game.gameId, game.awayTeam.teamId, unnest(boxScore.stats.away.\"5\") as box_score_detail from bs_json;
 
+create or replace table bs_home_fullgame as 
+select game.gameId, game.homeTeam.teamId, unnest(boxScore.stats.home.FullGame) as box_score_detail from bs_json;
+
+create or replace table bs_away_fullgame as 
+select game.gameId, game.awayTeam.teamId, unnest(boxScore.stats.away.FullGame) as box_score_detail from bs_json;
+
 -- final table
 create or replace table bs_detail as 
 select gameId,teamId,1 as period, unnest(box_score_detail) from bs_home_1
@@ -113,7 +119,11 @@ select gameId,teamId,3 as period, unnest(box_score_detail) from bs_away_3
 union all by name
 select gameId,teamId,4 as period, unnest(box_score_detail) from bs_away_4 
 union all by name
-select gameId,teamId,5 as period, unnest(box_score_detail) from bs_away_5;
+select gameId,teamId,5 as period, unnest(box_score_detail) from bs_away_5
+union all by name
+select gameId,teamId,'FullGame' as period, unnest(box_score_detail) from bs_home_fullgame
+union all by name
+select gameId,teamId,'FullGame' as period, unnest(box_score_detail) from bs_away_fullgame;
 "
 
 # SQL for player box scores
@@ -139,8 +149,8 @@ SELECT
   CAST(COALESCE(FG3A, '0') AS INTEGER) as fg3_attempted,
   CAST(COALESCE(FtPoints, '0') AS INTEGER) as ft_made,
   CAST(COALESCE(FTA, '0') AS INTEGER) as ft_attempted,
-  0 as plus_minus,
-  0 as starter,
+  null as plus_minus,
+  null as starter,
   period
 FROM bs_detail
 WHERE EntityId != '0';"
@@ -151,25 +161,26 @@ USE nba_box_scores;
 
 INSERT INTO main.team_stats
 SELECT
-  gameid as game_id,
-  teamid as team_id,
+  gameId as game_id,
+  teamId as team_id,
   period,
-  COALESCE(team_stats.Minutes, '0:00') as minutes,
-  CAST(COALESCE(team_stats.Points, '0') AS INTEGER) as points,
-  CAST(COALESCE(team_stats.DefRebounds, '0') AS INTEGER) + CAST(COALESCE(team_stats.OffRebounds, '0') AS INTEGER) as rebounds,
-  CAST(COALESCE(team_stats.Assists, '0') AS INTEGER) as assists,
-  CAST(COALESCE(team_stats.Steals, '0') AS INTEGER) as steals,
-  CAST(COALESCE(team_stats.Blocks, '0') AS INTEGER) as blocks,
-  CAST(COALESCE(team_stats.Turnovers, '0') AS INTEGER) as turnovers,
-  CAST(COALESCE(team_stats.FG2M, '0') AS INTEGER) + CAST(COALESCE(team_stats.FG3M, '0') AS INTEGER) as fg_made,
-  CAST(COALESCE(team_stats.FG2A, '0') AS INTEGER) + CAST(COALESCE(team_stats.FG3A, '0') AS INTEGER) as fg_attempted,
-  CAST(COALESCE(team_stats.FG3M, '0') AS INTEGER) as fg3_made,
-  CAST(COALESCE(team_stats.FG3A, '0') AS INTEGER) as fg3_attempted,
-  CAST(COALESCE(team_stats.FtPoints, '0') AS INTEGER) as ft_made,
-  CAST(COALESCE(team_stats.FTA, '0') AS INTEGER) as ft_attempted,
-  CAST(COALESCE(team_stats.OffPoss, '0') AS INTEGER) as offensive_possessions,
-  CAST(COALESCE(team_stats.DefPoss, '0') AS INTEGER) as defensive_possessions
-FROM bs_detail as team_stats WHERE team_stats.EntityId = '0';"
+  null as minutes,
+  SUM(CAST(COALESCE(team_stats.Points, '0') AS INTEGER)) as points,
+  SUM(CAST(COALESCE(team_stats.DefRebounds, '0') AS INTEGER) + CAST(COALESCE(team_stats.OffRebounds, '0') AS INTEGER)) as rebounds,
+  SUM(CAST(COALESCE(team_stats.Assists, '0') AS INTEGER)) as assists,
+  SUM(CAST(COALESCE(team_stats.Steals, '0') AS INTEGER)) as steals,
+  SUM(CAST(COALESCE(team_stats.Blocks, '0') AS INTEGER)) as blocks,
+  SUM(CAST(COALESCE(team_stats.Turnovers, '0') AS INTEGER)) as turnovers,
+  SUM(CAST(COALESCE(team_stats.FG2M, '0') AS INTEGER) + CAST(COALESCE(team_stats.FG3M, '0') AS INTEGER)) as fg_made,
+  SUM(CAST(COALESCE(team_stats.FG2A, '0') AS INTEGER) + CAST(COALESCE(team_stats.FG3A, '0') AS INTEGER)) as fg_attempted,
+  SUM(CAST(COALESCE(team_stats.FG3M, '0') AS INTEGER)) as fg3_made,
+  SUM(CAST(COALESCE(team_stats.FG3A, '0') AS INTEGER)) as fg3_attempted,
+  SUM(CAST(COALESCE(team_stats.FtPoints, '0') AS INTEGER)) as ft_made,
+  SUM(CAST(COALESCE(team_stats.FTA, '0') AS INTEGER)) as ft_attempted,
+  null as offensive_possessions,
+  null as defensive_possessions
+FROM bs_detail as team_stats
+GROUP BY gameId, teamId, period;"
 
 # Print and execute table creation SQL
 echo "Executing table creation SQL:"
@@ -177,7 +188,7 @@ echo "$TABLE_SQL"
 echo
 duckdb "md:" -c "$TABLE_SQL"
 
-# Print and execute data preprocessing SQL
+Print and execute data preprocessing SQL
 echo "Executing data preprocessing SQL:"
 echo "$PREP_SQL"
 echo

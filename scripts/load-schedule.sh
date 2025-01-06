@@ -40,14 +40,14 @@ INSERT INTO main.schedule (
 )
 SELECT
   gameId,
-  gameDateUTC,
+  gameDateTimeUTC,
   homeTeam.teamId,
   awayTeam.teamId,
   homeTeam.teamTricode,
   awayTeam.teamTricode,
   homeTeam.score,
   awayTeam.score,
-  gameStatus
+  gameStatusText
 FROM read_json('$SCHEDULE_DIR/completed-games.json')
 WHERE gameId NOT LIKE '001%';
 "
