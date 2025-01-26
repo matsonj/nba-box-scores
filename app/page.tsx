@@ -115,12 +115,12 @@ export default function Home() {
                   {games.map((game) => (
                     <div 
                       key={game.game_id} 
-                      className="bg-white rounded-lg shadow-md p-4 mb-4 cursor-pointer hover:shadow-lg transition-shadow relative"
+                      className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-4 cursor-pointer hover:shadow-lg transition-shadow relative"
                       onClick={() => setSelectedGameId(game.game_id)}
                     >
                       {loadingGames.has(game.game_id) && (
-                        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                        <div className="absolute inset-0 bg-white dark:bg-gray-800 bg-opacity-75 dark:bg-opacity-75 flex items-center justify-center rounded-lg">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
                         </div>
                       )}
                       {/* Period scores */}
@@ -131,7 +131,7 @@ export default function Home() {
                         <div className="w-full">
                           <table className="w-full text-sm">
                             <thead>
-                              <tr className="text-gray-600">
+                              <tr className="text-gray-600 dark:text-gray-400">
                                 <th className="text-left">Team</th>
                                 {uniquePeriods.map(period => (
                                   <th key={period} className="text-center w-8">
@@ -141,7 +141,7 @@ export default function Home() {
                                 <th className="text-center w-8">T</th>
                               </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="dark:text-gray-200">
                               <tr>
                                 <td className="text-left">{game.away_team_abbreviation}</td>
                                 {uniquePeriods.sort((a, b) => parseInt(a) - parseInt(b)).map(period => (

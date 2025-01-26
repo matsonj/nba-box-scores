@@ -109,7 +109,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
 
   return (
     <div 
-      className={`fixed right-0 top-[88px] h-[calc(100vh-88px)] w-[80vw] bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${
+      className={`fixed right-0 top-[88px] h-[calc(100vh-88px)] w-[80vw] bg-white dark:bg-gray-900 shadow-lg transform transition-transform duration-300 ease-in-out ${
         isVisible ? 'translate-x-0' : 'translate-x-full'
       } z-10`}
     >
@@ -117,10 +117,10 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
         <div className="absolute top-4 right-4 z-50">
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
             aria-label="Close panel"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600 hover:text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -129,7 +129,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
         <div className="p-6 md:text-base text-[50%]">
           {homeTeam && awayTeam && gameInfo && (
             <div className="mb-6">
-              <h2 className="md:text-2xl text-lg text-center">
+              <h2 className="md:text-2xl text-lg text-center dark:text-white">
                 {awayTeam.score > homeTeam.score ? (
                   <>
                     <span className="font-bold">* {awayTeam.teamAbbreviation} {awayTeam.score}</span>
@@ -144,7 +144,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
                   </>
                 )}
               </h2>
-              <p className="text-gray-600 text-center mt-2 md:text-base text-sm">
+              <p className="text-gray-600 dark:text-gray-400 text-center mt-2 md:text-base text-sm">
                 {format(new Date(gameInfo.game_date), 'MMMM d, yyyy • h:mm a')}
               </p>
             </div>
@@ -152,14 +152,14 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
           
           {loading ? (
             <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
             </div>
           ) : homeTeam && awayTeam ? (
             <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
               <BoxScore homeTeam={homeTeam} awayTeam={awayTeam} />
             </div>
           ) : (
-            <div className="text-center text-gray-500">No box score data available</div>
+            <div className="text-center text-gray-500 dark:text-gray-400">No box score data available</div>
           )}
         </div>
       </div>
