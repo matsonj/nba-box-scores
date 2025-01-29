@@ -155,14 +155,14 @@ describe('Box Scores API Route', () => {
     expect(data.teams).toHaveLength(2);
     
     // Check Boston team data
-    const bostonTeam = data.teams.find((team: any) => team.teamId === 1610612738);
+    const bostonTeam = data.teams.find((team: BoxScoreTeam) => team.teamId === 1610612738);
     expect(bostonTeam).toBeDefined();
     expect(bostonTeam.teamName).toBe('Boston Celtics');
     expect(bostonTeam.teamAbbreviation).toBe('BOS');
     expect(bostonTeam.score).toBe(115);
 
     // Check New York team data
-    const knicksTeam = data.teams.find((team: any) => team.teamId === 1610612752);
+    const knicksTeam = data.teams.find((team: BoxScoreTeam) => team.teamId === 1610612752);
     expect(knicksTeam).toBeDefined();
     expect(knicksTeam.teamName).toBe('New York Knicks');
     expect(knicksTeam.teamAbbreviation).toBe('NYK');
@@ -170,8 +170,8 @@ describe('Box Scores API Route', () => {
 
     // Check period scores
     expect(data.periodScores).toHaveLength(2);
-    const bostonPeriodScore = data.periodScores.find((score: any) => score.teamId === 1610612738);
-    const knicksPeriodScore = data.periodScores.find((score: any) => score.teamId === 1610612752);
+    const bostonPeriodScore = data.periodScores.find((score: { teamId: number; period: string; points: number }) => score.teamId === 1610612738);
+    const knicksPeriodScore = data.periodScores.find((score: { teamId: number; period: string; points: number }) => score.teamId === 1610612752);
     expect(bostonPeriodScore).toBeDefined();
     expect(knicksPeriodScore).toBeDefined();
     expect(bostonPeriodScore.period).toBe('FullGame');
@@ -193,8 +193,11 @@ describe('Box Scores API Route', () => {
   });
 
   it('should handle game not found', async () => {
-    // Mock empty game info response
-    (queryDb as jest.Mock).mockResolvedValueOnce([]);
+    // Mock empty game info response for all three parallel queries
+    (queryDb as jest.Mock)
+      .mockResolvedValueOnce([]) // game info
+      .mockResolvedValueOnce([]) // box scores
+      .mockResolvedValueOnce([]); // team stats
 
     const response = await GET(mockRequest, mockParams);
     const data = await response.json();
@@ -203,3 +206,10 @@ describe('Box Scores API Route', () => {
     expect(response.status).toBe(404);
   });
 });
+
+interface BoxScoreTeam {
+  teamId: number;
+  teamName: string;
+  teamAbbreviation: string;
+  score: number;
+}

@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
-import Link from 'next/link';
 import { Schedule } from './types/schema';
 import { ScheduleWithBoxScore } from './types/extended';
+import BoxScorePanel from '@/components/BoxScorePanel';
+import { ScheduleProvider } from '@/context/ScheduleContext';
 
 // Helper function to format period numbers
 function formatPeriod(period: string, allPeriods: string[]): string {
@@ -24,7 +25,9 @@ function formatPeriod(period: string, allPeriods: string[]): string {
 export default function Home() {
   const [gamesByDate, setGamesByDate] = useState<Record<string, ScheduleWithBoxScore[]>>({});
   const [loading, setLoading] = useState(true);
+  const [loadingGames] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchGames = async () => {
@@ -98,24 +101,28 @@ export default function Home() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 font-mono">
-      <h1 className="text-3xl font-bold mb-8 text-center">NBA Schedule</h1>
-      {Object.entries(gamesByDate)
-        .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
-        .map(([date, games]) => (
-          <div key={date} className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">
-              {format(parseISO(date), 'MMMM d, yyyy')}
-            </h2>
-            {games.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
-                {games.map((game) => (
-                  <Link
-                    key={game.game_id}
-                    href={`/game/${game.game_id}`}
-                    className="block"
-                  >
-                    <div className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow">
+    <ScheduleProvider>
+      <div className="container mx-auto px-4 py-8 font-mono">
+        {Object.entries(gamesByDate)
+          .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
+          .map(([date, games]) => (
+            <div key={date} className="mb-8">
+              <h2 className="text-xl font-semibold mb-4">
+                {format(parseISO(date), 'MMMM d, yyyy')}
+              </h2>
+              {games.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
+                  {games.map((game) => (
+                    <div 
+                      key={game.game_id} 
+                      className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-4 cursor-pointer hover:shadow-lg transition-shadow relative"
+                      onClick={() => setSelectedGameId(game.game_id)}
+                    >
+                      {loadingGames.has(game.game_id) && (
+                        <div className="absolute inset-0 bg-white dark:bg-gray-800 bg-opacity-75 dark:bg-opacity-75 flex items-center justify-center rounded-lg">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
+                        </div>
+                      )}
                       {/* Period scores */}
                       {game.boxScoreLoaded && game.periodScores && (() => {
                         const periodScores = game.periodScores;
@@ -124,7 +131,7 @@ export default function Home() {
                         <div className="w-full">
                           <table className="w-full text-sm">
                             <thead>
-                              <tr className="text-gray-600">
+                              <tr className="text-gray-600 dark:text-gray-400">
                                 <th className="text-left">Team</th>
                                 {uniquePeriods.map(period => (
                                   <th key={period} className="text-center w-8">
@@ -134,12 +141,15 @@ export default function Home() {
                                 <th className="text-center w-8">T</th>
                               </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="dark:text-gray-200">
                               <tr>
                                 <td className="text-left">{game.away_team_abbreviation}</td>
                                 {uniquePeriods.sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
                                   <td key={period} className="text-center">
-                                    {periodScores.find(ps => parseInt(ps.period) === parseInt(period) && ps.teamId === game.away_team_id)?.points || '-'}
+                                    {periodScores.find(ps => 
+                                      parseInt(ps.period) === parseInt(period) && 
+                                      String(ps.teamId) === String(game.away_team_id)
+                                    )?.points || '-'}
                                   </td>
                                 ))}
                                 <td className="text-center font-semibold">{game.away_team_score}</td>
@@ -148,7 +158,10 @@ export default function Home() {
                                 <td className="text-left">{game.home_team_abbreviation}</td>
                                 {uniquePeriods.sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
                                   <td key={period} className="text-center">
-                                    {periodScores.find(ps => parseInt(ps.period) === parseInt(period) && ps.teamId === game.home_team_id)?.points || '-'}
+                                    {periodScores.find(ps => 
+                                      parseInt(ps.period) === parseInt(period) && 
+                                      String(ps.teamId) === String(game.home_team_id)
+                                    )?.points || '-'}
                                   </td>
                                 ))}
                                 <td className="text-center font-semibold">{game.home_team_score}</td>
@@ -159,14 +172,18 @@ export default function Home() {
                         );
                       })()}
                     </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-gray-500 text-center py-4">No games</div>
-            )}
-          </div>
-        ))}
-    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-gray-500 text-center py-4">No games</div>
+              )}
+            </div>
+          ))}
+        <BoxScorePanel 
+          gameId={selectedGameId} 
+          onClose={() => setSelectedGameId(null)} 
+        />
+      </div>
+    </ScheduleProvider>
   );
 }

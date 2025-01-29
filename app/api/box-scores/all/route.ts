@@ -9,7 +9,7 @@ export async function GET() {
     console.log('Fetching all period scores...');
     const periodScores = await queryDb<TeamStats>(
       `SELECT game_id, team_id, period, points 
-       FROM main.team_stats 
+       FROM nba_box_scores.main.team_stats 
        WHERE period != 'FullGame'
        ORDER BY game_id, team_id, CAST(period AS INTEGER)`
     );

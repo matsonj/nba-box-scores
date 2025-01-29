@@ -19,7 +19,7 @@ const backfillBoxScores = async () => {
     const completedGames = JSON.parse(await fs.readFile(completedGamesFile, 'utf-8'));
     
     // Filter out preseason games (starting with 001)
-    const regularSeasonGames = completedGames.filter(game => !game.gameId.startsWith('001'));
+    const regularSeasonGames = completedGames.filter((game: { gameId: string }) => !game.gameId.startsWith('001'));
     console.log(`Found ${regularSeasonGames.length} regular season games out of ${completedGames.length} total games`);
 
     // Process each game

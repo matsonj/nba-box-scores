@@ -1,14 +1,14 @@
-import { NextResponse, NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db';
 import { Schedule } from '@/types/schema';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('Fetching schedule from DuckDB...');
-    const result = await queryDb(`
-      SELECT * FROM main.schedule 
+    const result = await queryDb<Schedule>(`
+      SELECT * FROM nba_box_scores.main.schedule 
       WHERE game_id NOT LIKE '006%'
     `);
     
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     console.log('Total games:', result.length);
 
     // Transform the data to match the expected format
-    const transformedResult = result.map((game: Schedule) => ({
+    const transformedResult = result.map((game) => ({
       game_id: game.game_id,
       game_date: game.game_date,
       home_team_id: game.home_team_id,

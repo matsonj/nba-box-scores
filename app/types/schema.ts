@@ -58,10 +58,31 @@ export interface TeamStats {
   defensive_possessions: number;
 }
 
+
+export interface Player {
+  playerId: string;
+  playerName: string;
+  minutes: string;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  fieldGoalsMade: number;
+  fieldGoalsAttempted: number;
+  threePointersMade: number;
+  threePointersAttempted: number;
+  freeThrowsMade: number;
+  freeThrowsAttempted: number;
+  plusMinus: number;
+  starter: boolean;
+}
+
 export interface Team {
   teamId: string;
   teamName: string;
   teamAbbreviation: string;
   score: number;
-  players: any[];
+  players: Player[];
 }

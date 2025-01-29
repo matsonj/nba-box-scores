@@ -1,121 +1,43 @@
-import { DuckDBInstance, DuckDBTypeId } from '@duckdb/node-api';
-import path from 'path';
-import fs from 'fs';
+"use server";
+import { Database } from 'duckdb-lambda-x86';
 
-// Create a singleton database connection
-let db: DuckDBInstance | null = null;
-let conn: any | null = null;
+process.env.HOME = '/tmp';
 
-export async function getConnection(): Promise<any> {
-  try {
-    // Return existing connection if it exists
-    if (conn) {
-      return conn;
-    }
-
-    const dbPath = path.join(process.cwd(), 'data', 'nba.db');
-    
-    // Check if database file exists and log its size
-    if (fs.existsSync(dbPath)) {
-      const stats = fs.statSync(dbPath);
-      console.log('Database file size:', stats.size, 'bytes');
-    }
-
-    // Create a new DuckDB instance
-    db = await DuckDBInstance.create(dbPath);
-    conn = await db.connect();
-    
-    console.log('Successfully connected to database');
-    return conn;
-  } catch (error) {
-    console.error('Error connecting to database:', error);
-    throw error;
-  }
-}
-
-export async function queryDb<T = any>(query: string, params: any[] = []): Promise<T[]> {
-  const connection = await getConnection();
-  if (!connection) {
-    throw new Error('Failed to get database connection');
+export async function queryDb<T>(query: string, params: (string | number | null)[] = []): Promise<T[]> {
+  if (query === "") {
+    return [];
   }
 
-  try {
-    console.log('Executing query:', query);
-    console.log('Parameters:', params);
-    
-    // Prepare and bind parameters
-    const stmt = await connection.prepare(query);
-    for (let i = 0; i < params.length; i++) {
-      const param = params[i];
-      if (typeof param === 'string') {
-        stmt.bindVarchar(i + 1, param);
-      } else if (typeof param === 'number') {
-        if (Number.isInteger(param)) {
-          stmt.bindInteger(i + 1, param);
-        } else {
-          stmt.bindDouble(i + 1, param);
-        }
-      } else if (param instanceof Date) {
-        // Convert Date to string in ISO format
-        stmt.bindVarchar(i + 1, param.toISOString().split('T')[0]);
-      } else {
-        throw new Error(`Unsupported parameter type: ${typeof param}`);
-      }
-    }
-    
-    // Execute the query and get all rows
-    const reader = await stmt.runAndReadAll();
-    const rows = reader.getRows();
-    const columnNames = reader.columnNames();
-    const columnTypes = reader.columnTypes();
-    
-    console.log('Column types:', columnTypes);
-    
-    // Convert array rows to objects with column names
-    return rows.map((row: any) => {
-      const obj: any = {};
-      columnNames.forEach((col, i) => {
-        let value = row[i];
-        // Convert DuckDB date values to JavaScript Date objects
-        if (columnTypes[i].typeId === 13 && value !== null) {
-          value = new Date(value.toString());
-        }
-        // Convert DuckDB timestamp values to ISO strings
-        if (columnTypes[i].typeId === 12 && value !== null) {
-          value = new Date(Number(value.micros / 1000n)).toISOString();
-        }
-        // Convert BigInt values to numbers for integer types
-        if (columnTypes[i].typeId === 4 && value !== null) {
-          value = Number(value);
-        }
-        // Convert BigInt values to numbers
-        if (typeof value === 'bigint') {
-          value = Number(value);
-        }
-        obj[col] = value;
-      });
-      return obj as T;
-    });
-  } catch (error: any) {
-    console.error('Error executing query:', {
-      query: query,
-      params,
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    });
-    throw error;
-  }
-}
+  // For parameterized queries, we'll need to interpolate the params manually
+  const interpolatedQuery = params.reduce<string>((acc, param, idx) => {
+    return acc.replace(
+      `$${idx + 1}`,
+      param === null ? 'NULL' : typeof param === 'string' ? `'${param}'` : param.toString()
+    );
+  }, query);
 
-// Ensure we close the connection when the process exits
-process.on('exit', () => {
-  if (conn) {
+  return new Promise(async (resolve, reject) => {
     try {
-      conn.close();
-      console.log('Database connection closed');
+      console.log('Connecting to database...');
+      const db: Database = new Database("md:");
+      console.log('Database instance created');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const connection: any = await db.connect();
+      console.log('Database connected');
+      
+      console.log('Executing query:', interpolatedQuery);
+      connection.all(interpolatedQuery, ((err: Error | null, rows: Array<T>) => {
+        if (err) {
+          console.error('Database query error:', err);
+          reject(err);
+          return;
+        }
+        console.log(`Query completed successfully. Returned ${rows.length} rows`);
+        resolve(rows);
+      }));
     } catch (error) {
-      console.error('Error closing database connection:', error);
+      console.error('Database connection error:', error);
+      reject(error);
     }
-  }
-});
+  });
+}

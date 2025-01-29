@@ -1,7 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db';
 import { TeamStats, Schedule } from '@/types/schema';
-import { generateSelectQuery, box_scoresColumns, team_statsColumns } from '@/lib/generated/sql-utils';
 
 interface BoxScores {
   game_id: string;
@@ -50,13 +49,14 @@ interface BoxScoreTeam {
     plusMinus: number;
     starter: boolean;
   }[];
+  periodScores: Record<string, number>;
 }
 
 export const runtime = 'nodejs';
 
 // Helper function to convert abbreviations to full team names
 function getTeamName(abbreviation: string): string {
-  const teamNames: { [key: string]: string } = {
+  const teamNames: Record<string, string> = {
     'ATL': 'Atlanta Hawks',
     'BOS': 'Boston Celtics',
     'BKN': 'Brooklyn Nets',
@@ -92,62 +92,51 @@ function getTeamName(abbreviation: string): string {
 }
 
 export async function GET(
-  request: Request,
-  { params }: { params: { gameId: string } }
+  request: NextRequest,
+  { params }: { params: any } // eslint-disable-line @typescript-eslint/no-explicit-any
 ) {
   try {
-    const { gameId } = params;
-    console.log('Box scores API called for game:', gameId);
+    const gameId = params.gameId;
+    console.log(`Fetching box scores for game ${gameId}...`);
 
-    // Get game info from schedule
-    console.log('Fetching game info from schedule...');
-    const gameInfo = await queryDb<Schedule>(
-      `SELECT 
-        game_id,
-        game_date,
-        CAST(home_team_id AS INTEGER) as home_team_id,
-        CAST(away_team_id AS INTEGER) as away_team_id,
-        home_team_abbreviation,
-        away_team_abbreviation,
-        CAST(home_team_score AS INTEGER) as home_team_score,
-        CAST(away_team_score AS INTEGER) as away_team_score,
-        status,
-        created_at
-      FROM main.schedule WHERE game_id = ?`, 
-      [gameId]
-    );
-    console.log('Game info:', gameInfo[0]);
+    // Get all data in parallel
+    console.log('Starting parallel queries...');
+    const [gameInfo, boxScoresData, teamStats] = await Promise.all([
+      // Game info query
+      queryDb<Schedule>(
+        `SELECT * FROM nba_box_scores.main.schedule WHERE game_id = '${gameId}'`
+      ).catch(err => {
+        console.error('Error fetching game info:', err);
+        throw new Error(`Failed to fetch game info: ${err.message}`);
+      }),
+      // Box scores query with optimized starter detection
+      queryDb<BoxScores>(
+        `SELECT * FROM nba_box_scores.main.box_scores WHERE game_id = '${gameId}' AND period = 'FullGame'`
+      ).catch(err => {
+        console.error('Error fetching box scores:', err);
+        throw new Error(`Failed to fetch box scores: ${err.message}`);
+      }),
+      // Team stats query
+      queryDb<TeamStats>(
+        `SELECT * FROM nba_box_scores.main.team_stats WHERE game_id = '${gameId}'`
+      ).catch(err => {
+        console.error('Error fetching team stats:', err);
+        throw new Error(`Failed to fetch team stats: ${err.message}`);
+      })
+    ]);
 
-    if (gameInfo.length === 0) {
-      console.log('Game not found in schedule');
-      return NextResponse.json({ error: 'Game not found' }, { status: 404 });
+    // Check if game exists
+    if (!gameInfo || gameInfo.length === 0) {
+      return NextResponse.json(
+        { error: 'Game not found' },
+        { status: 404 }
+      );
     }
 
-    // Get box scores
-    console.log('Fetching team stats...');
-    const teamStats = await queryDb<TeamStats>(
-      `SELECT team_id, period, points 
-       FROM main.team_stats 
-       WHERE game_id = ? AND period != 'FullGame'
-       ORDER BY team_id, CAST(period AS INTEGER)`,
-      [gameId]
-    );
-    console.log('Team stats:', teamStats);
+    console.log('Game info:', gameInfo[0]);
 
-    const boxScoresData = await queryDb<BoxScores>(
-      `WITH starters AS (
-        SELECT DISTINCT entity_id
-        FROM main.box_scores
-        WHERE game_id = ? AND period = '1' AND starter = 1
-      )
-      SELECT bs.*, 
-        CASE WHEN s.entity_id IS NOT NULL THEN 1 ELSE 0 END as starter
-      FROM main.box_scores bs
-      LEFT JOIN starters s ON bs.entity_id = s.entity_id
-      WHERE bs.game_id = ? AND bs.period = 'FullGame'
-      ORDER BY bs.minutes DESC`,
-      [gameId, gameId]
-    );
+    // Get box scores
+    console.log('Team stats:', teamStats);
 
     console.log('Box scores sample:', boxScoresData[0]);
     console.log('Team IDs from box scores:', [...new Set(boxScoresData.map(p => p.team_id))]);
@@ -161,16 +150,18 @@ export async function GET(
       teamId: Number(gameInfo[0].home_team_id),
       teamName: getTeamName(gameInfo[0].home_team_abbreviation),
       teamAbbreviation: gameInfo[0].home_team_abbreviation,
-      score: Number(gameInfo[0].home_team_score),
-      players: []
+      score: gameInfo[0].home_team_score,
+      players: [],
+      periodScores: {}
     };
 
     const awayTeam: BoxScoreTeam = {
       teamId: Number(gameInfo[0].away_team_id),
       teamName: getTeamName(gameInfo[0].away_team_abbreviation),
       teamAbbreviation: gameInfo[0].away_team_abbreviation,
-      score: Number(gameInfo[0].away_team_score),
-      players: []
+      score: gameInfo[0].away_team_score,
+      players: [],
+      periodScores: {}
     };
 
     // Map team_id to home/away team
@@ -273,7 +264,8 @@ export async function GET(
           freeThrowsAttempted: Number(player.freeThrowsAttempted),
           plusMinus: Number(player.plusMinus),
           starter: player.starter
-        }))
+        })),
+        periodScores: team.periodScores
       })),
       periodScores: periodScores
     };
