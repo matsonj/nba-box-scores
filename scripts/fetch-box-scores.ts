@@ -58,6 +58,12 @@ const backfillBoxScores = async () => {
           continue;
         }
 
+        // Check if we have full game data
+        if (!response.data.stats?.Home?.FullGame) {
+          console.log(`Skipping game ${gameId}: full game data not yet available`);
+          continue;
+        }
+
         const data = {
           game,
           boxScore: response.data
