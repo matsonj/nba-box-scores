@@ -6,6 +6,7 @@ import BoxScore from './BoxScore';
 import { Team, Player, Schedule } from '@/app/types/schema';
 import { useBoxScoreByGameId } from '@/hooks/useBoxScore';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
+import { getTeamName } from '@/lib/teams';
 
 interface BoxScorePanelProps {
   gameId: string | null;
@@ -55,7 +56,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
         // Convert to Team type
         const convertedHomeTeam: Team = {
           teamId: data.gameInfo.home_team_id.toString(),
-          teamName: data.gameInfo.home_team,
+          teamName: getTeamName(data.gameInfo.home_team_abbreviation),
           teamAbbreviation: data.gameInfo.home_team_abbreviation,
           score: data.gameInfo.home_team_score,
           players: data.teams[0].players
@@ -63,7 +64,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
 
         const convertedAwayTeam: Team = {
           teamId: data.gameInfo.away_team_id.toString(),
-          teamName: data.gameInfo.away_team,
+          teamName: getTeamName(data.gameInfo.away_team_abbreviation),
           teamAbbreviation: data.gameInfo.away_team_abbreviation,
           score: data.gameInfo.away_team_score,
           players: data.teams[1].players
