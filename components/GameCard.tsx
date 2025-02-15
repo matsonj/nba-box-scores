@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Game } from '@/app/types';
-import { Player, Schedule, Team } from '@/app/types/schema';
+import { Schedule, Team } from '@/app/types/schema';
 import BoxScore from './BoxScore';
 import { useSchedule } from '@/context/ScheduleContext';
 import { useBoxScoreByGameId } from '@/hooks/useBoxScore';
@@ -27,7 +27,7 @@ export default function GameCard({ game }: GameCardProps) {
     if (!game.boxScoreLoaded && !loading) {
       try {
         setLoading(true);
-        const data = await fetchBoxScore(game.game_id);
+        await fetchBoxScore(game.game_id);
 
         const gameInfo = scheduleData.find(game => game.game_id === game.game_id) as ExtendedSchedule;
         if (gameInfo) {
@@ -37,12 +37,10 @@ export default function GameCard({ game }: GameCardProps) {
         }
 
         // Update game with box score data
-        game.homeTeam.players = data.playerStats.filter(
-          (player: Player & { team_abbreviation: string }) => player.team_abbreviation === game.homeTeam.teamAbbreviation
-        );
-        game.awayTeam.players = data.playerStats.filter(
-          (player: Player & { team_abbreviation: string }) => player.team_abbreviation === game.awayTeam.teamAbbreviation
-        );
+        if (gameInfo.homeTeam && gameInfo.awayTeam) {
+          game.homeTeam = gameInfo.homeTeam;
+          game.awayTeam = gameInfo.awayTeam;
+        }
 
         setError('');
       } catch (err) {

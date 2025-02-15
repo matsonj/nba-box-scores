@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
-import { TeamStats, Schedule, BoxScore } from '@/types/schema';
+import { TeamStats, Schedule, BoxScores } from '@/types/schema';
 
 const teamNames: Record<string, string> = {
   'ATL': 'Atlanta Hawks',
@@ -54,15 +54,15 @@ export function useBoxScoreByGameId() {
       // Game info query
       evaluateQuery(
         `SELECT * FROM nba_box_scores.main.schedule WHERE game_id = '${gameId}'`
-      ).then(result => result.data.toRows() as Schedule[]),
+      ).then(result => result.data.toRows() as unknown as Schedule[]),
       // Box scores query with optimized starter detection
       evaluateQuery(
         `SELECT * FROM nba_box_scores.main.box_scores WHERE game_id = '${gameId}' AND period = 'FullGame'`
-      ).then(result => result.data.toRows() as BoxScore[]),
+      ).then(result => result.data.toRows() as unknown as BoxScores[]),
       // Team stats query
       evaluateQuery(
         `SELECT * FROM nba_box_scores.main.team_stats WHERE game_id = '${gameId}'`
-      ).then(result => result.data.toRows() as TeamStats[])
+      ).then(result => result.data.toRows() as unknown as TeamStats[])
     ]);
 
     // Check if game exists
@@ -81,7 +81,7 @@ export function useBoxScoreByGameId() {
       players: boxScoresData
         .filter(player => player.team_id.toString() === gameInfo[0].home_team_id.toString())
         .map(player => ({
-          playerId: player.player_id,
+          playerId: player.entity_id,
           playerName: player.player_name,
           minutes: player.minutes,
           points: player.points,
@@ -111,7 +111,7 @@ export function useBoxScoreByGameId() {
       players: boxScoresData
         .filter(player => player.team_id.toString() === gameInfo[0].away_team_id.toString())
         .map(player => ({
-          playerId: player.player_id,
+          playerId: player.entity_id,
           playerName: player.player_name,
           minutes: player.minutes,
           points: player.points,

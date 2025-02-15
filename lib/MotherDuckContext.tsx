@@ -15,7 +15,7 @@ interface MotherDuckContextValue {
 export const MotherDuckContext = createContext<MotherDuckContextValue | null>(null);
 
 export function MotherDuckClientProvider({ children, database }: { children: React.ReactNode, database?: string },) {
-  const connectionRef = useRef<PromiseWithResolvers<MDConnection | undefined>>();
+  const connectionRef = useRef<PromiseWithResolvers<MDConnection | undefined>>(undefined);
 
   if (connectionRef.current === undefined) {
     connectionRef.current = Promise.withResolvers<MDConnection | undefined>();

@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
 
     return config;
   },
-  headers: () => [
+  headers: async () => [
     {
       source: '/:path*',
       headers: [

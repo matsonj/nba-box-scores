@@ -1,13 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import BoxScore from './BoxScore';
 
-import { Team, Schedule, BoxScore as BoxScoreType, TeamStats } from '@/app/types/schema';
+import { Team, Schedule, BoxScores as BoxScoreType, TeamStats } from '@/app/types/schema';
 import { useQueryDb } from '@/lib/db';
 import { getTeamName } from '@/lib/teams';
-import { useDebounce } from '@/hooks/useDebounce';
+
 
 interface BoxScorePanelProps {
   gameId: string | null;
@@ -64,7 +64,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
             teamAbbreviation: gameInfo.home_team_abbreviation,
             score: teamStats.find(stat => stat.team_id.toString() === gameInfo.home_team_id.toString() && stat.period === 'FullGame')?.points || 0,
             players: homeTeamPlayers.map(player => ({
-              playerId: player.player_id,
+              playerId: player.entity_id,
               playerName: player.player_name,
               minutes: player.minutes,
               points: player.points,
@@ -80,7 +80,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
               freeThrowsMade: player.ft_made,
               freeThrowsAttempted: player.ft_attempted,
               plusMinus: player.plus_minus,
-              starter: player.starter
+              starter: player.starter === 1
             }))
           },
           awayTeam: {
@@ -89,7 +89,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
             teamAbbreviation: gameInfo.away_team_abbreviation,
             score: teamStats.find(stat => stat.team_id.toString() === gameInfo.away_team_id.toString() && stat.period === 'FullGame')?.points || 0,
             players: awayTeamPlayers.map(player => ({
-              playerId: player.player_id,
+              playerId: player.entity_id,
               playerName: player.player_name,
               minutes: player.minutes,
               points: player.points,
@@ -105,7 +105,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
               freeThrowsMade: player.ft_made,
               freeThrowsAttempted: player.ft_attempted,
               plusMinus: player.plus_minus,
-              starter: player.starter
+              starter: player.starter === 1
             }))
           }
         });
@@ -115,7 +115,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
     };
 
     loadData();
-  }, [gameId, queryDb, getTeamName]);
+  }, [gameId, queryDb]);
 
   if (!gameId) return null;
 

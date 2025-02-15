@@ -1,15 +1,36 @@
 'use client';
 
 import { useMotherDuckClientState } from './MotherDuckContext';
+import initMotherDuckConnection from './initMotherDuckConnection';
+import { fetchMotherDuckToken } from './fetchMotherDuckToken';
 
-// Helper function to interpolate query parameters
-function interpolateParams(query: string, params: (string | number | null)[] = []): string {
-  return params.reduce<string>((acc, param, idx) => {
+// Direct query execution for scripts
+export async function queryDb<T>(query: string, params: (string | number | null)[] = []): Promise<T[]> {
+  const mdToken = await fetchMotherDuckToken();
+  const connection = await initMotherDuckConnection(mdToken);
+
+  if (!connection) {
+    throw new Error('No MotherDuck connection available');
+  }
+
+  // For parameterized queries, we'll need to interpolate the params manually
+  const interpolatedQuery = params.reduce<string>((acc, param, idx) => {
     return acc.replace(
       `$${idx + 1}`,
       param === null ? 'NULL' : typeof param === 'string' ? `'${param}'` : param.toString()
     );
   }, query);
+
+  try {
+    console.log('Executing query:', interpolatedQuery);
+    const result = await connection.evaluateQuery(interpolatedQuery);
+    const rows = result.data.toRows() as T[];
+    console.log(`Query completed successfully. Returned ${rows.length} rows`);
+    return rows;
+  } catch (error) {
+    console.error('Failed to execute query:', error);
+    throw error;
+  }
 }
 
 // React hooks for components
@@ -32,8 +53,9 @@ export function useQueryDb() {
     try {
       console.log('Executing query:', interpolatedQuery);
       const result = await evaluateQuery(interpolatedQuery);
-      console.log(`Query completed successfully. Returned ${result.length} rows`);
-      return result.data.toRows() as T[];
+      const rows = result.data.toRows() as T[];
+      console.log(`Query completed successfully. Returned ${rows.length} rows`);
+      return rows;
     } catch (error) {
       console.error('Failed to execute query:', error);
       throw error;
@@ -60,11 +82,12 @@ export function useSafeQueryDb() {
     try {
       console.log('Executing safe query:', interpolatedQuery);
       const result = await safeEvaluateQuery(interpolatedQuery);
-      if (result.error) {
-        throw new Error(result.error);
+      if (result.status === 'success') {
+        const rows = result.result.data.toRows() as T[];
+        console.log(`Query completed successfully. Returned ${rows.length} rows`);
+        return rows;
       }
-      console.log(`Query completed successfully. Returned ${result.result.length} rows`);
-      return result.result.data.toRows() as T[];
+      throw new Error(String(result.err));
     } catch (error) {
       console.error('Failed to execute safe query:', error);
       throw error;
