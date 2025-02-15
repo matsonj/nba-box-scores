@@ -116,7 +116,7 @@ export default function Home() {
     };
 
     fetchGames();
-  }, []);
+  }, [fetchSchedule, fetchBoxScores]);
 
   if (loading) {
     return <div className="p-8">Loading schedule...</div>;

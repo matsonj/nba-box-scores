@@ -16,7 +16,6 @@ export function useSchedule() {
         WHERE game_id NOT LIKE '006%'
       `);
       
-      // Get the rows from the result
       const rows = result.data.toRows() as Schedule[];
       debugLog('schedule_rows', rows);
       
@@ -57,12 +56,11 @@ export function useBoxScores() {
         ORDER BY game_id, team_id, CAST(period AS INTEGER)
       `);
       
-      // Get the rows from the result
       const periodScores = result.data.toRows() as TeamStats[];
       debugLog('period_scores_raw', periodScores);
       
       // First, group scores by game_id
-      const gameScores = (periodScores || []).reduce((acc, score) => {
+      const gameScores = periodScores.reduce((acc, score) => {
         if (!acc[score.game_id]) {
           acc[score.game_id] = [];
         }

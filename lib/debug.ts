@@ -1,10 +1,10 @@
-export function debugLog(label: string, data: any) {
+export function debugLog(label: string, data: unknown) {
     console.group(`DEBUG: ${label}`);
     console.log(data); // Log the raw data first
     
     // Also log a stringified version with BigInt handling
     const seen = new WeakSet();
-    const replacer = (key: string, value: any) => {
+    const replacer = (key: string, value: unknown) => {
         if (typeof value === 'bigint') {
             return value.toString();
         }
