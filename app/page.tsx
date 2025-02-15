@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
 import { ScheduleWithBoxScore } from './types/extended';
 import BoxScorePanel from '@/components/BoxScorePanel';
@@ -25,6 +25,22 @@ function formatPeriod(period: string, allPeriods: string[]): string {
   return `OT${periodNum - 4}`;
 }
 
+function groupByDate(games: ScheduleWithBoxScore[]) {
+  const gamesByDate: Record<string, ScheduleWithBoxScore[]> = {};
+  games.forEach((game: ScheduleWithBoxScore) => {
+    if (!game.game_date) {
+      console.error('Game date is missing:', game);
+      return;
+    }
+    const gameDate = format(parseISO(game.game_date.toString()), 'yyyy-MM-dd');
+    if (!gamesByDate[gameDate]) {
+      gamesByDate[gameDate] = [];
+    }
+    gamesByDate[gameDate].push(game);
+  });
+  return gamesByDate;
+}
+
 export default function Home() {
   const [gamesByDate, setGamesByDate] = useState<Record<string, ScheduleWithBoxScore[]>>({});
   const [loading, setLoading] = useState(true);
@@ -32,6 +48,22 @@ export default function Home() {
   const [error, setError] = useState('');
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string>('');
+
+  const filteredGamesByDate = useMemo(() => {
+    if (!gamesByDate || Object.keys(gamesByDate).length === 0) return [];
+    
+    return Object.entries(
+      groupByDate(
+        Object.values(gamesByDate)
+          .flat()
+          .filter(game => 
+            !selectedTeam || 
+            game.home_team_abbreviation === selectedTeam ||
+            game.away_team_abbreviation === selectedTeam
+          )
+      )
+    ).map(([date, games]) => ({ date, games }));
+  }, [gamesByDate, selectedTeam]);
 
   const { fetchSchedule } = useSchedule();
   const { fetchBoxScores } = useBoxScores();
@@ -94,18 +126,7 @@ export default function Home() {
         
         // Group games by date
         console.log('Grouping games by date...');
-        const games: Record<string, ScheduleWithBoxScore[]> = {};
-        gamesWithBoxScores.forEach((game: ScheduleWithBoxScore) => {
-          if (!game.game_date) {
-            console.error('Game date is missing:', game);
-            return;
-          }
-          const gameDate = format(parseISO(game.game_date.toString()), 'yyyy-MM-dd');
-          if (!games[gameDate]) {
-            games[gameDate] = [];
-          }
-          games[gameDate].push(game);
-        });
+        const games = groupByDate(gamesWithBoxScores);
         console.log('Games grouped by date');
 
         setGamesByDate(games);
@@ -128,15 +149,6 @@ export default function Home() {
   if (error) {
     return <div className="p-8 text-red-500">Error: {error}</div>;
   }
-
-  const filteredGamesByDate = Object.entries(gamesByDate).map(([date, games]) => ({
-    date,
-    games: games.filter(game => 
-      !selectedTeam || 
-      game.homeTeam.teamAbbreviation === selectedTeam ||
-      game.awayTeam.teamAbbreviation === selectedTeam
-    )
-  }));
 
   return (
     <ScheduleProvider>
@@ -216,28 +228,28 @@ export default function Home() {
                             </thead>
                             <tbody className="dark:text-gray-200">
                               <tr>
-                                <td className="text-left">{game.awayTeam.teamAbbreviation}</td>
+                                <td className="text-left">{game.away_team_abbreviation}</td>
                                 {uniquePeriods.sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
                                   <td key={period} className="text-center">
                                     {periodScores.find(ps => 
                                       parseInt(ps.period) === parseInt(period) && 
-                                      String(ps.teamId) === String(game.awayTeam.teamId)
+                                      String(ps.teamId) === String(game.away_team_id)
                                     )?.points || '-'}
                                   </td>
                                 ))}
-                                <td className="text-center font-semibold">{game.awayTeam.score}</td>
+                                <td className="text-center font-semibold">{game.away_team_score}</td>
                               </tr>
                               <tr>
-                                <td className="text-left">{game.homeTeam.teamAbbreviation}</td>
+                                <td className="text-left">{game.home_team_abbreviation}</td>
                                 {uniquePeriods.sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
                                   <td key={period} className="text-center">
                                     {periodScores.find(ps => 
                                       parseInt(ps.period) === parseInt(period) && 
-                                      String(ps.teamId) === String(game.homeTeam.teamId)
+                                      String(ps.teamId) === String(game.home_team_id)
                                     )?.points || '-'}
                                   </td>
                                 ))}
-                                <td className="text-center font-semibold">{game.homeTeam.score}</td>
+                                <td className="text-center font-semibold">{game.home_team_score}</td>
                               </tr>
                             </tbody>
                           </table>
