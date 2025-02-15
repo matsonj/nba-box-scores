@@ -19,7 +19,7 @@
     "generate-schemas": "tsx scripts/generate-schemas.ts"
   },
   "dependencies": {
-    "@heroicons/react": "^2.0.18",
+    "@heroicons/react": "^2.2.0",
     "@motherduck/wasm-client": "^0.6.6",
     "axios": "^1.6.2",
     "core-js": "^3.40.0",

@@ -8,6 +8,7 @@ import { ScheduleProvider } from '@/context/ScheduleContext';
 import { getTeamName } from '@/lib/teams';
 import { useSchedule, useBoxScores } from '@/hooks/useGameData';
 import { debugLog } from '@/lib/debug';
+import { FunnelIcon } from '@heroicons/react/24/outline';
 
 // Helper function to format period numbers
 function formatPeriod(period: string, allPeriods: string[]): string {
@@ -30,6 +31,7 @@ export default function Home() {
   const [loadingGames] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<string>('');
 
   const { fetchSchedule } = useSchedule();
   const { fetchBoxScores } = useBoxScores();
@@ -127,17 +129,61 @@ export default function Home() {
     return <div className="p-8 text-red-500">Error: {error}</div>;
   }
 
+  const filteredGamesByDate = Object.entries(gamesByDate).map(([date, games]) => ({
+    date,
+    games: games.filter(game => 
+      !selectedTeam || 
+      game.homeTeam.teamAbbreviation === selectedTeam ||
+      game.awayTeam.teamAbbreviation === selectedTeam
+    )
+  }));
+
   return (
     <ScheduleProvider>
       <div className="container mx-auto px-4 py-8 font-mono">
-        {Object.entries(gamesByDate)
-          .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
-          .map(([date, games]) => (
-            <div key={date} className="mb-8">
-              <h2 className="text-xl font-semibold mb-4">
-                {format(parseISO(date), 'MMMM d, yyyy')}
-              </h2>
-              {games.length > 0 ? (
+        {/* Sticky filter controls */}
+        <div className="sticky top-0 z-50 bg-white dark:bg-gray-900 pt-4 pb-4 border-b">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <FunnelIcon className="h-5 w-5 text-gray-600" />
+              <select
+                value={selectedTeam}
+                onChange={(e) => setSelectedTeam(e.target.value)}
+                className="select select-bordered w-32"
+              >
+                <option value="">All Teams</option>
+                {['ATL','BOS','BKN','CHA','CHI','CLE','DAL','DEN','DET','GSW','HOU','IND','LAC','LAL','MEM','MIA','MIL','MIN','NOP','NYK','OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS'].map((abbr) => (
+                  <option key={abbr} value={abbr}>{abbr}</option>
+                ))}
+              </select>
+            </div>
+
+            {selectedTeam && (
+              <div className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                <span>Showing games for:</span>
+                <span className="font-medium">{selectedTeam}</span>
+                <button 
+                  onClick={() => setSelectedTeam('')}
+                  className="ml-1 text-blue-500 hover:text-blue-700"
+                  aria-label="Clear filter"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {filteredGamesByDate
+          .sort((a, b) => b.date.localeCompare(a.date))
+          .map(({ date, games }) => {
+            if (games.length === 0) return null;
+            
+            return (
+              <div key={date} className="mb-8">
+                <h2 className="text-xl font-bold mb-4">
+                  {format(parseISO(date), 'EEEE, MMMM do')}
+                </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
                   {games.map((game) => (
                     <div 
@@ -170,28 +216,28 @@ export default function Home() {
                             </thead>
                             <tbody className="dark:text-gray-200">
                               <tr>
-                                <td className="text-left">{game.away_team_abbreviation}</td>
+                                <td className="text-left">{game.awayTeam.teamAbbreviation}</td>
                                 {uniquePeriods.sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
                                   <td key={period} className="text-center">
                                     {periodScores.find(ps => 
                                       parseInt(ps.period) === parseInt(period) && 
-                                      String(ps.teamId) === String(game.away_team_id)
+                                      String(ps.teamId) === String(game.awayTeam.teamId)
                                     )?.points || '-'}
                                   </td>
                                 ))}
-                                <td className="text-center font-semibold">{game.away_team_score}</td>
+                                <td className="text-center font-semibold">{game.awayTeam.score}</td>
                               </tr>
                               <tr>
-                                <td className="text-left">{game.home_team_abbreviation}</td>
+                                <td className="text-left">{game.homeTeam.teamAbbreviation}</td>
                                 {uniquePeriods.sort((a, b) => parseInt(a) - parseInt(b)).map(period => (
                                   <td key={period} className="text-center">
                                     {periodScores.find(ps => 
                                       parseInt(ps.period) === parseInt(period) && 
-                                      String(ps.teamId) === String(game.home_team_id)
+                                      String(ps.teamId) === String(game.homeTeam.teamId)
                                     )?.points || '-'}
                                   </td>
                                 ))}
-                                <td className="text-center font-semibold">{game.home_team_score}</td>
+                                <td className="text-center font-semibold">{game.homeTeam.score}</td>
                               </tr>
                             </tbody>
                           </table>
@@ -201,11 +247,9 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="text-gray-500 text-center py-4">No games</div>
-              )}
-            </div>
-          ))}
+              </div>
+            );
+          })}
         <BoxScorePanel 
           gameId={selectedGameId} 
           onClose={() => setSelectedGameId(null)} 
