@@ -7,6 +7,7 @@ import { ScheduleWithBoxScore } from './types/extended';
 import BoxScorePanel from '@/components/BoxScorePanel';
 import { ScheduleProvider } from '@/context/ScheduleContext';
 import { useSchedule, useBoxScores } from '@/hooks/useGameData';
+import { debugLog } from '@/lib/debug';
 
 // Helper function to format period numbers
 function formatPeriod(period: string, allPeriods: string[]): string {
@@ -46,17 +47,25 @@ export default function Home() {
           fetchBoxScores()
         ]);
 
-        console.log('Data fetched:', {
+        debugLog('data_fetched', {
           scheduleCount: scheduleData.length,
-          boxScoresCount: Object.keys(boxScoresData).length
+          boxScoresCount: Object.keys(boxScoresData).length,
+          scheduleData,
+          boxScoresData
+        });
+
+        // Combine schedule with box scores
+        const gamesWithBoxScores = scheduleData.map((game: Schedule) => {
+          const hasBoxScore = !!boxScoresData[game.game_id];
+          const scores = boxScoresData[game.game_id] || [];
+          return {
+            ...game,
+            boxScoreLoaded: hasBoxScore,
+            periodScores: scores
+          };
         });
         
-        // Combine schedule with box scores
-        const gamesWithBoxScores = scheduleData.map((game: Schedule) => ({
-          ...game,
-          boxScoreLoaded: !!boxScoresData[game.game_id],
-          periodScores: boxScoresData[game.game_id] || []
-        }));
+        debugLog('games_with_box_scores', gamesWithBoxScores);
         
         // Group games by date
         console.log('Grouping games by date...');

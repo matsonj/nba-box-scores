@@ -132,13 +132,18 @@ export function useBoxScoreByGameId() {
     };
 
     // Get period scores
+    console.log('Raw team stats:', teamStats);
     const periodScores = teamStats
       .filter(stat => stat.period !== 'FullGame')
-      .map(stat => ({
-        period: stat.period,
-        teamId: stat.team_id,
-        points: stat.points
-      }));
+      .map(stat => {
+        const score = {
+          period: stat.period,
+          teamId: stat.team_id,
+          points: stat.points
+        };
+        console.log('Created period score:', score);
+        return score;
+      });
 
     return {
       gameInfo: gameInfo[0],

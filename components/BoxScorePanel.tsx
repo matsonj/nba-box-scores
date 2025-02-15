@@ -33,6 +33,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
   const [homeTeam, setHomeTeam] = useState<Team | null>(null);
   const [awayTeam, setAwayTeam] = useState<Team | null>(null);
   const [gameInfo, setGameInfo] = useState<Schedule | null>(null);
+  const [periodScores, setPeriodScores] = useState<BoxScoreResponse['periodScores']>([]);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -83,6 +84,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
         setHomeTeam(convertedHomeTeam);
         setAwayTeam(convertedAwayTeam);
         setGameInfo(data.gameInfo);
+        setPeriodScores(data.periodScores);
       } catch (error) {
         console.error('Error fetching box score:', error);
       } finally {
@@ -155,6 +157,56 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
             </div>
           ) : homeTeam && awayTeam ? (
             <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+              {/* Period Scores Table */}
+              <div className="mb-8">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 dark:bg-gray-700">
+                      <th className="py-2 px-4 text-left dark:text-gray-200">Team</th>
+                      {['1', '2', '3', '4'].map(period => (
+                        <th key={period} className="py-2 px-4 text-center dark:text-gray-200">{period}</th>
+                      ))}
+                      <th className="py-2 px-4 text-center dark:text-gray-200">T</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[awayTeam, homeTeam].map(team => {
+                      console.log('Rendering team:', {
+                        teamId: team.teamId,
+                        teamAbbreviation: team.teamAbbreviation,
+                        periodScores,
+                      });
+                      return (
+                        <tr key={team.teamId} className="border-t dark:border-gray-700">
+                          <td className="py-2 px-4 font-medium dark:text-gray-200">{team.teamAbbreviation}</td>
+                          {['1', '2', '3', '4'].map(period => {
+                            const score = periodScores.find(
+                              s => {
+                                console.log('Comparing:', {
+                                  scoreTeamId: s.teamId,
+                                  teamId: team.teamId,
+                                  period: period,
+                                  scorePeriod: s.period,
+                                  match: s.teamId === team.teamId && s.period === period
+                                });
+                                return s.teamId === team.teamId && s.period === period;
+                              }
+                            );
+                            console.log(`Score for ${team.teamAbbreviation} period ${period}:`, score);
+                            return (
+                              <td key={period} className="py-2 px-4 text-center dark:text-gray-200">
+                                {score?.points || '-'}
+                              </td>
+                            );
+                          })}
+                          <td className="py-2 px-4 text-center font-bold dark:text-gray-200">{team.score}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              
               <BoxScore homeTeam={homeTeam} awayTeam={awayTeam} />
             </div>
           ) : (

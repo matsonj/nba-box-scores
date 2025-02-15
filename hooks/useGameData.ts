@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { Schedule, TeamStats } from '@/types/schema';
+import { debugLog } from '@/lib/debug';
 
 export function useSchedule() {
   const { evaluateQuery } = useMotherDuckClientState();
@@ -15,11 +16,9 @@ export function useSchedule() {
         WHERE game_id NOT LIKE '006%'
       `);
       
-      console.log('Schedule query result:', result);
-      
       // Get the rows from the result
       const rows = result.data.toRows() as Schedule[];
-      console.log('Schedule rows:', rows);
+      debugLog('schedule_rows', rows);
       
       // Transform the data to match the expected format
       return rows.map((game: Schedule) => ({
@@ -54,14 +53,12 @@ export function useBoxScores() {
         ORDER BY game_id, team_id, CAST(period AS INTEGER)
       `);
       
-      console.log('Team stats query result:', result);
-      
       // Get the rows from the result
       const periodScores = result.data.toRows() as TeamStats[];
-      console.log('Period scores:', periodScores);
+      debugLog('period_scores_raw', periodScores);
       
-      // Group by game_id
-      return (periodScores || []).reduce((acc, score) => {
+      // First, group scores by game_id
+      const gameScores = (periodScores || []).reduce((acc, score) => {
         if (!acc[score.game_id]) {
           acc[score.game_id] = [];
         }
@@ -72,6 +69,9 @@ export function useBoxScores() {
         });
         return acc;
       }, {} as Record<string, Array<{ team_id: string; period: string; points: number }>>);
+
+      debugLog('period_scores_grouped', gameScores);
+      return gameScores;
     } catch (error) {
       console.error('Error fetching box scores:', error);
       throw error;
