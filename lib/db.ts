@@ -1,11 +1,16 @@
-"use server";
-import { Database } from 'duckdb-lambda-x86';
+'use client';
 
-process.env.HOME = '/tmp';
+import { useMotherDuckClientState } from './MotherDuckContext';
+import initMotherDuckConnection from './initMotherDuckConnection';
+import { fetchMotherDuckToken } from './fetchMotherDuckToken';
 
+// Direct query execution for scripts
 export async function queryDb<T>(query: string, params: (string | number | null)[] = []): Promise<T[]> {
-  if (query === "") {
-    return [];
+  const mdToken = await fetchMotherDuckToken();
+  const connection = await initMotherDuckConnection(mdToken);
+
+  if (!connection) {
+    throw new Error('No MotherDuck connection available');
   }
 
   // For parameterized queries, we'll need to interpolate the params manually
@@ -16,28 +21,76 @@ export async function queryDb<T>(query: string, params: (string | number | null)
     );
   }, query);
 
-  return new Promise(async (resolve, reject) => {
-    try {
-      console.log('Connecting to database...');
-      const db: Database = new Database("md:");
-      console.log('Database instance created');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const connection: any = await db.connect();
-      console.log('Database connected');
-      
-      console.log('Executing query:', interpolatedQuery);
-      connection.all(interpolatedQuery, ((err: Error | null, rows: Array<T>) => {
-        if (err) {
-          console.error('Database query error:', err);
-          reject(err);
-          return;
-        }
-        console.log(`Query completed successfully. Returned ${rows.length} rows`);
-        resolve(rows);
-      }));
-    } catch (error) {
-      console.error('Database connection error:', error);
-      reject(error);
+  try {
+    console.log('Executing query:', interpolatedQuery);
+    const result = await connection.evaluateQuery(interpolatedQuery);
+    const rows = result.data.toRows() as T[];
+    console.log(`Query completed successfully. Returned ${rows.length} rows`);
+    return rows;
+  } catch (error) {
+    console.error('Failed to execute query:', error);
+    throw error;
+  }
+}
+
+// React hooks for components
+export function useQueryDb() {
+  const { evaluateQuery } = useMotherDuckClientState();
+
+  return async function queryDb<T>(query: string, params: (string | number | null)[] = []): Promise<T[]> {
+    if (query === "") {
+      return [];
     }
-  });
+
+    // For parameterized queries, we'll need to interpolate the params manually
+    const interpolatedQuery = params.reduce<string>((acc, param, idx) => {
+      return acc.replace(
+        `$${idx + 1}`,
+        param === null ? 'NULL' : typeof param === 'string' ? `'${param}'` : param.toString()
+      );
+    }, query);
+
+    try {
+      console.log('Executing query:', interpolatedQuery);
+      const result = await evaluateQuery(interpolatedQuery);
+      const rows = result.data.toRows() as T[];
+      console.log(`Query completed successfully. Returned ${rows.length} rows`);
+      return rows;
+    } catch (error) {
+      console.error('Failed to execute query:', error);
+      throw error;
+    }
+  };
+}
+
+export function useSafeQueryDb() {
+  const { safeEvaluateQuery } = useMotherDuckClientState();
+
+  return async function safeQueryDb<T>(query: string, params: (string | number | null)[] = []): Promise<T[]> {
+    if (query === "") {
+      return [];
+    }
+
+    // For parameterized queries, we'll need to interpolate the params manually
+    const interpolatedQuery = params.reduce<string>((acc, param, idx) => {
+      return acc.replace(
+        `$${idx + 1}`,
+        param === null ? 'NULL' : typeof param === 'string' ? `'${param}'` : param.toString()
+      );
+    }, query);
+
+    try {
+      console.log('Executing safe query:', interpolatedQuery);
+      const result = await safeEvaluateQuery(interpolatedQuery);
+      if (result.status === 'success') {
+        const rows = result.result.data.toRows() as T[];
+        console.log(`Query completed successfully. Returned ${rows.length} rows`);
+        return rows;
+      }
+      throw new Error(String(result.err));
+    } catch (error) {
+      console.error('Failed to execute safe query:', error);
+      throw error;
+    }
+  };
 }

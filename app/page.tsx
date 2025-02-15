@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Schedule } from './types/schema';
 import { ScheduleWithBoxScore } from './types/extended';
 import BoxScorePanel from '@/components/BoxScorePanel';
 import { ScheduleProvider } from '@/context/ScheduleContext';
+import { getTeamName } from '@/lib/teams';
+import { useSchedule, useBoxScores } from '@/hooks/useGameData';
+import { debugLog } from '@/lib/debug';
 
 // Helper function to format period numbers
 function formatPeriod(period: string, allPeriods: string[]): string {
@@ -29,39 +31,64 @@ export default function Home() {
   const [error, setError] = useState('');
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
 
+  const { fetchSchedule } = useSchedule();
+  const { fetchBoxScores } = useBoxScores();
+
   useEffect(() => {
     const fetchGames = async () => {
       try {
-        // Fetch schedule and box scores in parallel
+        setLoading(true);
+        setError('');
+        
+        // Fetch schedule and box scores in parallel using WASM client
         console.log('Fetching data...');
-        const [scheduleResponse, boxScoresResponse] = await Promise.all([
-          fetch('/api/schedule'),
-          fetch('/api/box-scores/all')
-        ]);
-
-        if (!scheduleResponse.ok) {
-          throw new Error('Failed to fetch schedule');
-        }
-        if (!boxScoresResponse.ok) {
-          throw new Error('Failed to fetch box scores');
-        }
-
         const [scheduleData, boxScoresData] = await Promise.all([
-          scheduleResponse.json(),
-          boxScoresResponse.json()
+          fetchSchedule(),
+          fetchBoxScores()
         ]);
 
-        console.log('Data fetched:', {
+        debugLog('data_fetched', {
           scheduleCount: scheduleData.length,
-          boxScoresCount: Object.keys(boxScoresData).length
+          boxScoresCount: Object.keys(boxScoresData).length,
+          scheduleData,
+          boxScoresData
+        });
+
+        // Combine schedule with box scores
+        const gamesWithBoxScores = scheduleData.map((game) => {
+          const hasBoxScore = !!boxScoresData[game.game_id];
+          const scores = boxScoresData[game.game_id] || [];
+          
+          // Create Team objects
+          const homeTeam = {
+            teamId: game.home_team_id.toString(),
+            teamName: getTeamName(game.home_team_id.toString()),
+            teamAbbreviation: game.home_team_abbreviation,
+            score: game.home_team_score,
+            players: [],
+            periodScores: scores.filter(s => s.teamId === game.home_team_id.toString())
+          };
+          
+          const awayTeam = {
+            teamId: game.away_team_id.toString(),
+            teamName: getTeamName(game.away_team_id.toString()),
+            teamAbbreviation: game.away_team_abbreviation,
+            score: game.away_team_score,
+            players: [],
+            periodScores: scores.filter(s => s.teamId === game.away_team_id.toString())
+          };
+          
+          return {
+            ...game,
+            boxScoreLoaded: hasBoxScore,
+            homeTeam,
+            awayTeam,
+            periodScores: scores,
+            created_at: new Date() // Add required created_at field
+          };
         });
         
-        // Combine schedule with box scores
-        const gamesWithBoxScores = scheduleData.map((game: Schedule) => ({
-          ...game,
-          boxScoreLoaded: !!boxScoresData[game.game_id],
-          periodScores: boxScoresData[game.game_id] || []
-        }));
+        debugLog('games_with_box_scores', gamesWithBoxScores);
         
         // Group games by date
         console.log('Grouping games by date...');
@@ -90,7 +117,7 @@ export default function Home() {
     };
 
     fetchGames();
-  }, []);
+  }, [fetchSchedule, fetchBoxScores]);
 
   if (loading) {
     return <div className="p-8">Loading schedule...</div>;

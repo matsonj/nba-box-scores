@@ -3,120 +3,130 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import BoxScore from './BoxScore';
-import { Team, Player, Schedule } from '@/app/types/schema';
+
+import { Team, Schedule, BoxScores as BoxScoreType, TeamStats } from '@/app/types/schema';
+import { useQueryDb } from '@/lib/db';
+import { getTeamName } from '@/lib/teams';
+
 
 interface BoxScorePanelProps {
   gameId: string | null;
   onClose: () => void;
 }
 
-interface BoxScoreResponse {
-  gameInfo: Schedule;
-  teams: {
-    teamId: number;
-    teamName: string;
-    teamAbbreviation: string;
-    score: number;
-    players: Player[];
-  }[];
-  periodScores: {
-    period: string;
-    teamId: string;
-    points: number;
-  }[];
-}
+// Removed unused interface
+// interface BoxScoreResponse {
+//   gameInfo: Schedule;
+//   teams: {
+//     teamId: string;
+//     teamName: string;
+//     teamAbbreviation: string;
+//     score: number;
+//     players: Player[];
+//   }[];
+// }
 
 export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
-  const [loading, setLoading] = useState(false);
-  const [homeTeam, setHomeTeam] = useState<Team | null>(null);
-  const [awayTeam, setAwayTeam] = useState<Team | null>(null);
-  const [gameInfo, setGameInfo] = useState<Schedule | null>(null);
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    if (gameId) {
-      setIsVisible(true);
-    } else {
-      setIsVisible(false);
-    }
-  }, [gameId]);
+  const [data, setData] = useState<{
+    homeTeam: Team | null;
+    awayTeam: Team | null;
+    gameInfo: Schedule | null;
+  }>({ homeTeam: null, awayTeam: null, gameInfo: null });
+  const queryDb = useQueryDb();
 
   useEffect(() => {
     if (!gameId) return;
 
-    const fetchBoxScore = async () => {
-      setLoading(true);
+    const loadData = async () => {
       try {
-        console.log('Fetching box score for game:', gameId);
-        const response = await fetch(`/api/box-scores/${gameId}`);
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Failed to fetch box score: ${errorText}`);
-        }
-        const data: BoxScoreResponse = await response.json();
-        console.log('Box score data received:', data);
-        
-        // Find home and away teams from the teams array
-        const homeTeam = data.teams.find(team => team.teamId === Number(data.gameInfo.home_team_id));
-        const awayTeam = data.teams.find(team => team.teamId === Number(data.gameInfo.away_team_id));
-        
-        if (!homeTeam || !awayTeam) {
-          throw new Error('Could not find home or away team in response');
-        }
+        const scheduleResult = await queryDb<Schedule>(`
+          SELECT * FROM nba_box_scores.main.schedule WHERE game_id = '${gameId}'`
+        );
+        const [gameInfo] = scheduleResult;
+        if (!gameInfo) return;
 
-        // Convert to Team type
-        const convertedHomeTeam: Team = {
-          teamId: homeTeam.teamId.toString(),
-          teamName: homeTeam.teamName,
-          teamAbbreviation: homeTeam.teamAbbreviation,
-          score: homeTeam.score,
-          players: homeTeam.players
-        };
+        const boxScores = await queryDb<BoxScoreType>(
+          `SELECT * FROM nba_box_scores.main.box_scores WHERE game_id = '${gameId}' AND period = 'FullGame'`
+        );
 
-        const convertedAwayTeam: Team = {
-          teamId: awayTeam.teamId.toString(),
-          teamName: awayTeam.teamName,
-          teamAbbreviation: awayTeam.teamAbbreviation,
-          score: awayTeam.score,
-          players: awayTeam.players
-        };
+        const teamStats = await queryDb<TeamStats>(
+          `SELECT * FROM nba_box_scores.main.team_stats WHERE game_id = '${gameId}'`
+        );
 
-        setHomeTeam(convertedHomeTeam);
-        setAwayTeam(convertedAwayTeam);
-        setGameInfo(data.gameInfo);
+        const homeTeamPlayers = boxScores.filter(player => player.team_id.toString() === gameInfo.home_team_id.toString());
+        const awayTeamPlayers = boxScores.filter(player => player.team_id.toString() === gameInfo.away_team_id.toString());
+
+        setData({
+          gameInfo,
+          homeTeam: {
+            teamId: gameInfo.home_team_id.toString(),
+            teamName: getTeamName(gameInfo.home_team_abbreviation),
+            teamAbbreviation: gameInfo.home_team_abbreviation,
+            score: teamStats.find(stat => stat.team_id.toString() === gameInfo.home_team_id.toString() && stat.period === 'FullGame')?.points || 0,
+            players: homeTeamPlayers.map(player => ({
+              playerId: player.entity_id,
+              playerName: player.player_name,
+              minutes: player.minutes,
+              points: player.points,
+              rebounds: player.rebounds,
+              assists: player.assists,
+              steals: player.steals,
+              blocks: player.blocks,
+              turnovers: player.turnovers,
+              fieldGoalsMade: player.fg_made,
+              fieldGoalsAttempted: player.fg_attempted,
+              threePointersMade: player.fg3_made,
+              threePointersAttempted: player.fg3_attempted,
+              freeThrowsMade: player.ft_made,
+              freeThrowsAttempted: player.ft_attempted,
+              plusMinus: player.plus_minus,
+              starter: player.starter === 1
+            }))
+          },
+          awayTeam: {
+            teamId: gameInfo.away_team_id.toString(),
+            teamName: getTeamName(gameInfo.away_team_abbreviation),
+            teamAbbreviation: gameInfo.away_team_abbreviation,
+            score: teamStats.find(stat => stat.team_id.toString() === gameInfo.away_team_id.toString() && stat.period === 'FullGame')?.points || 0,
+            players: awayTeamPlayers.map(player => ({
+              playerId: player.entity_id,
+              playerName: player.player_name,
+              minutes: player.minutes,
+              points: player.points,
+              rebounds: player.rebounds,
+              assists: player.assists,
+              steals: player.steals,
+              blocks: player.blocks,
+              turnovers: player.turnovers,
+              fieldGoalsMade: player.fg_made,
+              fieldGoalsAttempted: player.fg_attempted,
+              threePointersMade: player.fg3_made,
+              threePointersAttempted: player.fg3_attempted,
+              freeThrowsMade: player.ft_made,
+              freeThrowsAttempted: player.ft_attempted,
+              plusMinus: player.plus_minus,
+              starter: player.starter === 1
+            }))
+          }
+        });
       } catch (error) {
-        console.error('Error fetching box score:', error);
-      } finally {
-        setLoading(false);
+        console.error('Error loading box score:', error);
       }
     };
 
-    fetchBoxScore();
-  }, [gameId]);
-
-  const handleClose = () => {
-    setIsVisible(false);
-    // Reset all state variables
-    setTimeout(() => {
-      setHomeTeam(null);
-      setAwayTeam(null);
-      setGameInfo(null);
-      onClose();
-    }, 300);
-  };
+    loadData();
+  }, [gameId, queryDb]);
 
   if (!gameId) return null;
 
   return (
     <div 
-      className={`fixed right-0 top-[88px] h-[calc(100vh-88px)] w-[80vw] bg-white dark:bg-gray-900 shadow-lg transform transition-transform duration-300 ease-in-out ${
-        isVisible ? 'translate-x-0' : 'translate-x-full'
-      } z-10`}
+      className="fixed right-0 top-[88px] h-[calc(100vh-88px)] w-[80vw] bg-white dark:bg-gray-900 shadow-lg z-10"
     >
       <div className="relative h-full">
         <div className="absolute top-4 right-4 z-50">
           <button
-            onClick={handleClose}
+            onClick={onClose}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
             aria-label="Close panel"
           >
@@ -127,39 +137,33 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
         </div>
         
         <div className="p-6 md:text-base text-[50%]">
-          {homeTeam && awayTeam && gameInfo && (
+          {data.homeTeam && data.awayTeam && data.gameInfo && (
             <div className="mb-6">
               <h2 className="md:text-2xl text-lg text-center dark:text-white">
-                {awayTeam.score > homeTeam.score ? (
+                {data.awayTeam.score > data.homeTeam.score ? (
                   <>
-                    <span className="font-bold">* {awayTeam.teamAbbreviation} {awayTeam.score}</span>
+                    <span className="font-bold">* {data.awayTeam.teamAbbreviation} {data.awayTeam.score}</span>
                     {' - '}
-                    <span>{homeTeam.teamAbbreviation} {homeTeam.score}</span>
+                    <span>{data.homeTeam.teamAbbreviation} {data.homeTeam.score}</span>
                   </>
                 ) : (
                   <>
-                    <span>{awayTeam.teamAbbreviation} {awayTeam.score}</span>
+                    <span>{data.awayTeam.teamAbbreviation} {data.awayTeam.score}</span>
                     {' - '}
-                    <span className="font-bold">{homeTeam.teamAbbreviation} {homeTeam.score} *</span>
+                    <span className="font-bold">{data.homeTeam.teamAbbreviation} {data.homeTeam.score} *</span>
                   </>
                 )}
               </h2>
               <p className="text-gray-600 dark:text-gray-400 text-center mt-2 md:text-base text-sm">
-                {format(new Date(gameInfo.game_date), 'MMMM d, yyyy • h:mm a')}
+                {format(new Date(data.gameInfo.game_date), 'MMMM d, yyyy • h:mm a')}
               </p>
             </div>
           )}
           
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
-            </div>
-          ) : homeTeam && awayTeam ? (
+          {data.homeTeam && data.awayTeam && (
             <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
-              <BoxScore homeTeam={homeTeam} awayTeam={awayTeam} />
+              <BoxScore homeTeam={data.homeTeam} awayTeam={data.awayTeam} />
             </div>
-          ) : (
-            <div className="text-center text-gray-500 dark:text-gray-400">No box score data available</div>
           )}
         </div>
       </div>
