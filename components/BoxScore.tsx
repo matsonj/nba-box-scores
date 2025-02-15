@@ -7,8 +7,6 @@ interface BoxScoreProps {
   awayTeam: Team;
 }
 
-import PeriodScores from './PeriodScores';
-
 export default function BoxScore({ homeTeam, awayTeam }: BoxScoreProps) {
   const renderTeamStats = (team: Team) => {
     if (!team.players || team.players.length === 0) {
@@ -71,15 +69,6 @@ export default function BoxScore({ homeTeam, awayTeam }: BoxScoreProps) {
 
   return (
     <div className="space-y-8">
-      <PeriodScores
-        homeTeamId={homeTeam.teamId}
-        awayTeamId={awayTeam.teamId}
-        homeTeamAbbreviation={homeTeam.teamAbbreviation}
-        awayTeamAbbreviation={awayTeam.teamAbbreviation}
-        periodScores={homeTeam.periodScores || []}
-        homeTeamScore={homeTeam.score}
-        awayTeamScore={awayTeam.score}
-      />
       {renderTeamStats(awayTeam)}
       {renderTeamStats(homeTeam)}
     </div>

@@ -76,10 +76,10 @@ export function useBoxScoreByGameId() {
       teamName: getTeamName(gameInfo[0].home_team_abbreviation),
       teamAbbreviation: gameInfo[0].home_team_abbreviation,
       score: teamStats.find(
-        stat => stat.team_id === gameInfo[0].home_team_id && stat.period === 'FullGame'
+        stat => stat.team_id.toString() === gameInfo[0].home_team_id.toString() && stat.period === 'FullGame'
       )?.points || 0,
       players: boxScoresData
-        .filter(player => player.team_id === gameInfo[0].home_team_id)
+        .filter(player => player.team_id.toString() === gameInfo[0].home_team_id.toString())
         .map(player => ({
           playerId: player.player_id,
           playerName: player.player_name,
@@ -106,10 +106,10 @@ export function useBoxScoreByGameId() {
       teamName: getTeamName(gameInfo[0].away_team_abbreviation),
       teamAbbreviation: gameInfo[0].away_team_abbreviation,
       score: teamStats.find(
-        stat => stat.team_id === gameInfo[0].away_team_id && stat.period === 'FullGame'
+        stat => stat.team_id.toString() === gameInfo[0].away_team_id.toString() && stat.period === 'FullGame'
       )?.points || 0,
       players: boxScoresData
-        .filter(player => player.team_id === gameInfo[0].away_team_id)
+        .filter(player => player.team_id.toString() === gameInfo[0].away_team_id.toString())
         .map(player => ({
           playerId: player.player_id,
           playerName: player.player_name,
