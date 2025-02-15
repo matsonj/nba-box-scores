@@ -15,7 +15,7 @@ interface BoxScorePanelProps {
 interface BoxScoreResponse {
   gameInfo: Schedule;
   teams: {
-    teamId: number;
+    teamId: string;
     teamName: string;
     teamAbbreviation: string;
     score: number;
@@ -57,8 +57,8 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
         console.log('Box score data received:', data);
         
         // Find home and away teams from the teams array
-        const homeTeam = data.teams.find(team => team.teamId === Number(data.gameInfo.home_team_id));
-        const awayTeam = data.teams.find(team => team.teamId === Number(data.gameInfo.away_team_id));
+        const homeTeam = data.teams.find(team => team.teamId === data.gameInfo.home_team_id.toString());
+        const awayTeam = data.teams.find(team => team.teamId === data.gameInfo.away_team_id.toString());
         
         if (!homeTeam || !awayTeam) {
           throw new Error('Could not find home or away team in response');
@@ -66,7 +66,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
 
         // Convert to Team type
         const convertedHomeTeam: Team = {
-          teamId: homeTeam.teamId.toString(),
+          teamId: homeTeam.teamId,
           teamName: homeTeam.teamName,
           teamAbbreviation: homeTeam.teamAbbreviation,
           score: homeTeam.score,
@@ -74,7 +74,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
         };
 
         const convertedAwayTeam: Team = {
-          teamId: awayTeam.teamId.toString(),
+          teamId: awayTeam.teamId,
           teamName: awayTeam.teamName,
           teamAbbreviation: awayTeam.teamAbbreviation,
           score: awayTeam.score,

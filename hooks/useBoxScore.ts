@@ -72,7 +72,7 @@ export function useBoxScoreByGameId() {
 
     // Create team lookup for home and away teams
     const homeTeam = {
-      teamId: Number(gameInfo[0].home_team_id),
+      teamId: gameInfo[0].home_team_id.toString(),
       teamName: getTeamName(gameInfo[0].home_team_abbreviation),
       teamAbbreviation: gameInfo[0].home_team_abbreviation,
       score: teamStats.find(
@@ -102,7 +102,7 @@ export function useBoxScoreByGameId() {
     };
 
     const awayTeam = {
-      teamId: Number(gameInfo[0].away_team_id),
+      teamId: gameInfo[0].away_team_id.toString(),
       teamName: getTeamName(gameInfo[0].away_team_abbreviation),
       teamAbbreviation: gameInfo[0].away_team_abbreviation,
       score: teamStats.find(

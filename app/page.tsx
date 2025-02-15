@@ -58,9 +58,31 @@ export default function Home() {
         const gamesWithBoxScores = scheduleData.map((game: Schedule) => {
           const hasBoxScore = !!boxScoresData[game.game_id];
           const scores = boxScoresData[game.game_id] || [];
+          
+          // Create Team objects
+          const homeTeam = {
+            teamId: game.home_team_id.toString(),
+            teamName: game.home_team,
+            teamAbbreviation: game.home_team_abbreviation,
+            score: game.home_team_score,
+            players: [],
+            periodScores: scores.filter(s => s.teamId === game.home_team_id.toString())
+          };
+          
+          const awayTeam = {
+            teamId: game.away_team_id.toString(),
+            teamName: game.away_team,
+            teamAbbreviation: game.away_team_abbreviation,
+            score: game.away_team_score,
+            players: [],
+            periodScores: scores.filter(s => s.teamId === game.away_team_id.toString())
+          };
+          
           return {
             ...game,
             boxScoreLoaded: hasBoxScore,
+            homeTeam,
+            awayTeam,
             periodScores: scores
           };
         });

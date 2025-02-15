@@ -28,6 +28,10 @@ export function useSchedule() {
         away_team: game.away_team,
         home_team_id: game.home_team_id,
         away_team_id: game.away_team_id,
+        home_team_abbreviation: game.home_team_abbreviation,
+        away_team_abbreviation: game.away_team_abbreviation,
+        home_team_score: game.home_team_score,
+        away_team_score: game.away_team_score,
         season: game.season,
         status: game.status
       }));
@@ -63,12 +67,12 @@ export function useBoxScores() {
           acc[score.game_id] = [];
         }
         acc[score.game_id].push({
-          team_id: score.team_id,
+          teamId: score.team_id,
           period: score.period,
           points: score.points
         });
         return acc;
-      }, {} as Record<string, Array<{ team_id: string; period: string; points: number }>>);
+      }, {} as Record<string, Array<{ teamId: string; period: string; points: number }>>);
 
       debugLog('period_scores_grouped', gameScores);
       return gameScores;
