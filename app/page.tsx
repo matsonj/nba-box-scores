@@ -6,6 +6,7 @@ import { Schedule } from './types/schema';
 import { ScheduleWithBoxScore } from './types/extended';
 import BoxScorePanel from '@/components/BoxScorePanel';
 import { ScheduleProvider } from '@/context/ScheduleContext';
+import { useSchedule, useBoxScores } from '@/hooks/useGameData';
 
 // Helper function to format period numbers
 function formatPeriod(period: string, allPeriods: string[]): string {
@@ -29,26 +30,20 @@ export default function Home() {
   const [error, setError] = useState('');
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
 
+  const { fetchSchedule } = useSchedule();
+  const { fetchBoxScores } = useBoxScores();
+
   useEffect(() => {
     const fetchGames = async () => {
       try {
-        // Fetch schedule and box scores in parallel
+        setLoading(true);
+        setError('');
+        
+        // Fetch schedule and box scores in parallel using WASM client
         console.log('Fetching data...');
-        const [scheduleResponse, boxScoresResponse] = await Promise.all([
-          fetch('/api/schedule'),
-          fetch('/api/box-scores/all')
-        ]);
-
-        if (!scheduleResponse.ok) {
-          throw new Error('Failed to fetch schedule');
-        }
-        if (!boxScoresResponse.ok) {
-          throw new Error('Failed to fetch box scores');
-        }
-
         const [scheduleData, boxScoresData] = await Promise.all([
-          scheduleResponse.json(),
-          boxScoresResponse.json()
+          fetchSchedule(),
+          fetchBoxScores()
         ]);
 
         console.log('Data fetched:', {

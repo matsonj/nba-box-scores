@@ -1,7 +1,6 @@
-"use server";
-import { Database } from 'duckdb-lambda-x86';
+'use client';
 
-process.env.HOME = '/tmp';
+import { useMotherDuckClientState } from './MotherDuckContext';
 
 export async function queryDb<T>(query: string, params: (string | number | null)[] = []): Promise<T[]> {
   if (query === "") {
@@ -16,28 +15,42 @@ export async function queryDb<T>(query: string, params: (string | number | null)
     );
   }, query);
 
-  return new Promise(async (resolve, reject) => {
-    try {
-      console.log('Connecting to database...');
-      const db: Database = new Database("md:");
-      console.log('Database instance created');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const connection: any = await db.connect();
-      console.log('Database connected');
-      
-      console.log('Executing query:', interpolatedQuery);
-      connection.all(interpolatedQuery, ((err: Error | null, rows: Array<T>) => {
-        if (err) {
-          console.error('Database query error:', err);
-          reject(err);
-          return;
-        }
-        console.log(`Query completed successfully. Returned ${rows.length} rows`);
-        resolve(rows);
-      }));
-    } catch (error) {
-      console.error('Database connection error:', error);
-      reject(error);
+  const { evaluateQuery } = useMotherDuckClientState();
+  try {
+    console.log('Executing query:', interpolatedQuery);
+    const result = await evaluateQuery(interpolatedQuery);
+    console.log(`Query completed successfully. Returned ${result.length} rows`);
+    return result.toArray() as T[];
+  } catch (error) {
+    console.error('Failed to execute query:', error);
+    throw error;
+  }
+}
+
+export async function safeQueryDb<T>(query: string, params: (string | number | null)[] = []): Promise<T[]> {
+  if (query === "") {
+    return [];
+  }
+
+  // For parameterized queries, we'll need to interpolate the params manually
+  const interpolatedQuery = params.reduce<string>((acc, param, idx) => {
+    return acc.replace(
+      `$${idx + 1}`,
+      param === null ? 'NULL' : typeof param === 'string' ? `'${param}'` : param.toString()
+    );
+  }, query);
+
+  const { safeEvaluateQuery } = useMotherDuckClientState();
+  try {
+    console.log('Executing safe query:', interpolatedQuery);
+    const result = await safeEvaluateQuery(interpolatedQuery);
+    if (result.error) {
+      throw new Error(result.error);
     }
-  });
+    console.log(`Query completed successfully. Returned ${result.result.length} rows`);
+    return result.result.toArray() as T[];
+  } catch (error) {
+    console.error('Failed to execute safe query:', error);
+    throw error;
+  }
 }

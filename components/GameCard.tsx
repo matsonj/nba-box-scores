@@ -3,6 +3,7 @@ import { Game } from '@/app/types';
 import { Player, Schedule, Team } from '@/app/types/schema';
 import BoxScore from './BoxScore';
 import { useSchedule } from '@/context/ScheduleContext';
+import { useBoxScoreByGameId } from '@/hooks/useBoxScore';
 
 interface GameCardProps {
   game: Game;
@@ -20,15 +21,13 @@ export default function GameCard({ game }: GameCardProps) {
 
   const { scheduleData } = useSchedule();
 
+  const { fetchBoxScore } = useBoxScoreByGameId();
+
   const handleExpandClick = async () => {
     if (!game.boxScoreLoaded && !loading) {
       try {
         setLoading(true);
-        const response = await fetch(`/api/box-scores/${game.game_id}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch box score');
-        }
-        const data = await response.json();
+        const data = await fetchBoxScore(game.game_id);
 
         const gameInfo = scheduleData.find(game => game.game_id === game.game_id) as ExtendedSchedule;
         if (gameInfo) {

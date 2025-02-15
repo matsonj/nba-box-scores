@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import BoxScore from './BoxScore';
 import { Team, Player, Schedule } from '@/app/types/schema';
+import { useBoxScoreByGameId } from '@/hooks/useBoxScore';
+import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 
 interface BoxScorePanelProps {
   gameId: string | null;
@@ -41,19 +43,16 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
     }
   }, [gameId]);
 
+  const { fetchBoxScore } = useBoxScoreByGameId();
+
   useEffect(() => {
     if (!gameId) return;
 
-    const fetchBoxScore = async () => {
+    const loadBoxScore = async () => {
       setLoading(true);
       try {
         console.log('Fetching box score for game:', gameId);
-        const response = await fetch(`/api/box-scores/${gameId}`);
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Failed to fetch box score: ${errorText}`);
-        }
-        const data: BoxScoreResponse = await response.json();
+        const data = await fetchBoxScore(gameId);
         console.log('Box score data received:', data);
         
         // Find home and away teams from the teams array
@@ -91,7 +90,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
       }
     };
 
-    fetchBoxScore();
+    loadBoxScore();
   }, [gameId]);
 
   const handleClose = () => {
