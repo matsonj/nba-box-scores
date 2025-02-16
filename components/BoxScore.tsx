@@ -24,6 +24,35 @@ export default function BoxScore({ homeTeam, awayTeam }: BoxScoreProps) {
       return getSeconds(b.minutes) - getSeconds(a.minutes);
     });
 
+    // Calculate totals
+    const totals = sortedPlayers.reduce((acc, player) => ({
+      points: acc.points + (player.points || 0),
+      rebounds: acc.rebounds + (player.rebounds || 0),
+      assists: acc.assists + (player.assists || 0),
+      steals: acc.steals + (player.steals || 0),
+      blocks: acc.blocks + (player.blocks || 0),
+      turnovers: acc.turnovers + (player.turnovers || 0),
+      fgMade: acc.fgMade + (player.fieldGoalsMade || 0),
+      fgAttempted: acc.fgAttempted + (player.fieldGoalsAttempted || 0),
+      threePMade: acc.threePMade + (player.threePointersMade || 0),
+      threePAttempted: acc.threePAttempted + (player.threePointersAttempted || 0),
+      ftMade: acc.ftMade + (player.freeThrowsMade || 0),
+      ftAttempted: acc.ftAttempted + (player.freeThrowsAttempted || 0)
+    }), {
+      points: 0,
+      rebounds: 0,
+      assists: 0,
+      steals: 0,
+      blocks: 0,
+      turnovers: 0,
+      fgMade: 0,
+      fgAttempted: 0,
+      threePMade: 0,
+      threePAttempted: 0,
+      ftMade: 0,
+      ftAttempted: 0
+    });
+
     return (
       <div>
         <h3 className="font-bold text-lg mb-1 dark:text-white">{team.teamName}</h3>
@@ -60,6 +89,26 @@ export default function BoxScore({ homeTeam, awayTeam }: BoxScoreProps) {
                   <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.freeThrowsMade}-{player.freeThrowsAttempted}</td>
                 </tr>
               ))}
+              {/* Total Row */}
+              <tr className="bg-blue-50 dark:bg-gray-600 font-bold">
+                <td className="md:px-1 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200 font-bold">TOTAL</td>
+                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">-</td>
+                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">{totals.points}</td>
+                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">{totals.rebounds}</td>
+                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">{totals.assists}</td>
+                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">{totals.steals}</td>
+                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">{totals.blocks}</td>
+                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">{totals.turnovers}</td>
+                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">
+                  {totals.fgMade}-{totals.fgAttempted}
+                </td>
+                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">
+                  {totals.threePMade}-{totals.threePAttempted}
+                </td>
+                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">
+                  {totals.ftMade}-{totals.ftAttempted}
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
