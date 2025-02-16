@@ -124,13 +124,13 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
       onClick={onClose}
     >
       <div 
-        className="bg-white dark:bg-gray-900 rounded-lg p-6 ml-auto w-[80vw] h-full shadow-lg transition-transform duration-300 translate-x-0"
+        className="bg-white dark:bg-gray-900 rounded-lg p-3 ml-auto w-[80vw] h-full shadow-lg transition-transform duration-300 translate-x-0"
         ref={panelRef}
         onClick={(e) => e.stopPropagation()}
         tabIndex={-1}
       >
         <div className="relative h-full">
-          <div className="absolute top-4 right-4 z-50">
+          <div className="absolute top-2 right-2 z-50">
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
@@ -142,9 +142,9 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
             </button>
           </div>
           
-          <div className="p-6 md:text-base text-[50%]">
+          <div className="p-3 md:text-base text-[50%]">
             {data.homeTeam && data.awayTeam && data.gameInfo && (
-              <div className="mb-6">
+              <div className="mb-3">
                 <h2 className="md:text-2xl text-lg text-center dark:text-white">
                   {data.awayTeam.score > data.homeTeam.score ? (
                     <>
@@ -160,14 +160,14 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
                     </>
                   )}
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400 text-center mt-2 md:text-base text-sm">
-                  {data.gameInfo.formatted_date}
+                <p className="text-gray-600 dark:text-gray-400 text-center mt-1 md:text-base text-sm">
+                  {new Date(data.gameInfo.game_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
               </div>
             )}
             
             {data.homeTeam && data.awayTeam && (
-              <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 120px)', padding: 0, width: 'calc(100% - 20px)', marginRight: '-10px' }}>
+              <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 120px)', padding: 0, paddingRight: '2px' }}>
                 <BoxScore homeTeam={data.homeTeam} awayTeam={data.awayTeam} />
               </div>
             )}
