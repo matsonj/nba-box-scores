@@ -167,7 +167,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
             )}
             
             {data.homeTeam && data.awayTeam && (
-              <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+              <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 120px)', padding: 0, width: 'calc(100% - 20px)', marginRight: '-10px' }}>
                 <BoxScore homeTeam={data.homeTeam} awayTeam={data.awayTeam} />
               </div>
             )}
