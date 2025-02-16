@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { format } from 'date-fns';
+
 import BoxScore from './BoxScore';
 
 import { Team, Schedule, BoxScores as BoxScoreType, TeamStats } from '@/app/types/schema';
@@ -161,7 +161,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
                   )}
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 text-center mt-2 md:text-base text-sm">
-                  {format(new Date(data.gameInfo.game_date), 'MMMM d, yyyy • h:mm a')}
+                  {data.gameInfo.formatted_date}
                 </p>
               </div>
             )}
