@@ -5,16 +5,21 @@ import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { Schedule, TeamStats } from '@/types/schema';
 import { debugLog } from '@/lib/debug';
 import { getTeamName } from '@/lib/teams';
+import { TEMP_TABLES } from '@/constants/tables';
+import { useDataLoader } from '@/lib/dataLoader';
 
 export function useSchedule() {
   const { evaluateQuery } = useMotherDuckClientState();
+  const dataLoader = useDataLoader();
 
   const fetchSchedule = useCallback(async () => {
     try {
-      console.log('Fetching schedule from DuckDB...');
+      // Ensure data is loaded into temp tables
+      await dataLoader.loadData();
+
+      console.log('Fetching schedule from temp tables...');
       const result = await evaluateQuery(`
-        SELECT * FROM nba_box_scores.main.schedule 
-        WHERE game_id NOT LIKE '006%'
+        SELECT * FROM ${TEMP_TABLES.SCHEDULE}
       `);
       
       const rows = result.data.toRows() as unknown as Schedule[];
@@ -46,13 +51,17 @@ export function useSchedule() {
 
 export function useBoxScores() {
   const { evaluateQuery } = useMotherDuckClientState();
+  const dataLoader = useDataLoader();
 
   const fetchBoxScores = useCallback(async () => {
     try {
-      console.log('Fetching box scores from DuckDB...');
+      // Ensure data is loaded into temp tables
+      await dataLoader.loadData();
+
+      console.log('Fetching box scores from temp tables...');
       const result = await evaluateQuery(`
         SELECT game_id, team_id, period, points 
-        FROM nba_box_scores.main.team_stats 
+        FROM ${TEMP_TABLES.TEAM_STATS} 
         WHERE period != 'FullGame'
         ORDER BY game_id, team_id, CAST(period AS INTEGER)
       `);

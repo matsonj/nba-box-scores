@@ -3,65 +3,35 @@
 import { useCallback } from 'react';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { TeamStats, Schedule, BoxScores } from '@/types/schema';
-
-const teamNames: Record<string, string> = {
-  'ATL': 'Atlanta Hawks',
-  'BOS': 'Boston Celtics',
-  'BKN': 'Brooklyn Nets',
-  'CHA': 'Charlotte Hornets',
-  'CHI': 'Chicago Bulls',
-  'CLE': 'Cleveland Cavaliers',
-  'DAL': 'Dallas Mavericks',
-  'DEN': 'Denver Nuggets',
-  'DET': 'Detroit Pistons',
-  'GSW': 'Golden State Warriors',
-  'HOU': 'Houston Rockets',
-  'IND': 'Indiana Pacers',
-  'LAC': 'Los Angeles Clippers',
-  'LAL': 'Los Angeles Lakers',
-  'MEM': 'Memphis Grizzlies',
-  'MIA': 'Miami Heat',
-  'MIL': 'Milwaukee Bucks',
-  'MIN': 'Minnesota Timberwolves',
-  'NOP': 'New Orleans Pelicans',
-  'NYK': 'New York Knicks',
-  'OKC': 'Oklahoma City Thunder',
-  'ORL': 'Orlando Magic',
-  'PHI': 'Philadelphia 76ers',
-  'PHX': 'Phoenix Suns',
-  'POR': 'Portland Trail Blazers',
-  'SAC': 'Sacramento Kings',
-  'SAS': 'San Antonio Spurs',
-  'TOR': 'Toronto Raptors',
-  'UTA': 'Utah Jazz',
-  'WAS': 'Washington Wizards'
-};
-
-function getTeamName(abbreviation: string): string {
-  return teamNames[abbreviation] || abbreviation;
-}
+import { TEMP_TABLES } from '@/constants/tables';
+import { useDataLoader } from '@/lib/dataLoader';
+import { getTeamName } from '@/lib/teams';
 
 export function useBoxScoreByGameId() {
   const { evaluateQuery } = useMotherDuckClientState();
+  const dataLoader = useDataLoader();
 
   const fetchBoxScore = useCallback(async (gameId: string) => {
   try {
+    // Ensure data is loaded into temp tables
+    await dataLoader.loadData();
+    
     console.log(`Fetching box scores for game ${gameId}...`);
 
-    // Get all data in parallel
+    // Get all data in parallel from temp tables
     console.log('Starting parallel queries...');
     const [gameInfo, boxScoresData, teamStats] = await Promise.all([
       // Game info query
       evaluateQuery(
-        `SELECT * FROM nba_box_scores.main.schedule WHERE game_id = '${gameId}'`
+        `SELECT * FROM ${TEMP_TABLES.SCHEDULE} WHERE game_id = '${gameId}'`
       ).then(result => result.data.toRows() as unknown as Schedule[]),
       // Box scores query with optimized starter detection
       evaluateQuery(
-        `SELECT * FROM nba_box_scores.main.box_scores WHERE game_id = '${gameId}' AND period = 'FullGame'`
+        `SELECT * FROM ${TEMP_TABLES.BOX_SCORES} WHERE game_id = '${gameId}'`
       ).then(result => result.data.toRows() as unknown as BoxScores[]),
       // Team stats query
       evaluateQuery(
-        `SELECT * FROM nba_box_scores.main.team_stats WHERE game_id = '${gameId}'`
+        `SELECT * FROM ${TEMP_TABLES.TEAM_STATS} WHERE game_id = '${gameId}'`
       ).then(result => result.data.toRows() as unknown as TeamStats[])
     ]);
 
