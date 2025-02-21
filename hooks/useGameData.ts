@@ -110,6 +110,6 @@ export function useBoxScores() {
 }
 
 const fetchSchedule = async (query: string): Promise<any> => {
-  // TODO: Implement schedule fetching using MotherDuck WASM Client
+  // TODO: Implement schedule fetching using MotherDuck Wasm Client
   return {};
 };

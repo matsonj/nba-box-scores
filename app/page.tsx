@@ -102,8 +102,8 @@ export default function Home() {
           setLoadingMessages(prev => [...prev, { message, completed: false }]);
         };
 
-        // Step 1: Load WASM
-        addLoadingMessage('Loading MotherDuck WASM...');
+        // Step 1: Load Wasm
+        addLoadingMessage('Loading MotherDuck Wasm...');
         await dataLoader.waitForWasm();
         updateLoadingMessage(0);
 

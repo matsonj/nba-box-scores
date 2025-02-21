@@ -14,11 +14,11 @@ export class DataLoader {
   }
 
   async waitForWasm(): Promise<void> {
-    // Try a simple query to ensure WASM is ready
+    // Try a simple query to ensure Wasm is ready
     try {
       await this.evaluateQuery('SELECT 1');
     } catch (error) {
-      console.error('Error waiting for WASM:', error);
+      console.error('Error waiting for Wasm:', error);
       throw error;
     }
   }
