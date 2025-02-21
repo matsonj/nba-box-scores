@@ -59,9 +59,59 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
           evaluateQuery(`SELECT * FROM ${TEMP_TABLES.TEAM_STATS} WHERE game_id = '${gameId}'`)
         ]);
 
-        const scheduleResult = gameInfoResult.data.toRows() as Schedule[];
-        const boxScores = boxScoresResult.data.toRows() as BoxScoreType[];
-        const teamStats = teamStatsResult.data.toRows() as TeamStats[];
+        const scheduleResult = [...gameInfoResult.data.toRows()].map(row => ({
+          ...row,
+          game_date: new Date(row.game_date + 'Z'),
+          created_at: new Date(row.created_at + 'Z'),
+          home_team_id: Number(row.home_team_id),
+          away_team_id: Number(row.away_team_id),
+          home_team_score: Number(row.home_team_score),
+          away_team_score: Number(row.away_team_score)
+        })) as Schedule[];
+
+        const boxScores = [...boxScoresResult.data.toRows()].map(row => ({
+          game_id: String(row.game_id),
+          team_id: String(row.team_id),
+          entity_id: String(row.entity_id),
+          player_name: String(row.player_name),
+          minutes: String(row.minutes),
+          points: Number(row.points),
+          rebounds: Number(row.rebounds),
+          assists: Number(row.assists),
+          steals: Number(row.steals),
+          blocks: Number(row.blocks),
+          turnovers: Number(row.turnovers),
+          fg_made: Number(row.fg_made),
+          fg_attempted: Number(row.fg_attempted),
+          fg3_made: Number(row.fg3_made),
+          fg3_attempted: Number(row.fg3_attempted),
+          ft_made: Number(row.ft_made),
+          ft_attempted: Number(row.ft_attempted),
+          plus_minus: Number(row.plus_minus),
+          starter: Number(row.starter),
+          period: String(row.period)
+        })) as BoxScoreType[];
+
+        const teamStats = [...teamStatsResult.data.toRows()].map(row => ({
+          game_id: String(row.game_id),
+          team_id: String(row.team_id),
+          period: String(row.period),
+          minutes: String(row.minutes),
+          points: Number(row.points),
+          rebounds: Number(row.rebounds),
+          assists: Number(row.assists),
+          steals: Number(row.steals),
+          blocks: Number(row.blocks),
+          turnovers: Number(row.turnovers),
+          fg_made: Number(row.fg_made),
+          fg_attempted: Number(row.fg_attempted),
+          fg3_made: Number(row.fg3_made),
+          fg3_attempted: Number(row.fg3_attempted),
+          ft_made: Number(row.ft_made),
+          ft_attempted: Number(row.ft_attempted),
+          offensive_possessions: Number(row.offensive_possessions),
+          defensive_possessions: Number(row.defensive_possessions)
+        })) as TeamStats[];
 
 
 

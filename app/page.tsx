@@ -33,11 +33,19 @@ function groupByDate(games: ScheduleWithBoxScore[]) {
       console.error('Game date is missing:', game);
       return;
     }
-    const gameDate = format(parseISO(game.game_date.toString()), 'yyyy-MM-dd');
+    // Ensure game_date is a Date object
+    const gameDate = format(
+      game.game_date instanceof Date ? game.game_date : parseISO(game.game_date as unknown as string),
+      'yyyy-MM-dd'
+    );
     if (!gamesByDate[gameDate]) {
       gamesByDate[gameDate] = [];
     }
-    gamesByDate[gameDate].push(game);
+    // Convert the date string to Date object before pushing
+    gamesByDate[gameDate].push({
+      ...game,
+      game_date: game.game_date instanceof Date ? game.game_date : parseISO(game.game_date as unknown as string)
+    });
   });
   return gamesByDate;
 }

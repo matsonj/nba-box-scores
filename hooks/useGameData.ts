@@ -35,7 +35,7 @@ export function useSchedule() {
         
         return {
           game_id: game.game_id,
-          game_date: localDate.toISOString().slice(0, 19).replace('T', ' '), // Format as YYYY-MM-DD HH:mm:ss
+          game_date: localDate, // Return the Date object directly
           home_team: getTeamName(game.home_team_abbreviation),
           away_team: getTeamName(game.away_team_abbreviation),
           home_team_id: game.home_team_id,
