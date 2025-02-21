@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { BoxScores as BoxScoreType, Schedule } from '@/app/types/schema';
+import { BoxScores as BoxScoreType } from '@/app/types/schema';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { TEMP_TABLES } from '@/constants/tables';
 import { utcToLocalDate } from '@/lib/dateUtils';
@@ -49,7 +49,7 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
         if (cancelled) return;
 
         const gameLog = [...result.data.toRows()].map(row => ({
-          game_date: utcToLocalDate(row.game_date),
+          game_date: utcToLocalDate(String(row.game_date)),
           game_id: String(row.game_id),
           team_id: String(row.team_id),
           entity_id: String(row.entity_id),
@@ -70,7 +70,7 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
           plus_minus: Number(row.plus_minus),
           starter: Number(row.starter),
           period: String(row.period)
-        })) as BoxScoreType[];
+        })) as GameLogEntry[];
 
         setGames(gameLog);
       } catch (error) {
