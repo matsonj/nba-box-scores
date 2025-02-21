@@ -8,6 +8,8 @@ import { getTeamName } from '@/lib/teams';
 import { TEMP_TABLES } from '@/constants/tables';
 import { useDataLoader } from '@/lib/dataLoader';
 
+const fetcher = (url: string): Promise<any> => fetch(url).then(res => res.json());
+
 export function useSchedule() {
   const { evaluateQuery } = useMotherDuckClientState();
   const dataLoader = useDataLoader();
@@ -25,21 +27,27 @@ export function useSchedule() {
       const rows = result.data.toRows() as unknown as Schedule[];
       debugLog('schedule_rows', rows);
       
-      // Transform the data to match the expected format
-      return rows.map((game: Schedule) => ({
-        game_id: game.game_id,
-        game_date: game.game_date,
-        home_team: getTeamName(game.home_team_abbreviation),
-        away_team: getTeamName(game.away_team_abbreviation),
-        home_team_id: game.home_team_id,
-        away_team_id: game.away_team_id,
-        home_team_abbreviation: game.home_team_abbreviation,
-        away_team_abbreviation: game.away_team_abbreviation,
-        home_team_score: game.home_team_score,
-        away_team_score: game.away_team_score,
-        status: game.status,
-        created_at: game.created_at
-      }));
+      // Convert UTC dates to local time and transform the data
+      return rows.map((game: Schedule) => {
+        // Convert UTC date string to local time
+        const utcDate = new Date(game.game_date + 'Z'); // Append Z to ensure UTC parsing
+        const localDate = new Date(utcDate.getTime() - utcDate.getTimezoneOffset() * 60000);
+        
+        return {
+          game_id: game.game_id,
+          game_date: localDate.toISOString().slice(0, 19).replace('T', ' '), // Format as YYYY-MM-DD HH:mm:ss
+          home_team: getTeamName(game.home_team_abbreviation),
+          away_team: getTeamName(game.away_team_abbreviation),
+          home_team_id: game.home_team_id,
+          away_team_id: game.away_team_id,
+          home_team_abbreviation: game.home_team_abbreviation,
+          away_team_abbreviation: game.away_team_abbreviation,
+          home_team_score: game.home_team_score,
+          away_team_score: game.away_team_score,
+          status: game.status,
+          created_at: game.created_at
+        };
+      });
     } catch (error) {
       console.error('Error fetching schedule:', error);
       throw error;
@@ -92,3 +100,8 @@ export function useBoxScores() {
 
   return { fetchBoxScores };
 }
+
+const fetchSchedule = async (query: string): Promise<any> => {
+  // TODO: Implement schedule fetching using MotherDuck WASM Client
+  return {};
+};
