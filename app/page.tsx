@@ -97,32 +97,34 @@ export default function Home() {
           });
         };
 
-        setLoadingMessages([
-          { message: 'Loading MotherDuck WASM...', completed: false },
-          { message: 'Initializing database tables...', completed: false },
-          { message: 'Fetching game schedule...', completed: false },
-          { message: 'Fetching box scores...', completed: false }
-        ]);
+        // Add and complete loading steps one at a time
+        const addLoadingMessage = (message: string) => {
+          setLoadingMessages(prev => [...prev, { message, completed: false }]);
+        };
 
-        // Wait for WASM to be ready
+        // Step 1: Load WASM
+        addLoadingMessage('Loading MotherDuck WASM...');
         await dataLoader.waitForWasm();
         updateLoadingMessage(0);
 
-        // Initialize tables first
+        // Step 2: Initialize tables
+        addLoadingMessage('Initializing database tables...');
         await dataLoader.loadData();
         updateLoadingMessage(1);
         
-        // Then fetch the game data
+        // Clear any previous errors
         setError('');
         
-        // Fetch schedule and box scores in parallel using WASM client
+        // Step 3: Fetch all game data
+        addLoadingMessage('Fetching game data...');
         const [scheduleData, boxScoresData] = await Promise.all([
           fetchSchedule(),
           fetchBoxScores()
         ]);
-        
         updateLoadingMessage(2);
-        updateLoadingMessage(3);
+        
+        // Add a small delay before proceeding
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         debugLog('data_fetched', {
           scheduleCount: scheduleData.length,
