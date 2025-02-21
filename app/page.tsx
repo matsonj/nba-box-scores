@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
 import { ScheduleWithBoxScore } from './types/extended';
 import BoxScorePanel from '@/components/BoxScorePanel';
@@ -8,6 +8,7 @@ import { ScheduleProvider } from '@/context/ScheduleContext';
 import { getTeamName } from '@/lib/teams';
 import { useSchedule, useBoxScores } from '@/hooks/useGameData';
 import { debugLog } from '@/lib/debug';
+import { FunnelIcon } from '@heroicons/react/24/outline';
 
 // Helper function to format period numbers
 function formatPeriod(period: string, allPeriods: string[]): string {
@@ -24,12 +25,45 @@ function formatPeriod(period: string, allPeriods: string[]): string {
   return `OT${periodNum - 4}`;
 }
 
+function groupByDate(games: ScheduleWithBoxScore[]) {
+  const gamesByDate: Record<string, ScheduleWithBoxScore[]> = {};
+  games.forEach((game: ScheduleWithBoxScore) => {
+    if (!game.game_date) {
+      console.error('Game date is missing:', game);
+      return;
+    }
+    const gameDate = format(parseISO(game.game_date.toString()), 'yyyy-MM-dd');
+    if (!gamesByDate[gameDate]) {
+      gamesByDate[gameDate] = [];
+    }
+    gamesByDate[gameDate].push(game);
+  });
+  return gamesByDate;
+}
+
 export default function Home() {
   const [gamesByDate, setGamesByDate] = useState<Record<string, ScheduleWithBoxScore[]>>({});
   const [loading, setLoading] = useState(true);
   const [loadingGames] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<string>('');
+
+  const filteredGamesByDate = useMemo(() => {
+    if (!gamesByDate || Object.keys(gamesByDate).length === 0) return [];
+    
+    return Object.entries(
+      groupByDate(
+        Object.values(gamesByDate)
+          .flat()
+          .filter(game => 
+            !selectedTeam || 
+            game.home_team_abbreviation === selectedTeam ||
+            game.away_team_abbreviation === selectedTeam
+          )
+      )
+    ).map(([date, games]) => ({ date, games }));
+  }, [gamesByDate, selectedTeam]);
 
   const { fetchSchedule } = useSchedule();
   const { fetchBoxScores } = useBoxScores();
@@ -92,18 +126,7 @@ export default function Home() {
         
         // Group games by date
         console.log('Grouping games by date...');
-        const games: Record<string, ScheduleWithBoxScore[]> = {};
-        gamesWithBoxScores.forEach((game: ScheduleWithBoxScore) => {
-          if (!game.game_date) {
-            console.error('Game date is missing:', game);
-            return;
-          }
-          const gameDate = format(parseISO(game.game_date.toString()), 'yyyy-MM-dd');
-          if (!games[gameDate]) {
-            games[gameDate] = [];
-          }
-          games[gameDate].push(game);
-        });
+        const games = groupByDate(gamesWithBoxScores);
         console.log('Games grouped by date');
 
         setGamesByDate(games);
@@ -130,15 +153,50 @@ export default function Home() {
   return (
     <ScheduleProvider>
       <div className="container mx-auto px-4 py-8 font-mono">
-        {Object.entries(gamesByDate)
-          .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
-          .map(([date, games]) => (
-            <div key={date} className="mb-8">
-              <h2 className="text-xl font-semibold mb-4">
-                {format(parseISO(date), 'MMMM d, yyyy')}
-              </h2>
-              {games.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
+        {/* Sticky filter controls */}
+        <div className="sticky top-0 z-50 bg-white dark:bg-gray-900 pt-4 pb-4 border-b">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <FunnelIcon className="h-5 w-5 text-gray-600" />
+              <select
+                value={selectedTeam}
+                onChange={(e) => setSelectedTeam(e.target.value)}
+                className="select select-bordered w-32"
+              >
+                <option value="">All Teams</option>
+                {['ATL','BOS','BKN','CHA','CHI','CLE','DAL','DEN','DET','GSW','HOU','IND','LAC','LAL','MEM','MIA','MIL','MIN','NOP','NYK','OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS'].map((abbr) => (
+                  <option key={abbr} value={abbr}>{abbr}</option>
+                ))}
+              </select>
+            </div>
+
+            {selectedTeam && (
+              <div className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                <span>Showing games for:</span>
+                <span className="font-medium">{selectedTeam}</span>
+                <button 
+                  onClick={() => setSelectedTeam('')}
+                  className="ml-1 text-blue-500 hover:text-blue-700"
+                  aria-label="Clear filter"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {filteredGamesByDate
+          .sort((a, b) => b.date.localeCompare(a.date))
+          .map(({ date, games }) => {
+            if (games.length === 0) return null;
+            
+            return (
+              <div key={date} className="mb-8">
+                <h2 className="text-xl font-bold mb-4">
+                  {format(parseISO(date), 'EEEE, MMMM do')}
+                </h2>
+                <div className="grid grid-cols-1 max-md:landscape:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
                   {games.map((game) => (
                     <div 
                       key={game.game_id} 
@@ -201,11 +259,9 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="text-gray-500 text-center py-4">No games</div>
-              )}
-            </div>
-          ))}
+              </div>
+            );
+          })}
         <BoxScorePanel 
           gameId={selectedGameId} 
           onClose={() => setSelectedGameId(null)} 
