@@ -13,6 +13,16 @@ export class DataLoader {
     this.evaluateQuery = evaluateQuery;
   }
 
+  async waitForWasm(): Promise<void> {
+    // Try a simple query to ensure WASM is ready
+    try {
+      await this.evaluateQuery('SELECT 1');
+    } catch (error) {
+      console.error('Error waiting for WASM:', error);
+      throw error;
+    }
+  }
+
   private async createTempTables() {
     const queries = [
       // Create schedule temp table

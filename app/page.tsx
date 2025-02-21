@@ -55,6 +55,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [loadingGames] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
+  const [loadingMessages, setLoadingMessages] = useState<Array<{ message: string; completed: boolean }>>([]);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string>();
   const dataLoader = useDataLoader();
@@ -81,18 +82,42 @@ export default function Home() {
   useEffect(() => {
     const loadAllData = async () => {
       try {
+        const updateLoadingMessage = (index: number) => {
+          setLoadingMessages(prev => {
+            const newMessages = [...prev];
+            if (newMessages[index]) {
+              newMessages[index] = { ...newMessages[index], completed: true };
+            }
+            return newMessages;
+          });
+        };
+
+        setLoadingMessages([
+          { message: 'Loading MotherDuck WASM...', completed: false },
+          { message: 'Initializing database tables...', completed: false },
+          { message: 'Fetching game schedule...', completed: false },
+          { message: 'Fetching box scores...', completed: false }
+        ]);
+
+        // Wait for WASM to be ready
+        await dataLoader.waitForWasm();
+        updateLoadingMessage(0);
+
         // Initialize tables first
         await dataLoader.loadData();
+        updateLoadingMessage(1);
         
         // Then fetch the game data
         setError('');
         
         // Fetch schedule and box scores in parallel using WASM client
-        console.log('Fetching data...');
         const [scheduleData, boxScoresData] = await Promise.all([
           fetchSchedule(),
           fetchBoxScores()
         ]);
+        
+        updateLoadingMessage(2);
+        updateLoadingMessage(3);
 
         debugLog('data_fetched', {
           scheduleCount: scheduleData.length,
@@ -144,6 +169,11 @@ export default function Home() {
 
         setGamesByDate(games);
         setError('');
+        setLoadingMessages(prev => [
+          ...prev,
+          { message: 'Processing and organizing data...', completed: true },
+          { message: 'Ready! ✨', completed: true }
+        ]);
       } catch (err) {
         console.error('Error in fetchGames:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch games');
@@ -153,10 +183,18 @@ export default function Home() {
     };
 
     loadAllData();
-  }, [dataLoader, fetchSchedule, fetchBoxScores]);
+  }, []);
 
   if (loading) {
-    return <div className="p-8">Loading schedule...</div>;
+    return (
+      <div className="p-8 space-y-2 font-mono text-sm">
+        {loadingMessages.map((msg, index) => (
+          <div key={index}>
+            {msg.message} {msg.completed ? '✅' : ''}
+          </div>
+        ))}
+      </div>
+    );
   }
 
   if (error) {
