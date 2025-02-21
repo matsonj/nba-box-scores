@@ -7,6 +7,7 @@ import { debugLog } from '@/lib/debug';
 import { getTeamName } from '@/lib/teams';
 import { TEMP_TABLES } from '@/constants/tables';
 import { useDataLoader } from '@/lib/dataLoader';
+import { utcToLocalDate } from '@/lib/dateUtils';
 
 const fetcher = (url: string): Promise<any> => fetch(url).then(res => res.json());
 
@@ -29,9 +30,7 @@ export function useSchedule() {
       
       // Convert UTC dates to local time and transform the data
       return rows.map((game: Schedule) => {
-        // Convert UTC date string to local time
-        const utcDate = new Date(game.game_date + 'Z'); // Append Z to ensure UTC parsing
-        const localDate = new Date(utcDate.getTime() - utcDate.getTimezoneOffset() * 60000);
+        const localDate = utcToLocalDate(game.game_date);
         
         return {
           game_id: game.game_id,
@@ -77,21 +76,30 @@ export function useBoxScores() {
       const periodScores = result.data.toRows() as unknown as TeamStats[];
       debugLog('period_scores_raw', periodScores);
       
-      // First, group scores by game_id
-      const gameScores = periodScores.reduce((acc, score) => {
-        if (!acc[score.game_id]) {
-          acc[score.game_id] = [];
-        }
-        acc[score.game_id].push({
+      // Use Map for better performance with object keys
+      const gameScores = new Map<string, Array<{ teamId: string; period: string; points: number }>>();
+      
+      // Pre-allocate arrays for known games to avoid resizing
+      const uniqueGameIds = new Set(periodScores.map(score => score.game_id));
+      uniqueGameIds.forEach(gameId => {
+        gameScores.set(gameId, []);
+      });
+
+      // Populate scores
+      for (const score of periodScores) {
+        const scores = gameScores.get(score.game_id)!;
+        scores.push({
           teamId: score.team_id,
           period: score.period,
           points: score.points
         });
-        return acc;
-      }, {} as Record<string, Array<{ teamId: string; period: string; points: number }>>);
+      }
 
-      debugLog('period_scores_grouped', gameScores);
-      return gameScores;
+      // Convert Map back to object for compatibility
+      const gameScoresObj = Object.fromEntries(gameScores);
+
+      debugLog('period_scores_grouped', gameScoresObj);
+      return gameScoresObj;
     } catch (error) {
       console.error('Error fetching box scores:', error);
       throw error;
