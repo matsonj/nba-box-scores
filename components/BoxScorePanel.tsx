@@ -4,7 +4,8 @@ import { useEffect, useState, useRef } from 'react';
 
 import BoxScore from './BoxScore';
 import { Team, Schedule, BoxScores as BoxScoreType, TeamStats } from '@/app/types/schema';
-import { useQueryDb } from '@/lib/db';
+import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
+import { TEMP_TABLES } from '@/constants/tables';
 import { getTeamName } from '@/lib/teams';
 
 interface BoxScorePanelProps {
@@ -19,7 +20,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
     gameInfo: Schedule | null;
   }>({ homeTeam: null, awayTeam: null, gameInfo: null });
   const [loading, setLoading] = useState(false);
-  const queryDb = useQueryDb();
+  const { evaluateQuery } = useMotherDuckClientState();
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,11 +48,22 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
 
     const loadData = async () => {
       try {
-        const [scheduleResult, boxScores, teamStats] = await Promise.all([
-          queryDb<Schedule>(`SELECT * FROM nba_box_scores.main.schedule WHERE game_id = '${gameId}'`),
-          queryDb<BoxScoreType>(`SELECT * FROM nba_box_scores.main.box_scores WHERE game_id = '${gameId}' AND period = 'FullGame'`),
-          queryDb<TeamStats>(`SELECT * FROM nba_box_scores.main.team_stats WHERE game_id = '${gameId}'`)
+        // Fetch all data in parallel using Promise.all for better performance
+        const [
+          gameInfoResult,
+          boxScoresResult,
+          teamStatsResult
+        ] = await Promise.all([
+          evaluateQuery(`SELECT * FROM ${TEMP_TABLES.SCHEDULE} WHERE game_id = '${gameId}'`),
+          evaluateQuery(`SELECT * FROM ${TEMP_TABLES.BOX_SCORES} WHERE game_id = '${gameId}'`),
+          evaluateQuery(`SELECT * FROM ${TEMP_TABLES.TEAM_STATS} WHERE game_id = '${gameId}'`)
         ]);
+
+        const scheduleResult = gameInfoResult.data.toRows() as Schedule[];
+        const boxScores = boxScoresResult.data.toRows() as BoxScoreType[];
+        const teamStats = teamStatsResult.data.toRows() as TeamStats[];
+
+
 
         if (cancelled) return;
 
@@ -135,7 +147,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
     return () => {
       cancelled = true;
     };
-  }, [gameId, queryDb]);
+  }, [gameId, evaluateQuery]);
 
   const handleClose = () => {
     setData({ homeTeam: null, awayTeam: null, gameInfo: null });
