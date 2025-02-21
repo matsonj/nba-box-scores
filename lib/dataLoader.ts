@@ -30,9 +30,8 @@ export class DataLoader {
        SELECT * FROM ${SOURCE_TABLES.TEAM_STATS}`
     ];
 
-    for (const query of queries) {
-      await this.evaluateQuery(query);
-    }
+    // Execute all queries in parallel
+    await Promise.all(queries.map(query => this.evaluateQuery(query)));
   }
 
   async loadData(): Promise<void> {
