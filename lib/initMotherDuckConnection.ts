@@ -25,16 +25,13 @@ export default async function initMotherDuckConnection(mdToken: string, database
             try {
                 // Try to connect to the database
                 await _connection.evaluateQuery(`USE ${database};`);
-                console.log('Successfully connected to database:', database);
             } catch (error) {
-                console.error(`Failed to use database ${database}:`, error);
                 throw error;
             }
         }
 
         return _connection;
     } catch (error) {
-        console.error("Failed to create DuckDB connection:", error);
         throw error;
     }
 }

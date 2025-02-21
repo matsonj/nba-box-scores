@@ -22,10 +22,8 @@ export async function queryDb<T>(query: string, params: (string | number | null)
   }, query);
 
   try {
-    console.log('Executing query:', interpolatedQuery);
     const result = await connection.evaluateQuery(interpolatedQuery);
     const rows = result.data.toRows() as T[];
-    console.log(`Query completed successfully. Returned ${rows.length} rows`);
     return rows;
   } catch (error) {
     console.error('Failed to execute query:', error);
@@ -51,10 +49,8 @@ export function useQueryDb() {
     }, query);
 
     try {
-      console.log('Executing query:', interpolatedQuery);
       const result = await evaluateQuery(interpolatedQuery);
       const rows = result.data.toRows() as T[];
-      console.log(`Query completed successfully. Returned ${rows.length} rows`);
       return rows;
     } catch (error) {
       console.error('Failed to execute query:', error);
@@ -80,11 +76,9 @@ export function useSafeQueryDb() {
     }, query);
 
     try {
-      console.log('Executing safe query:', interpolatedQuery);
       const result = await safeEvaluateQuery(interpolatedQuery);
       if (result.status === 'success') {
         const rows = result.result.data.toRows() as T[];
-        console.log(`Query completed successfully. Returned ${rows.length} rows`);
         return rows;
       }
       throw new Error(String(result.err));

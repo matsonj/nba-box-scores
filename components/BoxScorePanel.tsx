@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 
 import BoxScore from './BoxScore';
+import PlayerGameLogPanel from './PlayerGameLogPanel';
 import { Team, Schedule, BoxScores as BoxScoreType, TeamStats } from '@/app/types/schema';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { TEMP_TABLES } from '@/constants/tables';
@@ -20,6 +21,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
     gameInfo: Schedule | null;
   }>({ homeTeam: null, awayTeam: null, gameInfo: null });
   const [loading, setLoading] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState<{ entityId: string; name: string } | null>(null);
   const { evaluateQuery } = useMotherDuckClientState();
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -258,8 +260,19 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
                   </p>
                 </div>
                 <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 120px)', padding: 0, paddingRight: '2px' }}>
-                  <BoxScore homeTeam={data.homeTeam} awayTeam={data.awayTeam} />
+                  <BoxScore 
+                    homeTeam={data.homeTeam} 
+                    awayTeam={data.awayTeam} 
+                    onPlayerClick={(entityId, playerName) => setSelectedPlayer({ entityId, name: playerName })}
+                  />
                 </div>
+                {selectedPlayer && (
+                  <PlayerGameLogPanel
+                    entityId={selectedPlayer.entityId}
+                    playerName={selectedPlayer.name}
+                    onClose={() => setSelectedPlayer(null)}
+                  />
+                )}
               </>
             ) : null}
           </div>
