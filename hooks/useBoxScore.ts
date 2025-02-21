@@ -13,27 +13,38 @@ export function useBoxScoreByGameId() {
 
   const fetchBoxScore = useCallback(async (gameId: string) => {
   try {
-    // Ensure data is loaded into temp tables
-    await dataLoader.loadData();
-    
     console.log(`Fetching box scores for game ${gameId}...`);
 
-    // Get all data in parallel from temp tables
-    console.log('Starting parallel queries...');
-    const [gameInfo, boxScoresData, teamStats] = await Promise.all([
-      // Game info query
-      evaluateQuery(
-        `SELECT * FROM ${TEMP_TABLES.SCHEDULE} WHERE game_id = '${gameId}'`
-      ).then(result => result.data.toRows() as unknown as Schedule[]),
-      // Box scores query with optimized starter detection
-      evaluateQuery(
-        `SELECT * FROM ${TEMP_TABLES.BOX_SCORES} WHERE game_id = '${gameId}'`
-      ).then(result => result.data.toRows() as unknown as BoxScores[]),
-      // Team stats query
-      evaluateQuery(
-        `SELECT * FROM ${TEMP_TABLES.TEAM_STATS} WHERE game_id = '${gameId}'`
-      ).then(result => result.data.toRows() as unknown as TeamStats[])
-    ]);
+    // Combine all queries into a single query using WITH clauses for better performance
+    const result = await evaluateQuery(`
+      WITH game_info AS (
+        SELECT * FROM ${TEMP_TABLES.SCHEDULE} WHERE game_id = '${gameId}'
+      ),
+      box_scores AS (
+        SELECT * FROM ${TEMP_TABLES.BOX_SCORES} WHERE game_id = '${gameId}'
+      ),
+      team_stats AS (
+        SELECT * FROM ${TEMP_TABLES.TEAM_STATS} WHERE game_id = '${gameId}'
+      )
+      SELECT 
+        'game_info' as type, CAST(NULL as INTEGER) as row_num, * 
+      FROM game_info
+      UNION ALL
+      SELECT 
+        'box_scores' as type, ROW_NUMBER() OVER () as row_num, * 
+      FROM box_scores
+      UNION ALL
+      SELECT 
+        'team_stats' as type, ROW_NUMBER() OVER () as row_num, * 
+      FROM team_stats
+    `);
+
+    const rows = result.data.toRows();
+    
+    // Separate the results
+    const gameInfo = rows.filter(row => row.type === 'game_info') as unknown as Schedule[];
+    const boxScoresData = rows.filter(row => row.type === 'box_scores') as unknown as BoxScores[];
+    const teamStats = rows.filter(row => row.type === 'team_stats') as unknown as TeamStats[];
 
     // Check if game exists
     if (!gameInfo || gameInfo.length === 0) {

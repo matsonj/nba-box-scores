@@ -7,6 +7,7 @@ import BoxScorePanel from '@/components/BoxScorePanel';
 import { ScheduleProvider } from '@/context/ScheduleContext';
 import { getTeamName } from '@/lib/teams';
 import { useSchedule, useBoxScores } from '@/hooks/useGameData';
+import { useDataLoader } from '@/lib/dataLoader';
 import { debugLog } from '@/lib/debug';
 import { FunnelIcon } from '@heroicons/react/24/outline';
 
@@ -47,7 +48,10 @@ export default function Home() {
   const [loadingGames] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
-  const [selectedTeam, setSelectedTeam] = useState<string>('');
+  const [selectedTeam, setSelectedTeam] = useState<string>();
+  const dataLoader = useDataLoader();
+  const { fetchSchedule } = useSchedule();
+  const { fetchBoxScores } = useBoxScores();
 
   const filteredGamesByDate = useMemo(() => {
     if (!gamesByDate || Object.keys(gamesByDate).length === 0) return [];
@@ -65,13 +69,14 @@ export default function Home() {
     ).map(([date, games]) => ({ date, games }));
   }, [gamesByDate, selectedTeam]);
 
-  const { fetchSchedule } = useSchedule();
-  const { fetchBoxScores } = useBoxScores();
-
+  // Load all data when component mounts
   useEffect(() => {
-    const fetchGames = async () => {
+    const loadAllData = async () => {
       try {
-        setLoading(true);
+        // Initialize tables first
+        await dataLoader.loadData();
+        
+        // Then fetch the game data
         setError('');
         
         // Fetch schedule and box scores in parallel using WASM client
@@ -139,8 +144,8 @@ export default function Home() {
       }
     };
 
-    fetchGames();
-  }, [fetchSchedule, fetchBoxScores]);
+    loadAllData();
+  }, [dataLoader, fetchSchedule, fetchBoxScores]);
 
   if (loading) {
     return <div className="p-8">Loading schedule...</div>;
