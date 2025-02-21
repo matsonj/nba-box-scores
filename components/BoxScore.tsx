@@ -5,9 +5,10 @@ import { Team } from '@/app/types/schema';
 interface BoxScoreProps {
   homeTeam: Team;
   awayTeam: Team;
+  onPlayerClick?: (entityId: string, playerName: string) => void;
 }
 
-export default function BoxScore({ homeTeam, awayTeam }: BoxScoreProps) {
+export default function BoxScore({ homeTeam, awayTeam, onPlayerClick }: BoxScoreProps) {
   const renderTeamStats = (team: Team) => {
     if (!team.players || team.players.length === 0) {
       return <div>No player stats available</div>;
@@ -76,7 +77,10 @@ export default function BoxScore({ homeTeam, awayTeam }: BoxScoreProps) {
             <tbody>
               {sortedPlayers.map((player, index) => (
                 <tr key={player.playerName} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
-                  <td className="md:px-1 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200">{player.playerName}</td>
+                  <td 
+                    className="md:px-1 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                    onClick={() => onPlayerClick?.(player.playerId, player.playerName)}
+                  >{player.playerName}</td>
                   <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.minutes || '0:00'}</td>
                   <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.points}</td>
                   <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.rebounds}</td>
