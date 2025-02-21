@@ -3,67 +3,48 @@
 import { useCallback } from 'react';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { TeamStats, Schedule, BoxScores } from '@/types/schema';
-
-const teamNames: Record<string, string> = {
-  'ATL': 'Atlanta Hawks',
-  'BOS': 'Boston Celtics',
-  'BKN': 'Brooklyn Nets',
-  'CHA': 'Charlotte Hornets',
-  'CHI': 'Chicago Bulls',
-  'CLE': 'Cleveland Cavaliers',
-  'DAL': 'Dallas Mavericks',
-  'DEN': 'Denver Nuggets',
-  'DET': 'Detroit Pistons',
-  'GSW': 'Golden State Warriors',
-  'HOU': 'Houston Rockets',
-  'IND': 'Indiana Pacers',
-  'LAC': 'Los Angeles Clippers',
-  'LAL': 'Los Angeles Lakers',
-  'MEM': 'Memphis Grizzlies',
-  'MIA': 'Miami Heat',
-  'MIL': 'Milwaukee Bucks',
-  'MIN': 'Minnesota Timberwolves',
-  'NOP': 'New Orleans Pelicans',
-  'NYK': 'New York Knicks',
-  'OKC': 'Oklahoma City Thunder',
-  'ORL': 'Orlando Magic',
-  'PHI': 'Philadelphia 76ers',
-  'PHX': 'Phoenix Suns',
-  'POR': 'Portland Trail Blazers',
-  'SAC': 'Sacramento Kings',
-  'SAS': 'San Antonio Spurs',
-  'TOR': 'Toronto Raptors',
-  'UTA': 'Utah Jazz',
-  'WAS': 'Washington Wizards'
-};
-
-function getTeamName(abbreviation: string): string {
-  return teamNames[abbreviation] || abbreviation;
-}
+import { TEMP_TABLES } from '@/constants/tables';
+import { useDataLoader } from '@/lib/dataLoader';
+import { getTeamName } from '@/lib/teams';
 
 export function useBoxScoreByGameId() {
   const { evaluateQuery } = useMotherDuckClientState();
+  const dataLoader = useDataLoader();
 
   const fetchBoxScore = useCallback(async (gameId: string) => {
   try {
     console.log(`Fetching box scores for game ${gameId}...`);
 
-    // Get all data in parallel
-    console.log('Starting parallel queries...');
-    const [gameInfo, boxScoresData, teamStats] = await Promise.all([
-      // Game info query
-      evaluateQuery(
-        `SELECT * FROM nba_box_scores.main.schedule WHERE game_id = '${gameId}'`
-      ).then(result => result.data.toRows() as unknown as Schedule[]),
-      // Box scores query with optimized starter detection
-      evaluateQuery(
-        `SELECT * FROM nba_box_scores.main.box_scores WHERE game_id = '${gameId}' AND period = 'FullGame'`
-      ).then(result => result.data.toRows() as unknown as BoxScores[]),
-      // Team stats query
-      evaluateQuery(
-        `SELECT * FROM nba_box_scores.main.team_stats WHERE game_id = '${gameId}'`
-      ).then(result => result.data.toRows() as unknown as TeamStats[])
-    ]);
+    // Combine all queries into a single query using WITH clauses for better performance
+    const result = await evaluateQuery(`
+      WITH game_info AS (
+        SELECT * FROM ${TEMP_TABLES.SCHEDULE} WHERE game_id = '${gameId}'
+      ),
+      box_scores AS (
+        SELECT * FROM ${TEMP_TABLES.BOX_SCORES} WHERE game_id = '${gameId}'
+      ),
+      team_stats AS (
+        SELECT * FROM ${TEMP_TABLES.TEAM_STATS} WHERE game_id = '${gameId}'
+      )
+      SELECT 
+        'game_info' as type, CAST(NULL as INTEGER) as row_num, * 
+      FROM game_info
+      UNION ALL
+      SELECT 
+        'box_scores' as type, ROW_NUMBER() OVER () as row_num, * 
+      FROM box_scores
+      UNION ALL
+      SELECT 
+        'team_stats' as type, ROW_NUMBER() OVER () as row_num, * 
+      FROM team_stats
+    `);
+
+    const rows = result.data.toRows();
+    
+    // Separate the results
+    const gameInfo = rows.filter(row => row.type === 'game_info') as unknown as Schedule[];
+    const boxScoresData = rows.filter(row => row.type === 'box_scores') as unknown as BoxScores[];
+    const teamStats = rows.filter(row => row.type === 'team_stats') as unknown as TeamStats[];
 
     // Check if game exists
     if (!gameInfo || gameInfo.length === 0) {

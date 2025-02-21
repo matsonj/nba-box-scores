@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { format, parseISO } from 'date-fns';
 import { ScheduleWithBoxScore } from './types/extended';
 import BoxScorePanel from '@/components/BoxScorePanel';
 import { ScheduleProvider } from '@/context/ScheduleContext';
 import { getTeamName } from '@/lib/teams';
 import { useSchedule, useBoxScores } from '@/hooks/useGameData';
+import { useDataLoader } from '@/lib/dataLoader';
 import { debugLog } from '@/lib/debug';
 import { FunnelIcon } from '@heroicons/react/24/outline';
 
@@ -32,11 +33,19 @@ function groupByDate(games: ScheduleWithBoxScore[]) {
       console.error('Game date is missing:', game);
       return;
     }
-    const gameDate = format(parseISO(game.game_date.toString()), 'yyyy-MM-dd');
+    // Ensure game_date is a Date object
+    const gameDate = format(
+      game.game_date instanceof Date ? game.game_date : parseISO(game.game_date as unknown as string),
+      'yyyy-MM-dd'
+    );
     if (!gamesByDate[gameDate]) {
       gamesByDate[gameDate] = [];
     }
-    gamesByDate[gameDate].push(game);
+    // Convert the date string to Date object before pushing
+    gamesByDate[gameDate].push({
+      ...game,
+      game_date: game.game_date instanceof Date ? game.game_date : parseISO(game.game_date as unknown as string)
+    });
   });
   return gamesByDate;
 }
@@ -46,8 +55,12 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [loadingGames] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
+  const [loadingMessages, setLoadingMessages] = useState<Array<{ message: string; completed: boolean }>>([]);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
-  const [selectedTeam, setSelectedTeam] = useState<string>('');
+  const [selectedTeam, setSelectedTeam] = useState<string>();
+  const dataLoader = useDataLoader();
+  const { fetchSchedule } = useSchedule();
+  const { fetchBoxScores } = useBoxScores();
 
   const filteredGamesByDate = useMemo(() => {
     if (!gamesByDate || Object.keys(gamesByDate).length === 0) return [];
@@ -65,21 +78,53 @@ export default function Home() {
     ).map(([date, games]) => ({ date, games }));
   }, [gamesByDate, selectedTeam]);
 
-  const { fetchSchedule } = useSchedule();
-  const { fetchBoxScores } = useBoxScores();
-
+  // Load all data when component mounts
+  const initialLoadComplete = useRef(false);
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
-    const fetchGames = async () => {
+    if (initialLoadComplete.current) return;
+    initialLoadComplete.current = true;
+
+    const loadAllData = async () => {
       try {
-        setLoading(true);
+        const updateLoadingMessage = (index: number) => {
+          setLoadingMessages(prev => {
+            const newMessages = [...prev];
+            if (newMessages[index]) {
+              newMessages[index] = { ...newMessages[index], completed: true };
+            }
+            return newMessages;
+          });
+        };
+
+        // Add and complete loading steps one at a time
+        const addLoadingMessage = (message: string) => {
+          setLoadingMessages(prev => [...prev, { message, completed: false }]);
+        };
+
+        // Step 1: Load WASM
+        addLoadingMessage('Loading MotherDuck WASM...');
+        await dataLoader.waitForWasm();
+        updateLoadingMessage(0);
+
+        // Step 2: Initialize tables
+        addLoadingMessage('Initializing database tables...');
+        await dataLoader.loadData();
+        updateLoadingMessage(1);
+        
+        // Clear any previous errors
         setError('');
         
-        // Fetch schedule and box scores in parallel using WASM client
-        console.log('Fetching data...');
+        // Step 3: Fetch all game data
+        addLoadingMessage('Fetching game data...');
         const [scheduleData, boxScoresData] = await Promise.all([
           fetchSchedule(),
           fetchBoxScores()
         ]);
+        updateLoadingMessage(2);
+        
+        // Add a small delay before proceeding
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         debugLog('data_fetched', {
           scheduleCount: scheduleData.length,
@@ -131,6 +176,11 @@ export default function Home() {
 
         setGamesByDate(games);
         setError('');
+        setLoadingMessages(prev => [
+          ...prev,
+          { message: 'Processing and organizing data...', completed: true },
+          { message: 'Ready! ✨', completed: true }
+        ]);
       } catch (err) {
         console.error('Error in fetchGames:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch games');
@@ -139,11 +189,20 @@ export default function Home() {
       }
     };
 
-    fetchGames();
-  }, [fetchSchedule, fetchBoxScores]);
+    loadAllData();
+  }, []);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   if (loading) {
-    return <div className="p-8">Loading schedule...</div>;
+    return (
+      <div className="p-8 space-y-2 font-mono text-sm">
+        {loadingMessages.map((msg, index) => (
+          <div key={index}>
+            {msg.message} {msg.completed ? '✅' : ''}
+          </div>
+        ))}
+      </div>
+    );
   }
 
   if (error) {
