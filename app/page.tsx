@@ -8,7 +8,6 @@ import { ScheduleProvider } from '@/context/ScheduleContext';
 import { getTeamName } from '@/lib/teams';
 import { useSchedule, useBoxScores } from '@/hooks/useGameData';
 import { useDataLoader } from '@/lib/dataLoader';
-import { debugLog } from '@/lib/debug';
 import { FunnelIcon } from '@heroicons/react/24/outline';
 
 // Helper function to format period numbers
@@ -30,7 +29,6 @@ function groupByDate(games: ScheduleWithBoxScore[]) {
   const gamesByDate: Record<string, ScheduleWithBoxScore[]> = {};
   games.forEach((game: ScheduleWithBoxScore) => {
     if (!game.game_date) {
-      console.error('Game date is missing:', game);
       return;
     }
     // Ensure game_date is a Date object
@@ -126,13 +124,6 @@ export default function Home() {
         // Add a small delay before proceeding
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        debugLog('data_fetched', {
-          scheduleCount: scheduleData.length,
-          boxScoresCount: Object.keys(boxScoresData).length,
-          scheduleData,
-          boxScoresData
-        });
-
         // Combine schedule with box scores
         const gamesWithBoxScores = scheduleData.map((game) => {
           const hasBoxScore = !!boxScoresData[game.game_id];
@@ -167,13 +158,8 @@ export default function Home() {
           };
         });
         
-        debugLog('games_with_box_scores', gamesWithBoxScores);
-        
         // Group games by date
-        console.log('Grouping games by date...');
         const games = groupByDate(gamesWithBoxScores);
-        console.log('Games grouped by date');
-
         setGamesByDate(games);
         setError('');
         setLoadingMessages(prev => [

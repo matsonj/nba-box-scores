@@ -16,6 +16,10 @@ interface PlayerGameLogPanelProps {
 export default function PlayerGameLogPanel({ entityId, playerName, onClose }: PlayerGameLogPanelProps) {
   interface GameLogEntry extends BoxScoreType {
     game_date: Date;
+    home_team_id: string;
+    away_team_id: string;
+    home_team_score: number;
+    away_team_score: number;
   }
 
   const [games, setGames] = useState<GameLogEntry[]>([]);
@@ -39,7 +43,7 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
       try {
         setLoading(true);
         const result = await evaluateQuery(`
-          SELECT b.*, s.game_date
+          SELECT b.*, s.game_date, s.home_team_id, s.away_team_id, s.home_team_score, s.away_team_score
           FROM ${TEMP_TABLES.BOX_SCORES} b
           JOIN ${TEMP_TABLES.SCHEDULE} s ON b.game_id = s.game_id
           WHERE b.entity_id = '${entityId}' AND b.period = 'FullGame'
@@ -69,7 +73,11 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
           ft_attempted: Number(row.ft_attempted),
           plus_minus: Number(row.plus_minus),
           starter: Number(row.starter),
-          period: String(row.period)
+          period: String(row.period),
+          home_team_id: String(row.home_team_id),
+          away_team_id: String(row.away_team_id),
+          home_team_score: Number(row.home_team_score),
+          away_team_score: Number(row.away_team_score)
         })) as GameLogEntry[];
 
         setGames(gameLog);
@@ -121,6 +129,7 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
               <thead>
                 <tr className="bg-gray-100 dark:bg-gray-700">
                   <th className="md:px-1 md:py-0.5 p-0.5 text-left md:text-base text-xs dark:text-gray-200 bg-transparent">Date</th>
+                  <th className="md:px-1 md:py-0.5 p-0.5 text-left md:text-base text-xs dark:text-gray-200 bg-transparent">Result</th>
                   <th className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">MIN</th>
                   <th className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">PTS</th>
                   <th className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">REB</th>
@@ -138,6 +147,16 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
                 {games.map((game, index) => (
                   <tr key={game.game_id} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
                     <td className="md:px-1 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200">{format(game.game_date, 'MM-dd-yy')}</td>
+                    <td className="md:px-1 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200">
+                      {(() => {
+                        const isHomeTeam = game.team_id === game.home_team_id;
+                        const teamScore = isHomeTeam ? game.home_team_score : game.away_team_score;
+                        const opponentScore = isHomeTeam ? game.away_team_score : game.home_team_score;
+                        const margin = teamScore - opponentScore;
+                        const result = margin > 0 ? 'W' : 'L';
+                        return `${result} [${margin > 0 ? '+' : ''}${margin}]`;
+                      })()}
+                    </td>
                     <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{game.minutes || '0:00'}</td>
                     <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{game.points}</td>
                     <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{game.rebounds}</td>

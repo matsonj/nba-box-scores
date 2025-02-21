@@ -2,7 +2,7 @@
 
 import { useMotherDuckClientState } from './MotherDuckContext';
 import { SOURCE_TABLES, TEMP_TABLES } from '@/constants/tables';
-import { debugLog } from './debug';
+
 
 export class DataLoader {
   private evaluateQuery: ReturnType<typeof useMotherDuckClientState>['evaluateQuery'];
@@ -52,9 +52,7 @@ export class DataLoader {
     this.isLoading = true;
     this.loadPromise = (async () => {
       try {
-        debugLog('data_loader', 'Creating temporary tables...');
         await this.createTempTables();
-        debugLog('data_loader', 'Temporary tables created successfully');
       } catch (error) {
         console.error('Error loading data:', error);
         throw error;

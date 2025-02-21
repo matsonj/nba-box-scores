@@ -3,7 +3,6 @@
 import { useCallback } from 'react';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { Schedule, TeamStats } from '@/types/schema';
-import { debugLog } from '@/lib/debug';
 import { getTeamName } from '@/lib/teams';
 import { TEMP_TABLES } from '@/constants/tables';
 import { useDataLoader } from '@/lib/dataLoader';
@@ -20,13 +19,11 @@ export function useSchedule() {
       // Ensure data is loaded into temp tables
       await dataLoader.loadData();
 
-      console.log('Fetching schedule from temp tables...');
       const result = await evaluateQuery(`
         SELECT * FROM ${TEMP_TABLES.SCHEDULE}
       `);
       
       const rows = result.data.toRows() as unknown as Schedule[];
-      debugLog('schedule_rows', rows);
       
       // Convert UTC dates to local time and transform the data
       return rows.map((game: Schedule) => {
@@ -65,7 +62,6 @@ export function useBoxScores() {
       // Ensure data is loaded into temp tables
       await dataLoader.loadData();
 
-      console.log('Fetching box scores from temp tables...');
       const result = await evaluateQuery(`
         SELECT game_id, team_id, period, points 
         FROM ${TEMP_TABLES.TEAM_STATS} 
@@ -74,7 +70,6 @@ export function useBoxScores() {
       `);
       
       const periodScores = result.data.toRows() as unknown as TeamStats[];
-      debugLog('period_scores_raw', periodScores);
       
       // Use Map for better performance with object keys
       const gameScores = new Map<string, Array<{ teamId: string; period: string; points: number }>>();
@@ -98,7 +93,7 @@ export function useBoxScores() {
       // Convert Map back to object for compatibility
       const gameScoresObj = Object.fromEntries(gameScores);
 
-      debugLog('period_scores_grouped', gameScoresObj);
+
       return gameScoresObj;
     } catch (error) {
       console.error('Error fetching box scores:', error);
