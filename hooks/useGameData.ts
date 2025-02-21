@@ -30,7 +30,7 @@ export function useSchedule() {
       
       // Convert UTC dates to local time and transform the data
       return rows.map((game: Schedule) => {
-        const localDate = utcToLocalDate(game.game_date);
+        const localDate = utcToLocalDate(game.game_date.toString());
         
         return {
           game_id: game.game_id,

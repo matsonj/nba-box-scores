@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { format, parseISO } from 'date-fns';
 import { ScheduleWithBoxScore } from './types/extended';
 import BoxScorePanel from '@/components/BoxScorePanel';
@@ -79,7 +79,12 @@ export default function Home() {
   }, [gamesByDate, selectedTeam]);
 
   // Load all data when component mounts
+  const initialLoadComplete = useRef(false);
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
+    if (initialLoadComplete.current) return;
+    initialLoadComplete.current = true;
+
     const loadAllData = async () => {
       try {
         const updateLoadingMessage = (index: number) => {
@@ -184,6 +189,7 @@ export default function Home() {
 
     loadAllData();
   }, []);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   if (loading) {
     return (
