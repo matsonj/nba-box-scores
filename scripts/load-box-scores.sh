@@ -62,7 +62,7 @@ USE nba_box_scores;
 create or replace table bs_json as
 FROM read_json_auto('$BOX_SCORES_DIR/*.json',union_by_name=true);
 
--- interim tables
+-- interim tables for regular periods (always exist)
 create or replace table bs_home_1 as 
 select game.gameId, game.homeTeam.teamId, unnest(boxScore.stats.home.\"1\") as box_score_detail from bs_json;
 
@@ -74,9 +74,6 @@ select game.gameId, game.homeTeam.teamId, unnest(boxScore.stats.home.\"3\") as b
 
 create or replace table bs_home_4 as 
 select game.gameId, game.homeTeam.teamId, unnest(boxScore.stats.home.\"4\") as box_score_detail from bs_json;
-
-create or replace table bs_home_5 as 
-select game.gameId, game.homeTeam.teamId, unnest(boxScore.stats.home.\"5\") as box_score_detail from bs_json;
 
 create or replace table bs_away_1 as 
 select game.gameId, game.awayTeam.teamId, unnest(boxScore.stats.away.\"1\") as box_score_detail from bs_json;
@@ -90,8 +87,66 @@ select game.gameId, game.awayTeam.teamId, unnest(boxScore.stats.away.\"3\") as b
 create or replace table bs_away_4 as 
 select game.gameId, game.awayTeam.teamId, unnest(boxScore.stats.away.\"4\") as box_score_detail from bs_json;
 
-create or replace table bs_away_5 as 
-select game.gameId, game.awayTeam.teamId, unnest(boxScore.stats.away.\"5\") as box_score_detail from bs_json;
+-- Create a list of all games with overtime periods
+create or replace table games_with_ot as
+select 
+  distinct game.gameId, 
+  game.homeTeam.teamId as home_team_id,
+  game.awayTeam.teamId as away_team_id,
+  CASE WHEN json_extract_path(boxScore.stats.home, ['5']) IS NOT NULL THEN 1 ELSE 0 END as has_period_5,
+  CASE WHEN json_extract_path(boxScore.stats.home, ['6']) IS NOT NULL THEN 1 ELSE 0 END as has_period_6,
+  CASE WHEN json_extract_path(boxScore.stats.home, ['7']) IS NOT NULL THEN 1 ELSE 0 END as has_period_7,
+  CASE WHEN json_extract_path(boxScore.stats.home, ['8']) IS NOT NULL THEN 1 ELSE 0 END as has_period_8
+from bs_json;
+
+-- Create tables only for games with overtime periods
+create or replace table bs_home_5 as
+select g.gameId, g.home_team_id as teamId, unnest(j.boxScore.stats.home.\"5\") as box_score_detail
+from games_with_ot g
+join bs_json j on g.gameId = j.game.gameId
+where g.has_period_5 = 1;
+
+create or replace table bs_home_6 as
+select g.gameId, g.home_team_id as teamId, unnest(j.boxScore.stats.home.\"6\") as box_score_detail
+from games_with_ot g
+join bs_json j on g.gameId = j.game.gameId
+where g.has_period_6 = 1;
+
+create or replace table bs_home_7 as
+select g.gameId, g.home_team_id as teamId, unnest(j.boxScore.stats.home.\"7\") as box_score_detail
+from games_with_ot g
+join bs_json j on g.gameId = j.game.gameId
+where g.has_period_7 = 1;
+
+create or replace table bs_home_8 as
+select g.gameId, g.home_team_id as teamId, unnest(j.boxScore.stats.home.\"8\") as box_score_detail
+from games_with_ot g
+join bs_json j on g.gameId = j.game.gameId
+where g.has_period_8 = 1;
+
+create or replace table bs_away_5 as
+select g.gameId, g.away_team_id as teamId, unnest(j.boxScore.stats.away.\"5\") as box_score_detail
+from games_with_ot g
+join bs_json j on g.gameId = j.game.gameId
+where g.has_period_5 = 1;
+
+create or replace table bs_away_6 as
+select g.gameId, g.away_team_id as teamId, unnest(j.boxScore.stats.away.\"6\") as box_score_detail
+from games_with_ot g
+join bs_json j on g.gameId = j.game.gameId
+where g.has_period_6 = 1;
+
+create or replace table bs_away_7 as
+select g.gameId, g.away_team_id as teamId, unnest(j.boxScore.stats.away.\"7\") as box_score_detail
+from games_with_ot g
+join bs_json j on g.gameId = j.game.gameId
+where g.has_period_7 = 1;
+
+create or replace table bs_away_8 as
+select g.gameId, g.away_team_id as teamId, unnest(j.boxScore.stats.away.\"8\") as box_score_detail
+from games_with_ot g
+join bs_json j on g.gameId = j.game.gameId
+where g.has_period_8 = 1;
 
 create or replace table bs_home_fullgame as 
 select game.gameId, game.homeTeam.teamId, unnest(boxScore.stats.home.FullGame) as box_score_detail from bs_json;
@@ -99,7 +154,7 @@ select game.gameId, game.homeTeam.teamId, unnest(boxScore.stats.home.FullGame) a
 create or replace table bs_away_fullgame as 
 select game.gameId, game.awayTeam.teamId, unnest(boxScore.stats.away.FullGame) as box_score_detail from bs_json;
 
--- final table
+-- final table with all periods
 create or replace table bs_detail as 
 select gameId,teamId,1 as period, unnest(box_score_detail) from bs_home_1
 union all by name
@@ -111,15 +166,27 @@ select gameId,teamId,4 as period, unnest(box_score_detail) from bs_home_4
 union all by name
 select gameId,teamId,5 as period, unnest(box_score_detail) from bs_home_5
 union all by name
+select gameId,teamId,6 as period, unnest(box_score_detail) from bs_home_6
+union all by name
+select gameId,teamId,7 as period, unnest(box_score_detail) from bs_home_7
+union all by name
+select gameId,teamId,8 as period, unnest(box_score_detail) from bs_home_8
+union all by name
 select gameId,teamId,1 as period, unnest(box_score_detail) from bs_away_1
 union all by name
 select gameId,teamId,2 as period, unnest(box_score_detail) from bs_away_2
 union all by name
 select gameId,teamId,3 as period, unnest(box_score_detail) from bs_away_3
 union all by name
-select gameId,teamId,4 as period, unnest(box_score_detail) from bs_away_4 
+select gameId,teamId,4 as period, unnest(box_score_detail) from bs_away_4
 union all by name
 select gameId,teamId,5 as period, unnest(box_score_detail) from bs_away_5
+union all by name
+select gameId,teamId,6 as period, unnest(box_score_detail) from bs_away_6
+union all by name
+select gameId,teamId,7 as period, unnest(box_score_detail) from bs_away_7
+union all by name
+select gameId,teamId,8 as period, unnest(box_score_detail) from bs_away_8
 union all by name
 select gameId,teamId,'FullGame' as period, unnest(box_score_detail) from bs_home_fullgame
 union all by name
@@ -188,7 +255,7 @@ echo "$TABLE_SQL"
 echo
 duckdb "md:" -c "$TABLE_SQL"
 
-Print and execute data preprocessing SQL
+# Print and execute data preprocessing SQL
 echo "Executing data preprocessing SQL:"
 echo "$PREP_SQL"
 echo
