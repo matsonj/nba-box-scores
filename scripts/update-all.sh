@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Exit immediately if a command exits with a non-zero status
+set -e
+# Exit if any command in a pipeline fails
+set -o pipefail
+
 echo "Starting data update process..."
 
 # Run fetch schedule

@@ -89,13 +89,18 @@ SELECT
        THEN 'No new games to load, skipping processing'
        ELSE 'Processing new games' END AS status;
 
--- Only load data for new games if there are any
+-- First, set variables to check if we have new games to process and store filenames
+SET VARIABLE new_games_count = (SELECT COUNT(*) FROM new_game_ids);
+SET VARIABLE filenames = (
+  SELECT list(filename) 
+  FROM new_game_ids
+);
+
+-- Create the table using the filenames variable and check for new games
 CREATE OR REPLACE TABLE bs_json AS
-SELECT * FROM read_json_auto(
-  (SELECT filename FROM new_game_ids),
-  union_by_name=true
-)
-WHERE (SELECT COUNT(*) FROM new_game_ids) > 0;
+  SELECT * 
+  FROM read_json_auto(getvariable('filenames'), union_by_name=true)
+  WHERE getvariable('new_games_count') > 0;
 
 -- Only continue with the rest of the processing if we have new games
 -- interim tables for regular periods
