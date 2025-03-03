@@ -33,7 +33,7 @@ def create_database_schema(conn: duckdb.DuckDBPyConnection) -> None:
     
     conn.execute("""
         CREATE OR REPLACE VIEW player_game_stats AS
-        WITH pivoted_stats AS (
+        WITH period_stats AS (
             SELECT 
                 game_id,
                 team as team_id,
@@ -56,13 +56,46 @@ def create_database_schema(conn: duckdb.DuckDBPyConnection) -> None:
                 CAST(COALESCE(MAX(CASE WHEN stat_name = 'FG3A' THEN stat_value END), '0') AS INTEGER) as fg3_attempted,
                 CAST(COALESCE(MAX(CASE WHEN stat_name = 'FtPoints' THEN stat_value END), '0') AS INTEGER) as ft_made,
                 CAST(COALESCE(MAX(CASE WHEN stat_name = 'FTA' THEN stat_value END), '0') AS INTEGER) as ft_attempted,
-                NULL as plus_minus,
-                NULL as starter
+                NULL as plus_minus
             FROM player_stats
             WHERE player_id != '0'
             GROUP BY game_id, team, player_id, player_name, period
+        ),
+        period_stats_with_starter AS (
+            SELECT 
+                ps.*,
+                CASE 
+                    WHEN ROW_NUMBER() OVER (PARTITION BY game_id, team_id ORDER BY points DESC) <= 5 THEN 1
+                    ELSE 0
+                END as starter
+            FROM period_stats ps
+            WHERE period != 'FullGame'
         )
-        SELECT * FROM pivoted_stats;
+        SELECT * FROM period_stats_with_starter
+        UNION ALL
+        SELECT 
+            game_id,
+            team_id,
+            entity_id,
+            player_name,
+            'FullGame' as period,
+            minutes,
+            SUM(points) as points,
+            SUM(rebounds) as rebounds,
+            SUM(assists) as assists,
+            SUM(steals) as steals,
+            SUM(blocks) as blocks,
+            SUM(turnovers) as turnovers,
+            SUM(fg_made) as fg_made,
+            SUM(fg_attempted) as fg_attempted,
+            SUM(fg3_made) as fg3_made,
+            SUM(fg3_attempted) as fg3_attempted,
+            SUM(ft_made) as ft_made,
+            SUM(ft_attempted) as ft_attempted,
+            NULL as plus_minus,
+            MAX(starter) as starter
+        FROM period_stats_with_starter
+        GROUP BY game_id, team_id, entity_id, player_name, minutes;
     """)
 
 
@@ -106,6 +139,25 @@ def process_player_stats(
     # Skip the "Team" entity as it's not a player
     player_stats = [s for s in stats if s['EntityId'] != '0']
     
+    # Convert period to sequential number (1-4 for quarters, 5+ for overtime)
+    try:
+        period_num = int(period)
+        if period_num > 4:
+            # Already in the correct format (5,6,etc for overtime)
+            normalized_period = period
+        else:
+            normalized_period = str(period_num)
+    except ValueError:
+        # Handle OT periods
+        if period.startswith('OT'):
+            try:
+                ot_num = int(period[2:])
+                normalized_period = str(ot_num + 4)
+            except ValueError:
+                normalized_period = period
+        else:
+            normalized_period = period
+    
     for player in player_stats:
         # Handle Minutes field specially
         if 'Minutes' in player:
@@ -116,7 +168,7 @@ def process_player_stats(
                 'team': team,
                 'player_id': player['EntityId'],
                 'player_name': player['Name'],
-                'period': period,
+                'period': normalized_period,
                 'stat_name': 'Minutes',
                 'stat_value': player['Minutes']
             })
@@ -131,7 +183,7 @@ def process_player_stats(
                     'team': team,
                     'player_id': player['EntityId'],
                     'player_name': player['Name'],
-                    'period': period,
+                    'period': normalized_period,
                     'stat_name': stat_name,
                     'stat_value': str(stat_value)
                 })
