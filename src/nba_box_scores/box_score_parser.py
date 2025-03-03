@@ -79,7 +79,22 @@ def create_database_schema(conn: duckdb.DuckDBPyConnection) -> None:
             entity_id,
             player_name,
             'FullGame' as period,
-            minutes,
+            CONCAT(
+                CAST(SUM(
+                    -- Convert MM:SS to seconds
+                    CAST(SPLIT_PART(minutes, ':', 1) AS INTEGER) * 60 + 
+                    CAST(SPLIT_PART(minutes, ':', 2) AS INTEGER)
+                ) / 60 AS INTEGER),
+                ':',
+                LPAD(
+                    CAST(SUM(
+                        CAST(SPLIT_PART(minutes, ':', 1) AS INTEGER) * 60 + 
+                        CAST(SPLIT_PART(minutes, ':', 2) AS INTEGER)
+                    ) % 60 AS VARCHAR),
+                    2,
+                    '0'
+                )
+            ) as minutes,
             SUM(points) as points,
             SUM(rebounds) as rebounds,
             SUM(assists) as assists,
@@ -95,7 +110,7 @@ def create_database_schema(conn: duckdb.DuckDBPyConnection) -> None:
             NULL as plus_minus,
             MAX(starter) as starter
         FROM period_stats_with_starter
-        GROUP BY game_id, team_id, entity_id, player_name, minutes;
+        GROUP BY game_id, team_id, entity_id, player_name;
     """)
 
 

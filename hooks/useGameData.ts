@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { Schedule, TeamStats } from '@/types/schema';
 import { getTeamName } from '@/lib/teams';
-import { TEMP_TABLES } from '@/constants/tables';
+import { TEMP_TABLES, SOURCE_TABLES } from '@/constants/tables';
 import { useDataLoader } from '@/lib/dataLoader';
 import { utcToLocalDate } from '@/lib/dateUtils';
 
@@ -20,7 +20,7 @@ export function useSchedule() {
       await dataLoader.loadData();
 
       const result = await evaluateQuery(`
-        SELECT * FROM ${TEMP_TABLES.SCHEDULE}
+        SELECT * FROM nba_box_scores.main.schedule
       `);
       
       const rows = result.data.toRows() as unknown as Schedule[];
@@ -64,7 +64,7 @@ export function useBoxScores() {
 
       const result = await evaluateQuery(`
         SELECT game_id, team_id, period, points 
-        FROM ${TEMP_TABLES.TEAM_STATS} 
+        FROM nba_box_scores.main.team_stats 
         WHERE period != 'FullGame'
         ORDER BY game_id, team_id, CAST(period AS INTEGER)
       `);
@@ -84,10 +84,11 @@ export function useBoxScores() {
       for (const score of periodScores) {
         const scores = gameScores.get(score.game_id)!;
         scores.push({
-          teamId: score.team_id,
+          teamId: score.team_id, // Already an abbreviation
           period: score.period,
-          points: score.points
+          points: Number(score.points) // Ensure points is converted to a number
         });
+
       }
 
       // Convert Map back to object for compatibility
