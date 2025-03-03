@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nba-box-scores"
+version = "0.1.0"
+description = "NBA box scores data processing"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "duckdb>=1.2",
+    "numpy>=1.24",
+    "pandas>=2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = false
