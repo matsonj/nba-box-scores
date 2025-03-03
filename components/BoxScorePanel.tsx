@@ -57,7 +57,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
           teamStatsResult
         ] = await Promise.all([
           evaluateQuery(`SELECT * FROM ${TEMP_TABLES.SCHEDULE} WHERE game_id = '${gameId}'`),
-          evaluateQuery(`SELECT * FROM ${TEMP_TABLES.BOX_SCORES} WHERE game_id = '${gameId}'`),
+          evaluateQuery(`SELECT * FROM ${TEMP_TABLES.BOX_SCORES} WHERE game_id = '${gameId}' AND period = 'FullGame'`),
           evaluateQuery(`SELECT * FROM ${TEMP_TABLES.TEAM_STATS} WHERE game_id = '${gameId}'`)
         ]);
 
@@ -122,11 +122,11 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
         const [gameInfo] = scheduleResult;
         if (!gameInfo) return;
 
-        const homeTeamPlayers = boxScores.filter(player => player.team_id.toString() === gameInfo.home_team_id.toString());
-        const awayTeamPlayers = boxScores.filter(player => player.team_id.toString() === gameInfo.away_team_id.toString());
+        const homeTeamPlayers = boxScores.filter(player => player.team_id === gameInfo.home_team_abbreviation);
+        const awayTeamPlayers = boxScores.filter(player => player.team_id === gameInfo.away_team_abbreviation);
 
-        const homeTeamStats = teamStats.find(stat => stat.team_id.toString() === gameInfo.home_team_id.toString() && stat.period === 'FullGame');
-        const awayTeamStats = teamStats.find(stat => stat.team_id.toString() === gameInfo.away_team_id.toString() && stat.period === 'FullGame');
+        const homeTeamStats = teamStats.find(stat => stat.team_id === gameInfo.home_team_abbreviation && stat.period === 'FullGame');
+        const awayTeamStats = teamStats.find(stat => stat.team_id === gameInfo.away_team_abbreviation && stat.period === 'FullGame');
 
         if (!cancelled) {
           setData({
@@ -267,11 +267,13 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
                   />
                 </div>
                 {selectedPlayer && (
-                  <PlayerGameLogPanel
-                    entityId={selectedPlayer.entityId}
-                    playerName={selectedPlayer.name}
-                    onClose={() => setSelectedPlayer(null)}
-                  />
+                  <div className="fixed inset-0 z-[60] bg-black bg-opacity-50">
+                    <PlayerGameLogPanel
+                      entityId={selectedPlayer.entityId}
+                      playerName={selectedPlayer.name}
+                      onClose={() => setSelectedPlayer(null)}
+                    />
+                  </div>
                 )}
               </>
             ) : null}

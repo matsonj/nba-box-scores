@@ -3,7 +3,7 @@
 import { useCallback } from 'react';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { TeamStats, Schedule, BoxScores } from '@/types/schema';
-import { TEMP_TABLES } from '@/constants/tables';
+import { TEMP_TABLES, SOURCE_TABLES } from '@/constants/tables';
 import { useDataLoader } from '@/lib/dataLoader';
 import { getTeamName } from '@/lib/teams';
 
@@ -18,13 +18,13 @@ export function useBoxScoreByGameId() {
     // Combine all queries into a single query using WITH clauses for better performance
     const result = await evaluateQuery(`
       WITH game_info AS (
-        SELECT * FROM ${TEMP_TABLES.SCHEDULE} WHERE game_id = '${gameId}'
+        SELECT * FROM nba_box_scores.main.schedule WHERE game_id = '${gameId}'
       ),
       box_scores AS (
-        SELECT * FROM ${TEMP_TABLES.BOX_SCORES} WHERE game_id = '${gameId}'
+        SELECT * FROM nba_box_scores.main.box_scores WHERE game_id = '${gameId}' AND period = 'FullGame'
       ),
       team_stats AS (
-        SELECT * FROM ${TEMP_TABLES.TEAM_STATS} WHERE game_id = '${gameId}'
+        SELECT * FROM nba_box_scores.main.team_stats WHERE game_id = '${gameId}'
       )
       SELECT 
         'game_info' as type, CAST(NULL as INTEGER) as row_num, * 

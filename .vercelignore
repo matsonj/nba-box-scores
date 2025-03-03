@@ -1,0 +1,11 @@
+# data files
+data/
+*.duckdb
+
+# python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# logs
+logs/
