@@ -96,17 +96,6 @@ FROM period_scores
 WHERE period <> 'FullGame'
 GROUP BY game_id, team_id;"
 
-# # Print and execute table creation SQL
-# echo "Executing table creation SQL:"
-# echo "$TABLE_SQL"
-# echo
-# duckdb "md:" -c "$TABLE_SQL"
-
-# # Print and execute data preprocessing SQL
-# echo "Executing data preprocessing SQL:"
-# echo "$PREP_SQL"
-# echo
-# duckdb "md:" -c "$PREP_SQL"
 
 # Create schema and tables in MotherDuck
 echo "Creating schema and tables in MotherDuck..."
