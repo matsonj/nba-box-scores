@@ -11,21 +11,6 @@ import { useSchedule, useBoxScores } from '@/hooks/useGameData';
 import { useDataLoader } from '@/lib/dataLoader';
 import { FunnelIcon } from '@heroicons/react/24/outline';
 
-// Helper function to format period numbers
-function formatPeriod(period: string, allPeriods: string[]): string {
-  const periodNum = parseInt(period);
-  if (periodNum <= 4) return period;
-  
-  // Get the maximum period number
-  const maxPeriod = Math.max(...allPeriods.map(p => parseInt(p)));
-  
-  // If we only have one OT period (max is 5), just show "OT"
-  if (maxPeriod === 5) return "OT";
-  
-  // Otherwise show OT1, OT2, etc.
-  return `OT${periodNum - 4}`;
-}
-
 function groupByDate(games: ScheduleWithBoxScore[]) {
   const gamesByDate: Record<string, ScheduleWithBoxScore[]> = {};
   games.forEach((game: ScheduleWithBoxScore) => {

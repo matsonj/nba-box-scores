@@ -1,15 +1,9 @@
 import { Game } from '@/app/types';
-import { Schedule, Team } from '@/app/types/schema';
 
 interface GameCardProps {
   game: Game;
   loading?: boolean;
   onGameSelect?: (gameId: string) => void;
-}
-
-interface ExtendedSchedule extends Schedule {
-  homeTeam: Team;
-  awayTeam: Team;
 }
 
 export default function GameCard({ game, loading: isLoading, onGameSelect }: GameCardProps) {
