@@ -52,7 +52,7 @@ WITH period_scores AS (
     game_id,
     team_id,
     period,
-    minutes,
+    '12:00' as minutes,
     SUM(points) as points,
     SUM(rebounds) as rebounds,
     SUM(assists) as assists,
@@ -69,7 +69,7 @@ WITH period_scores AS (
     null as defensive_possessions
   FROM box_scores
   WHERE period != 'FullGame'
-  GROUP BY game_id, team_id, period, minutes
+  GROUP BY game_id, team_id, period
 )
 SELECT * FROM period_scores
 UNION ALL
