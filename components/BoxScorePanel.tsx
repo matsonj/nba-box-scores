@@ -267,11 +267,13 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
                   />
                 </div>
                 {selectedPlayer && (
-                  <PlayerGameLogPanel
-                    entityId={selectedPlayer.entityId}
-                    playerName={selectedPlayer.name}
-                    onClose={() => setSelectedPlayer(null)}
-                  />
+                  <div className="fixed inset-0 z-[60] bg-black bg-opacity-50">
+                    <PlayerGameLogPanel
+                      entityId={selectedPlayer.entityId}
+                      playerName={selectedPlayer.name}
+                      onClose={() => setSelectedPlayer(null)}
+                    />
+                  </div>
                 )}
               </>
             ) : null}

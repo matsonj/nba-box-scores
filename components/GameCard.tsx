@@ -1,7 +1,7 @@
-import { Game } from '@/app/types';
+import { ScheduleWithBoxScore } from '@/app/types/extended';
 
 interface GameCardProps {
-  game: Game;
+  game: ScheduleWithBoxScore;
   loading?: boolean;
   onGameSelect?: (gameId: string) => void;
 }
