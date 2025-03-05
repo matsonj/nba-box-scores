@@ -8,6 +8,51 @@ const BOX_SCORES_DIR = path.join(DATA_DIR, 'box_scores');
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Retry configuration
+const MAX_RETRIES = 5;
+const INITIAL_RETRY_DELAY = 1000; // 1 second
+const MAX_RETRY_DELAY = 30000; // 30 seconds
+
+/**
+ * Makes an HTTP request with retry logic for non-200 responses
+ * Uses exponential backoff for retries
+ */
+const fetchWithRetry = async (url: string, params: any, headers: any) => {
+  let retries = 0;
+  let delay = INITIAL_RETRY_DELAY;
+  
+  while (true) {
+    try {
+      const response = await axios.get(url, { params, headers });
+      return response;
+    } catch (err: any) {
+      const status = err.response?.status;
+      
+      // If we've reached max retries or it's a 4xx error (except 429 rate limit), don't retry
+      if (
+        retries >= MAX_RETRIES || 
+        (status && status >= 400 && status < 500 && status !== 429)
+      ) {
+        throw err;
+      }
+      
+      // Calculate delay with exponential backoff
+      // For 429 rate limit, use a longer delay
+      if (status === 429) {
+        delay = Math.min(delay * 3, MAX_RETRY_DELAY);
+        console.log(`Rate limited (429), retrying in ${delay/1000} seconds... (Attempt ${retries + 1}/${MAX_RETRIES})`);
+      } else {
+        delay = Math.min(delay * 2, MAX_RETRY_DELAY);
+        console.log(`Request failed with status ${status || 'unknown'}, retrying in ${delay/1000} seconds... (Attempt ${retries + 1}/${MAX_RETRIES})`);
+      }
+      
+      // Wait before retrying
+      await sleep(delay);
+      retries++;
+    }
+  }
+};
+
 const backfillBoxScores = async () => {
   try {
     // Ensure box scores directory exists
@@ -40,18 +85,20 @@ const backfillBoxScores = async () => {
         // Add a small delay between requests
         await sleep(1000);
 
-        const response = await axios.get('https://api.pbpstats.com/get-game-stats', {
-          params: {
-            GameId: gameId,
-            Type: 'Player'
-          },
-          headers: {
-            'accept': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Origin': 'https://pbpstats.com',
-            'Referer': 'https://pbpstats.com/'
-          }
-        });
+        const params = {
+          GameId: gameId,
+          Type: 'Player'
+        };
+        
+        const headers = {
+          'accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Origin': 'https://pbpstats.com',
+          'Referer': 'https://pbpstats.com/'
+        };
+        
+        // Use the retry function instead of direct axios call
+        const response = await fetchWithRetry('https://api.pbpstats.com/get-game-stats', params, headers);
 
         if (!response.data) {
           console.error(`No data returned for game ${gameId}`);
@@ -79,14 +126,11 @@ const backfillBoxScores = async () => {
           data: err.response?.data
         });
 
-        // If we get rate limited, wait longer
-        if (err.response?.status === 429) {
-          console.log('Rate limited, waiting 10 seconds...');
-          await sleep(10000);
-        } else {
-          // Otherwise just wait 2 seconds
-          await sleep(2000);
-        }
+        // Even after retries, if we still have an error, wait before moving to the next game
+        // This helps avoid cascading failures
+        const waitTime = err.response?.status === 429 ? 15000 : 5000;
+        console.log(`Moving to next game after error, waiting ${waitTime/1000} seconds...`);
+        await sleep(waitTime);
       }
     }
 
