@@ -30,35 +30,76 @@ export default function GameCard({ game, loading: isLoading, onGameSelect }: Gam
           <thead>
             <tr className="text-gray-600 dark:text-gray-400">
               <th className="text-left">Team</th>
-              {[1,2,3,4].map(period => (
-                <th key={period} className="text-center w-8">{period}</th>
-              ))}
+              {/* Generate all possible periods (regular + overtime) */}
+              {(() => {
+                // Find the maximum period in the data
+                const maxPeriod = game.periodScores ? 
+                  Math.max(...game.periodScores.map(ps => parseInt(ps.period))) : 4;
+                
+                // Create array of all periods to display (up to 8 max)
+                const periodsToShow = Array.from(
+                  { length: Math.min(Math.max(maxPeriod, 4), 8) },
+                  (_, i) => i + 1
+                );
+                
+                return periodsToShow.map(period => (
+                  <th key={period} className="text-center w-8">
+                    {period <= 4 ? period : 
+                     period === 5 ? 'OT' : 
+                     `OT${period - 4}`}
+                  </th>
+                ));
+              })()}
               <th className="text-center w-8">T</th>
             </tr>
           </thead>
           <tbody className="dark:text-gray-200">
             <tr>
               <td className="text-left">{game.away_team_abbreviation}</td>
-              {[1,2,3,4].map(period => (
-                <td key={period} className="text-center">
-                  {game.periodScores?.find(ps => 
-                    ps.period === period.toString() && 
-                    ps.teamId === game.away_team_abbreviation
-                  )?.points || '-'}
-                </td>
-              ))}
+              {(() => {
+                // Find the maximum period in the data
+                const maxPeriod = game.periodScores ? 
+                  Math.max(...game.periodScores.map(ps => parseInt(ps.period))) : 4;
+                
+                // Create array of all periods to display (up to 8 max)
+                const periodsToShow = Array.from(
+                  { length: Math.min(Math.max(maxPeriod, 4), 8) },
+                  (_, i) => i + 1
+                );
+                
+                return periodsToShow.map(period => (
+                  <td key={period} className="text-center">
+                    {game.periodScores?.find(ps => 
+                      ps.period === period.toString() && 
+                      ps.teamId === game.away_team_abbreviation
+                    )?.points || '-'}
+                  </td>
+                ));
+              })()}
               <td className="text-center font-semibold">{game.away_team_score}</td>
             </tr>
             <tr>
               <td className="text-left">{game.home_team_abbreviation}</td>
-              {[1,2,3,4].map(period => (
-                <td key={period} className="text-center">
-                  {game.periodScores?.find(ps => 
-                    ps.period === period.toString() && 
-                    ps.teamId === game.home_team_abbreviation
-                  )?.points || '-'}
-                </td>
-              ))}
+              {(() => {
+                // Find the maximum period in the data
+                const maxPeriod = game.periodScores ? 
+                  Math.max(...game.periodScores.map(ps => parseInt(ps.period))) : 4;
+                
+                // Create array of all periods to display (up to 8 max)
+                const periodsToShow = Array.from(
+                  { length: Math.min(Math.max(maxPeriod, 4), 8) },
+                  (_, i) => i + 1
+                );
+                
+                return periodsToShow.map(period => (
+                  <td key={period} className="text-center">
+                    {game.periodScores?.find(ps => 
+                      ps.period === period.toString() && 
+                      ps.teamId === game.home_team_abbreviation
+                    )?.points || '-'}
+                  </td>
+                ));
+              })()}
               <td className="text-center font-semibold">{game.home_team_score}</td>
             </tr>
           </tbody>
