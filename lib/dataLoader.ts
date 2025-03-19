@@ -68,13 +68,12 @@ export class DataLoader {
   }
   
   /**
-   * Creates or updates the dynamic table based on the current parameters
-   * @param params Optional parameters to customize the dynamic table
+   * Creates or updates the dynamic table
    */
-  async createDynamicTable(params?: { [key: string]: any }): Promise<void> {
+  async createDynamicTable(): Promise<void> {
     try {
       const dynamicTableName = 'temp_dynamic_stats';
-      const query = createDynamicTableStatement(dynamicTableName, params);
+      const query = createDynamicTableStatement(dynamicTableName);
       await this.evaluateQuery(query);
       console.log('Dynamic table created successfully');
     } catch (error) {

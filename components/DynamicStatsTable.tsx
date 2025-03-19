@@ -4,16 +4,15 @@ import { useEffect, useState, useRef } from 'react';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { useDataLoader } from '@/lib/dataLoader';
 import { TEMP_TABLES } from '@/constants/tables';
-import type { MaterializedQueryResult } from '@motherduck/wasm-client';
 
 interface DynamicStatsTableProps {
-  parameters?: { [key: string]: any };
+  parameters?: { [key: string]: unknown };
   dataLoader?: ReturnType<typeof useDataLoader>;
 }
 
 interface TableData {
   columns: string[];
-  rows: readonly any[];
+  rows: readonly Record<string, unknown>[];
 }
 
 export default function DynamicStatsTable({ parameters, dataLoader: externalDataLoader }: DynamicStatsTableProps) {
@@ -43,13 +42,29 @@ export default function DynamicStatsTable({ parameters, dataLoader: externalData
         // First make sure the data is loaded
         await dataLoader.loadData();
         
-        // If parameters change, update the dynamic table
-        if (parameters) {
-          await dataLoader.createDynamicTable(parameters);
-        }
+        // Update the dynamic table
+        await dataLoader.createDynamicTable();
         
-        // Query the dynamic table
-        const result = await evaluateQuery(`SELECT * FROM ${TEMP_TABLES.DYNAMIC_STATS} LIMIT 100`);
+        // Query the dynamic table with specific columns in the requested order
+        const result = await evaluateQuery(`
+          SELECT 
+            game_id, 
+            player_name, 
+            game_quality, 
+            points, 
+            rebounds, 
+            assists, 
+            steals, 
+            blocks, 
+            turnovers, 
+            fg_v, 
+            fg3_made, 
+            ft_v 
+          FROM ${TEMP_TABLES.DYNAMIC_STATS} 
+          WHERE game_quality > 0 
+          ORDER BY game_quality DESC 
+          LIMIT 100
+        `);
         
         // Convert MaterializedQueryResult to array of objects
         const rows = result.data.toRows();
@@ -95,30 +110,84 @@ export default function DynamicStatsTable({ parameters, dataLoader: externalData
     return <div className="p-4">No data available</div>;
   }
 
+  // Define the columns we want to display in the order we want them
+  const displayColumns = [
+    'game_id',
+    'player_name',
+    'game_quality',
+    'points',
+    'rebounds',
+    'assists',
+    'steals',
+    'blocks',
+    'turnovers',
+    'fg_v',
+    'fg3_made',
+    'ft_v'
+  ];
+
+  // Map column names to display names
+  const columnDisplayNames: Record<string, string> = {
+    'game_id': 'Game ID',
+    'player_name': 'Player',
+    'game_quality': 'Game Quality',
+    'points': 'PTS',
+    'rebounds': 'REB',
+    'assists': 'AST',
+    'steals': 'STL',
+    'blocks': 'BLK',
+    'turnovers': 'TO',
+    'fg_v': 'FG Value',
+    'fg3_made': '3P Made',
+    'ft_v': 'FT Value'
+  };
+
+  // Filter rows to only include players with game quality > 0
+  const filteredRows = tableData.rows.filter(row => {
+    const gameQuality = row.game_quality as number;
+    return gameQuality > 0;
+  });
+  
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            {tableData.columns.map((column, index) => (
+    <div className="w-full">
+      <table className="min-w-full table-auto">
+        <thead>
+          <tr className="bg-gray-100 dark:bg-gray-700">
+            {displayColumns.map((column, index) => (
               <th
                 key={index}
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent"
+                style={{ textAlign: column === 'player_name' ? 'left' : 'right' }}
               >
-                {column}
+                {columnDisplayNames[column] || column}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {tableData.rows.map((row, rowIndex) => (
-            <tr key={rowIndex}>
-              {tableData.columns.map((column, colIndex) => (
-                <td key={colIndex} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {row[column]?.toString() || ''}
-                </td>
-              ))}
+        <tbody>
+          {filteredRows.map((row, rowIndex) => (
+            <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
+              {displayColumns.map((column, colIndex) => {
+                let displayValue = row[column]?.toString() || '';
+                
+                // Format game_quality as a percentage with 2 decimal places
+                if (column === 'game_quality' && displayValue) {
+                  const value = parseFloat(displayValue);
+                  if (!isNaN(value)) {
+                    displayValue = (value * 100).toFixed(1) + '%';
+                  }
+                }
+                
+                return (
+                  <td 
+                    key={colIndex} 
+                    className="md:px-1 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200"
+                    style={{ textAlign: column === 'player_name' ? 'left' : 'right' }}
+                  >
+                    {displayValue}
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>

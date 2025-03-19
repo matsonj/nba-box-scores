@@ -6,10 +6,9 @@ import { TEMP_TABLES } from '@/constants/tables';
 
 /**
  * Returns the SQL query for creating a dynamic stats table
- * @param params Optional parameters to customize the query
  * @returns SQL query string
  */
-export const getDynamicTableQuery = (params?: { [key: string]: any }) => {
+export const getDynamicTableQuery = () => {
   // For now, a simple query that selects from the schedule table
   // This can be expanded later to include filtering based on user parameters
   return `with cte_schedule as materialized (
@@ -114,16 +113,15 @@ select mg.*, -1 as wins, bsc.gm_count from cte_missing_games mg
 order by wins desc
 )
 select *, case when wins <> -1 then round(wins / gm_count,4) else -1 end as game_quality
-from cte_final`;
+from cte_final order by game_quality desc`;
 };
 
 /**
  * Returns the SQL statement to create or replace the dynamic table
  * @param tableName The name of the temporary table to create
- * @param params Optional parameters to customize the query
  * @returns SQL statement for creating the table
  */
-export const createDynamicTableStatement = (tableName: string, params?: { [key: string]: any }) => {
-  const query = getDynamicTableQuery(params);
+export const createDynamicTableStatement = (tableName: string) => {
+  const query = getDynamicTableQuery();
   return `CREATE OR REPLACE TEMP TABLE ${tableName} AS ${query}`;
 };
