@@ -69,29 +69,28 @@ export class DataLoader {
     return this.loadPromise;
   }
 
-  /**
-   * Loads all data including the dynamic table
-   * If essential tables are already loaded, it will only create the dynamic table
-   */
-  async loadData(skipEssentialTables = false): Promise<void> {
-    // First ensure essential tables are loaded (unless explicitly skipped)
-    if (!skipEssentialTables) {
-      await this.loadEssentialTables();
-    }
-    
-    // Then create the dynamic table in the background
-    this.createDynamicTable().catch(error => {
-      console.error('Error creating dynamic table in background:', error);
-    });
-    
-    return Promise.resolve();
-  }
+  // The loadData method has been removed in favor of more explicit control
+  // over when the dynamic table is created via the DynamicTableLoader component
   
   /**
    * Creates or updates the dynamic table
+   * This is an expensive operation that should only be called
+   * after the main application has fully loaded
    */
   async createDynamicTable(): Promise<void> {
     try {
+      console.log('Starting dynamic table creation...');
+      // First check if essential tables exist
+      try {
+        await this.evaluateQuery(`SELECT 1 FROM ${TEMP_TABLES.SCHEDULE} LIMIT 1`);
+        await this.evaluateQuery(`SELECT 1 FROM ${TEMP_TABLES.BOX_SCORES} LIMIT 1`);
+        await this.evaluateQuery(`SELECT 1 FROM ${TEMP_TABLES.TEAM_STATS} LIMIT 1`);
+      } catch {
+        console.error('Essential tables not loaded yet, loading them first...');
+        await this.loadEssentialTables();
+      }
+      
+      // Now create the dynamic table
       const dynamicTableName = 'temp_dynamic_stats';
       const query = createDynamicTableStatement(dynamicTableName);
       await this.evaluateQuery(query);

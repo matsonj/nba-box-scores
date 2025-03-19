@@ -50,7 +50,7 @@ export default function DynamicStatsTable({ parameters, dataLoader: externalData
           tableExists = true;
         } catch {
           console.log('Dynamic table does not exist yet');
-          setError('Dynamic stats are still being calculated. Please check back in a moment.');
+          setError('Dynamic stats are still being calculated in the background. This may take a few moments to complete. Please close this popup and try again shortly.');
           setIsLoading(false);
           return;
         }
@@ -145,16 +145,16 @@ export default function DynamicStatsTable({ parameters, dataLoader: externalData
   const columnDisplayNames: Record<string, string> = {
     'week_id': 'Week',
     'player_name': 'Player',
-    'game_quality': 'Game Quality',
+    'game_quality': 'GQ',
     'points': 'PTS',
     'rebounds': 'REB',
     'assists': 'AST',
     'steals': 'STL',
     'blocks': 'BLK',
     'turnovers': 'TO',
-    'fg_v': 'FG Value',
-    'fg3_made': '3P Made',
-    'ft_v': 'FT Value'
+    'fg_v': 'FGv',
+    'fg3_made': '3P',
+    'ft_v': 'FTv'
   };
 
   // Filter rows to only include players with game quality > 0
