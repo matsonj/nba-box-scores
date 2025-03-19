@@ -71,11 +71,13 @@ export class DataLoader {
 
   /**
    * Loads all data including the dynamic table
-   * This method first ensures essential tables are loaded, then creates the dynamic table
+   * If essential tables are already loaded, it will only create the dynamic table
    */
-  async loadData(): Promise<void> {
-    // First ensure essential tables are loaded
-    await this.loadEssentialTables();
+  async loadData(skipEssentialTables = false): Promise<void> {
+    // First ensure essential tables are loaded (unless explicitly skipped)
+    if (!skipEssentialTables) {
+      await this.loadEssentialTables();
+    }
     
     // Then create the dynamic table in the background
     this.createDynamicTable().catch(error => {

@@ -50,7 +50,7 @@ export function DynamicTablePopover() {
 
       {isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-[90] flex items-center justify-center p-4 md:p-0">
-          <div className="w-full md:w-1/2 h-full md:h-auto max-h-[90vh] md:max-h-[80vh] bg-white dark:bg-gray-800 rounded-lg shadow-lg z-[100] border border-gray-200 dark:border-gray-700 overflow-auto relative">
+          <div className="w-full md:w-3/4 lg:w-2/3 h-full md:h-auto max-h-[90vh] md:max-h-[80vh] bg-white dark:bg-gray-800 rounded-lg shadow-lg z-[100] border border-gray-200 dark:border-gray-700 overflow-auto relative">
             <div className="sticky top-0 bg-white dark:bg-gray-800 p-4 border-b border-gray-200 dark:border-gray-700 z-10">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold dark:text-white">Game Quality Stats</h3>
@@ -65,7 +65,7 @@ export function DynamicTablePopover() {
                 </button>
               </div>
             </div>
-            <div className="p-4">
+            <div className="p-4 font-mono">
               {/* Only render the table once when the popover is opened */}
               <DynamicStatsTable key="dynamic-stats-table" dataLoader={dataLoader} />
             </div>

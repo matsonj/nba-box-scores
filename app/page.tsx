@@ -155,8 +155,9 @@ export default function Home() {
         ]);
         
         // After the page renders, start loading dynamic table in background
+        // Skip loading essential tables since we already loaded them
         setTimeout(() => {
-          dataLoader.loadData().catch(error => {
+          dataLoader.loadData(true).catch(error => {
             console.error('Error loading dynamic table in background:', error);
           });
         }, 100);

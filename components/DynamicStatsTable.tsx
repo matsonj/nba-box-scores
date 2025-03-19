@@ -39,22 +39,31 @@ export default function DynamicStatsTable({ parameters, dataLoader: externalData
       setError(null);
       
       try {
-        // Create the dynamic table if it doesn't exist yet
-        // This might happen if the user navigates to this component before the background task completes
+        // Check if the dynamic table exists
+        // If it doesn't exist, we'll show a message instead of trying to create it
+        // This ensures we don't trigger expensive calculations when the popover is opened
+        let tableExists = false;
         try {
           // First check if the dynamic table exists by running a simple query
           await evaluateQuery('SELECT 1 FROM temp_dynamic_stats LIMIT 1');
           console.log('Dynamic table already exists');
-        } catch (e) {
-          // If the query fails, the table doesn't exist yet, so create it
-          console.log('Dynamic table does not exist yet, creating...');
-          await dataLoader.createDynamicTable();
+          tableExists = true;
+        } catch {
+          console.log('Dynamic table does not exist yet');
+          setError('Dynamic stats are still being calculated. Please check back in a moment.');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Only proceed if the table exists
+        if (!tableExists) {
+          return;
         }
         
         // Query the dynamic table with specific columns in the requested order
         const result = await evaluateQuery(`
           SELECT 
-            game_id, 
+            week_id,
             player_name, 
             game_quality, 
             points, 
@@ -118,7 +127,7 @@ export default function DynamicStatsTable({ parameters, dataLoader: externalData
 
   // Define the columns we want to display in the order we want them
   const displayColumns = [
-    'game_id',
+    'week_id',
     'player_name',
     'game_quality',
     'points',
@@ -134,7 +143,7 @@ export default function DynamicStatsTable({ parameters, dataLoader: externalData
 
   // Map column names to display names
   const columnDisplayNames: Record<string, string> = {
-    'game_id': 'Game ID',
+    'week_id': 'Week',
     'player_name': 'Player',
     'game_quality': 'Game Quality',
     'points': 'PTS',
@@ -176,12 +185,28 @@ export default function DynamicStatsTable({ parameters, dataLoader: externalData
               {displayColumns.map((column, colIndex) => {
                 let displayValue = row[column]?.toString() || '';
                 
-                // Format game_quality as a percentage with 2 decimal places
+                // Format various columns
                 if (column === 'game_quality' && displayValue) {
                   const value = parseFloat(displayValue);
                   if (!isNaN(value)) {
                     displayValue = (value * 100).toFixed(1) + '%';
                   }
+                } else if (column === 'fg_v' && displayValue) {
+                  const value = parseFloat(displayValue);
+                  if (!isNaN(value)) {
+                    const sign = value >= 0 ? '+' : '-';
+                    displayValue = sign + Math.abs(value).toFixed(1);
+                  }
+                } else if (column === 'ft_v' && displayValue) {
+                  const value = parseFloat(displayValue);
+                  if (!isNaN(value)) {
+                    const sign = value >= 0 ? '+' : '-';
+                    displayValue = sign + Math.abs(value).toFixed(1);
+                  }
+                } else if (column === 'week_id' && displayValue) {
+                  // Format week_id as 0000-00
+                  const weekId = displayValue.padStart(6, '0');
+                  displayValue = weekId.substring(0, 4) + '-' + weekId.substring(4, 6);
                 }
                 
                 return (
