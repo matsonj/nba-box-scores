@@ -91,9 +91,9 @@ export default function Home() {
         await dataLoader.waitForWasm();
         updateLoadingMessage(0);
 
-        // Step 2: Initialize tables
-        addLoadingMessage('Initializing database tables...');
-        await dataLoader.loadData();
+        // Step 2: Initialize essential tables
+        addLoadingMessage('Initializing essential tables...');
+        await dataLoader.loadEssentialTables();
         updateLoadingMessage(1);
         
         // Clear any previous errors
@@ -153,6 +153,13 @@ export default function Home() {
           { message: 'Processing and organizing data...', completed: true },
           { message: 'Ready! ✨', completed: true }
         ]);
+        
+        // After the page renders, start loading dynamic table in background
+        setTimeout(() => {
+          dataLoader.loadData().catch(error => {
+            console.error('Error loading dynamic table in background:', error);
+          });
+        }, 100);
       } catch (err) {
         console.error('Error in fetchGames:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch games');

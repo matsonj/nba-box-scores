@@ -45,7 +45,11 @@ export class DataLoader {
     await Promise.all(queries.map(query => this.evaluateQuery(query)));
   }
 
-  async loadData(): Promise<void> {
+  /**
+   * Loads only the essential tables needed for the main page
+   * Returns a promise that resolves when the essential tables are loaded
+   */
+  async loadEssentialTables(): Promise<void> {
     if (this.isLoading) {
       return this.loadPromise!;
     }
@@ -54,10 +58,8 @@ export class DataLoader {
     this.loadPromise = (async () => {
       try {
         await this.createTempTables();
-        // Create the dynamic table after the base tables are loaded
-        await this.createDynamicTable();
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('Error loading essential tables:', error);
         throw error;
       } finally {
         this.isLoading = false;
@@ -65,6 +67,22 @@ export class DataLoader {
     })();
 
     return this.loadPromise;
+  }
+
+  /**
+   * Loads all data including the dynamic table
+   * This method first ensures essential tables are loaded, then creates the dynamic table
+   */
+  async loadData(): Promise<void> {
+    // First ensure essential tables are loaded
+    await this.loadEssentialTables();
+    
+    // Then create the dynamic table in the background
+    this.createDynamicTable().catch(error => {
+      console.error('Error creating dynamic table in background:', error);
+    });
+    
+    return Promise.resolve();
   }
   
   /**

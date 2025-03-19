@@ -29,7 +29,7 @@ export function DynamicTablePopover() {
     <div className="relative" ref={popoverRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-center w-10 h-10 p-2 rounded-lg bg-blue-100 dark:bg-blue-800 hover:bg-blue-200 dark:hover:bg-blue-700 transition-colors mr-3"
+        className="w-10 h-10 p-2 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors mr-3"
         aria-label="View game quality stats"
       >
         <svg
@@ -38,7 +38,7 @@ export function DynamicTablePopover() {
           viewBox="0 0 24 24"
           strokeWidth={1.5}
           stroke="currentColor"
-          className="w-6 h-6 text-blue-600 dark:text-blue-200"
+          className="w-6 h-6 text-gray-800 dark:text-gray-200"
         >
           <path
             strokeLinecap="round"

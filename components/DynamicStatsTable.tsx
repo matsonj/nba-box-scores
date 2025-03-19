@@ -39,11 +39,17 @@ export default function DynamicStatsTable({ parameters, dataLoader: externalData
       setError(null);
       
       try {
-        // First make sure the data is loaded
-        await dataLoader.loadData();
-        
-        // Update the dynamic table
-        await dataLoader.createDynamicTable();
+        // Create the dynamic table if it doesn't exist yet
+        // This might happen if the user navigates to this component before the background task completes
+        try {
+          // First check if the dynamic table exists by running a simple query
+          await evaluateQuery('SELECT 1 FROM temp_dynamic_stats LIMIT 1');
+          console.log('Dynamic table already exists');
+        } catch (e) {
+          // If the query fails, the table doesn't exist yet, so create it
+          console.log('Dynamic table does not exist yet, creating...');
+          await dataLoader.createDynamicTable();
+        }
         
         // Query the dynamic table with specific columns in the requested order
         const result = await evaluateQuery(`
