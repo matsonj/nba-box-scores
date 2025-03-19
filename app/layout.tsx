@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
+import { DynamicTablePopover } from './components/DynamicTablePopover'
 import { MotherDuckClientProvider } from '@/lib/MotherDuckContext'
 
 export const metadata: Metadata = {
@@ -25,7 +26,10 @@ export default function RootLayout({
                   <h1 className="text-2xl font-bold text-gray-900 dark:text-white">NBA Box Scores</h1>
                   <span className="text-lg italic text-gray-600 dark:text-gray-400">mega fast sports data</span>
                 </div>
-                <ThemeToggle />
+                <div className="flex items-center">
+                  <DynamicTablePopover />
+                  <ThemeToggle />
+                </div>
               </div>
             </header>
             <main className="pt-16 text-gray-900 dark:text-gray-100">

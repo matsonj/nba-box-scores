@@ -2,6 +2,7 @@
 
 import { useMotherDuckClientState } from './MotherDuckContext';
 import { SOURCE_TABLES, TEMP_TABLES } from '@/constants/tables';
+import { createDynamicTableStatement } from './queries/dynamicTableQuery';
 
 
 export class DataLoader {
@@ -53,6 +54,8 @@ export class DataLoader {
     this.loadPromise = (async () => {
       try {
         await this.createTempTables();
+        // Create the dynamic table after the base tables are loaded
+        await this.createDynamicTable();
       } catch (error) {
         console.error('Error loading data:', error);
         throw error;
@@ -62,6 +65,22 @@ export class DataLoader {
     })();
 
     return this.loadPromise;
+  }
+  
+  /**
+   * Creates or updates the dynamic table based on the current parameters
+   * @param params Optional parameters to customize the dynamic table
+   */
+  async createDynamicTable(params?: { [key: string]: any }): Promise<void> {
+    try {
+      const dynamicTableName = 'temp_dynamic_stats';
+      const query = createDynamicTableStatement(dynamicTableName, params);
+      await this.evaluateQuery(query);
+      console.log('Dynamic table created successfully');
+    } catch (error) {
+      console.error('Error creating dynamic table:', error);
+      throw error;
+    }
   }
 }
 

@@ -185,7 +185,7 @@ export default function Home() {
     <ScheduleProvider>
       <div className="container mx-auto px-4 py-8 font-mono">
         {/* Sticky filter controls */}
-        <div className="sticky top-0 z-50 bg-white dark:bg-gray-900 pt-4 pb-4 border-b">
+        <div className="sticky top-0 bg-white dark:bg-gray-900 pt-4 pb-4 border-b z-10">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <FunnelIcon className="h-5 w-5 text-gray-600" />
