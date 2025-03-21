@@ -16,8 +16,8 @@ export function useSchedule() {
 
   const fetchSchedule = useCallback(async () => {
     try {
-      // Ensure data is loaded into temp tables
-      await dataLoader.loadData();
+      // Ensure essential data is loaded into temp tables
+      await dataLoader.loadEssentialTables();
 
       const result = await evaluateQuery(`
         SELECT * FROM nba_box_scores.main.schedule
@@ -59,8 +59,8 @@ export function useBoxScores() {
 
   const fetchBoxScores = useCallback(async () => {
     try {
-      // Ensure data is loaded into temp tables
-      await dataLoader.loadData();
+      // Ensure essential data is loaded into temp tables
+      await dataLoader.loadEssentialTables();
 
       const result = await evaluateQuery(`
         SELECT game_id, team_id, period, points 

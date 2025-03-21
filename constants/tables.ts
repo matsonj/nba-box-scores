@@ -2,6 +2,7 @@ export const TEMP_TABLES = {
   SCHEDULE: 'temp_schedule',
   BOX_SCORES: 'temp_box_scores',
   TEAM_STATS: 'temp_team_stats',
+  DYNAMIC_STATS: 'temp_dynamic_stats',
 } as const;
 
 export const SOURCE_TABLES = {

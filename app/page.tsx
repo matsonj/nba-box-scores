@@ -10,6 +10,14 @@ import { getTeamName } from '@/lib/teams';
 import { useSchedule, useBoxScores } from '@/hooks/useGameData';
 import { useDataLoader } from '@/lib/dataLoader';
 import { FunnelIcon } from '@heroicons/react/24/outline';
+import dynamic from 'next/dynamic';
+
+// Dynamically import the DynamicTableLoader with no SSR
+// This ensures it only loads on the client side after everything else
+const DynamicTableLoader = dynamic(
+  () => import('@/components/DynamicTableLoader'),
+  { ssr: false }
+);
 
 function groupByDate(games: ScheduleWithBoxScore[]) {
   const gamesByDate: Record<string, ScheduleWithBoxScore[]> = {};
@@ -91,9 +99,9 @@ export default function Home() {
         await dataLoader.waitForWasm();
         updateLoadingMessage(0);
 
-        // Step 2: Initialize tables
-        addLoadingMessage('Initializing database tables...');
-        await dataLoader.loadData();
+        // Step 2: Initialize essential tables
+        addLoadingMessage('Initializing essential tables...');
+        await dataLoader.loadEssentialTables();
         updateLoadingMessage(1);
         
         // Clear any previous errors
@@ -153,11 +161,13 @@ export default function Home() {
           { message: 'Processing and organizing data...', completed: true },
           { message: 'Ready! ✨', completed: true }
         ]);
+
       } catch (err) {
         console.error('Error in fetchGames:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch games');
       } finally {
         setLoading(false);
+        // Dynamic table loading is now handled by the DynamicTableLoader component
       }
     };
 
@@ -183,9 +193,11 @@ export default function Home() {
 
   return (
     <ScheduleProvider>
+      {/* Include the DynamicTableLoader component which will load the dynamic table in the background */}
+      <DynamicTableLoader />
       <div className="container mx-auto px-4 py-8 font-mono">
         {/* Sticky filter controls */}
-        <div className="sticky top-0 z-50 bg-white dark:bg-gray-900 pt-4 pb-4 border-b">
+        <div className="sticky top-0 bg-white dark:bg-gray-900 pt-4 pb-4 border-b z-10">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <FunnelIcon className="h-5 w-5 text-gray-600" />

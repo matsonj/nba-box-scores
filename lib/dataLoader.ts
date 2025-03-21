@@ -2,6 +2,7 @@
 
 import { useMotherDuckClientState } from './MotherDuckContext';
 import { SOURCE_TABLES, TEMP_TABLES } from '@/constants/tables';
+import { createDynamicTableStatement } from './queries/dynamicTableQuery';
 
 
 export class DataLoader {
@@ -44,7 +45,11 @@ export class DataLoader {
     await Promise.all(queries.map(query => this.evaluateQuery(query)));
   }
 
-  async loadData(): Promise<void> {
+  /**
+   * Loads only the essential tables needed for the main page
+   * Returns a promise that resolves when the essential tables are loaded
+   */
+  async loadEssentialTables(): Promise<void> {
     if (this.isLoading) {
       return this.loadPromise!;
     }
@@ -54,7 +59,7 @@ export class DataLoader {
       try {
         await this.createTempTables();
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('Error loading essential tables:', error);
         throw error;
       } finally {
         this.isLoading = false;
@@ -62,6 +67,38 @@ export class DataLoader {
     })();
 
     return this.loadPromise;
+  }
+
+  // The loadData method has been removed in favor of more explicit control
+  // over when the dynamic table is created via the DynamicTableLoader component
+  
+  /**
+   * Creates or updates the dynamic table
+   * This is an expensive operation that should only be called
+   * after the main application has fully loaded
+   */
+  async createDynamicTable(): Promise<void> {
+    try {
+      console.log('Starting dynamic table creation...');
+      // First check if essential tables exist
+      try {
+        await this.evaluateQuery(`SELECT 1 FROM ${TEMP_TABLES.SCHEDULE} LIMIT 1`);
+        await this.evaluateQuery(`SELECT 1 FROM ${TEMP_TABLES.BOX_SCORES} LIMIT 1`);
+        await this.evaluateQuery(`SELECT 1 FROM ${TEMP_TABLES.TEAM_STATS} LIMIT 1`);
+      } catch {
+        console.error('Essential tables not loaded yet, loading them first...');
+        await this.loadEssentialTables();
+      }
+      
+      // Now create the dynamic table
+      const dynamicTableName = 'temp_dynamic_stats';
+      const query = createDynamicTableStatement(dynamicTableName);
+      await this.evaluateQuery(query);
+      console.log('Dynamic table created successfully');
+    } catch (error) {
+      console.error('Error creating dynamic table:', error);
+      throw error;
+    }
   }
 }
 
