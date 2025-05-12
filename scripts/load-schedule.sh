@@ -49,7 +49,7 @@ SELECT
   awayTeam.score,
   gameStatusText
 FROM read_json('$SCHEDULE_DIR/completed-games.json')
-WHERE gameId LIKE '002%';
+WHERE gameId LIKE '002%' or gameId LIKE '004%' or gameId LIKE '005%';
 "
 
 echo "Schedule data loaded successfully!"
