@@ -10,9 +10,9 @@ const fetchAndSaveSchedule = async () => {
     // Ensure schedule directory exists
     await fs.mkdir(SCHEDULE_DIR, { recursive: true });
     
-    // Fetch schedule
-    console.log('Fetching NBA schedule...');
-    const response = await axios.get('https://cdn.nba.com/static/json/staticData/scheduleLeagueV2_1.json');
+    // Fetch schedule for 2024-25 season (completed games)
+    console.log('Fetching NBA schedule for 2024-25 season...');
+    const response = await axios.get('https://cdn.nba.com/static/json/staticData/scheduleLeagueV2_2.json');
     
     // Extract completed games
     const games = response.data.leagueSchedule.gameDates
