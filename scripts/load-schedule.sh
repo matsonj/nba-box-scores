@@ -9,12 +9,12 @@ echo "First game data:"
 jq '.[0]' "$SCHEDULE_DIR/completed-games.json"
 
 # Create and populate the schedule table using DuckDB
-echo "Creating and populating schedule table..."
+echo "Creating and populating schedule table (appending new games without dropping existing ones)..."
 duckdb "md:" -c "
 USE nba_box_scores;
-DROP TABLE IF EXISTS main.schedule;
 
-CREATE TABLE main.schedule (
+-- Ensure the schedule table exists but do NOT drop existing data
+CREATE TABLE IF NOT EXISTS main.schedule (
   game_id TEXT PRIMARY KEY,
   game_date TIMESTAMP NOT NULL,
   home_team_id INTEGER NOT NULL,
@@ -27,7 +27,8 @@ CREATE TABLE main.schedule (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO main.schedule (
+-- Upsert new games for the current season based on primary key (game_id)
+INSERT OR REPLACE INTO main.schedule (
   game_id,
   game_date,
   home_team_id,
