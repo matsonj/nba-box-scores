@@ -1,0 +1,103 @@
+'use client';
+
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useCallback } from 'react';
+import { FunnelIcon } from '@heroicons/react/24/outline';
+import { TEAM_ABBREVIATIONS } from '@/lib/teams';
+import { getAvailableSeasons, formatSeasonLabel } from '@/lib/seasonUtils';
+import type { SeasonType } from '@/lib/seasonUtils';
+
+const SEASON_TYPES: { value: SeasonType; label: string }[] = [
+  { value: 'all', label: 'All Games' },
+  { value: 'regular', label: 'Regular Season' },
+  { value: 'playoffs', label: 'Playoffs' },
+];
+
+const availableSeasons = getAvailableSeasons();
+
+interface SeasonFilterProps {
+  onFilterChange?: (filters: { season?: number; type?: SeasonType; team?: string }) => void;
+}
+
+export default function SeasonFilter({ onFilterChange }: SeasonFilterProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const season = searchParams?.get('season') ? Number(searchParams.get('season')) : undefined;
+  const seasonType = (searchParams?.get('type') as SeasonType) || 'all';
+  const team = searchParams?.get('team') || '';
+
+  const updateParams = useCallback((key: string, value: string) => {
+    const params = new URLSearchParams(searchParams?.toString() ?? '');
+    if (value && value !== 'all' && value !== '') {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    const queryString = params.toString();
+    router.replace(queryString ? `?${queryString}` : '/', { scroll: false });
+
+    // Notify parent of filter change
+    const newParams = new URLSearchParams(queryString);
+    onFilterChange?.({
+      season: newParams.get('season') ? Number(newParams.get('season')) : undefined,
+      type: (newParams.get('type') as SeasonType) || undefined,
+      team: newParams.get('team') || undefined,
+    });
+  }, [searchParams, router, onFilterChange]);
+
+  const hasActiveFilters = season || seasonType !== 'all' || team;
+
+  const clearAll = useCallback(() => {
+    router.replace('/', { scroll: false });
+    onFilterChange?.({});
+  }, [router, onFilterChange]);
+
+  return (
+    <div className="sticky top-16 bg-white dark:bg-gray-900 pt-4 pb-4 border-b border-gray-200 dark:border-gray-700 z-10">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <FunnelIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+          <select
+            value={season ?? ''}
+            onChange={(e) => updateParams('season', e.target.value)}
+            className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm w-32"
+          >
+            <option value="">All Seasons</option>
+            {availableSeasons.map((year) => (
+              <option key={year} value={year}>{formatSeasonLabel(year)}</option>
+            ))}
+          </select>
+          <select
+            value={seasonType}
+            onChange={(e) => updateParams('type', e.target.value)}
+            className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm w-40"
+          >
+            {SEASON_TYPES.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+          <select
+            value={team}
+            onChange={(e) => updateParams('team', e.target.value)}
+            className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm w-32"
+          >
+            <option value="">All Teams</option>
+            {TEAM_ABBREVIATIONS.map((abbr) => (
+              <option key={abbr} value={abbr}>{abbr}</option>
+            ))}
+          </select>
+        </div>
+
+        {hasActiveFilters && (
+          <button
+            onClick={clearAll}
+            className="text-sm text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}

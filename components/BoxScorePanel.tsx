@@ -8,6 +8,14 @@ import { Team, Schedule, BoxScores as BoxScoreType, TeamStats } from '@/app/type
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { TEMP_TABLES } from '@/constants/tables';
 import { getTeamName } from '@/lib/teams';
+import { parseGameDate } from '@/lib/dateUtils';
+import { sanitizeNumericId } from '@/lib/queryUtils';
+import dynamic from 'next/dynamic';
+
+const TeamComparisonChart = dynamic(
+  () => import('./charts/TeamComparisonChart'),
+  { ssr: false, loading: () => <div className="h-[250px]" /> }
+);
 
 interface BoxScorePanelProps {
   gameId: string | null;
@@ -50,21 +58,22 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
 
     const loadData = async () => {
       try {
+        const safeGameId = sanitizeNumericId(gameId);
         // Fetch all data in parallel using Promise.all for better performance
         const [
           gameInfoResult,
           boxScoresResult,
           teamStatsResult
         ] = await Promise.all([
-          evaluateQuery(`SELECT * FROM ${TEMP_TABLES.SCHEDULE} WHERE game_id = '${gameId}'`),
-          evaluateQuery(`SELECT * FROM ${TEMP_TABLES.BOX_SCORES} WHERE game_id = '${gameId}' AND period = 'FullGame'`),
-          evaluateQuery(`SELECT * FROM ${TEMP_TABLES.TEAM_STATS} WHERE game_id = '${gameId}'`)
+          evaluateQuery(`SELECT * FROM ${TEMP_TABLES.SCHEDULE} WHERE game_id = '${safeGameId}'`),
+          evaluateQuery(`SELECT * FROM ${TEMP_TABLES.BOX_SCORES} WHERE game_id = '${safeGameId}' AND period = 'FullGame'`),
+          evaluateQuery(`SELECT * FROM ${TEMP_TABLES.TEAM_STATS} WHERE game_id = '${safeGameId}'`)
         ]);
 
         const scheduleResult = [...gameInfoResult.data.toRows()].map(row => ({
           ...row,
-          game_date: new Date(row.game_date + 'Z'),
-          created_at: new Date(row.created_at + 'Z'),
+          game_date: parseGameDate(row.game_date as string),
+          created_at: parseGameDate(row.created_at as string),
           home_team_id: Number(row.home_team_id),
           away_team_id: Number(row.away_team_id),
           home_team_score: Number(row.home_team_score),
@@ -232,7 +241,7 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
             </button>
           </div>
           
-          <div className="p-3 md:text-base text-[50%]">
+          <div className="p-3 md:text-base text-xs">
             {loading ? (
               <div className="flex items-center justify-center h-[calc(100vh-120px)]">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-300 dark:border-gray-600 border-t-blue-600 dark:border-t-blue-400" />
@@ -260,11 +269,12 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
                   </p>
                 </div>
                 <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 120px)', padding: 0, paddingRight: '2px' }}>
-                  <BoxScore 
-                    homeTeam={data.homeTeam} 
-                    awayTeam={data.awayTeam} 
+                  <BoxScore
+                    homeTeam={data.homeTeam}
+                    awayTeam={data.awayTeam}
                     onPlayerClick={(entityId, playerName) => setSelectedPlayer({ entityId, name: playerName })}
                   />
+                  <TeamComparisonChart homeTeam={data.homeTeam} awayTeam={data.awayTeam} />
                 </div>
                 {selectedPlayer && (
                   <div className="fixed inset-0 z-[60] bg-black bg-opacity-50">

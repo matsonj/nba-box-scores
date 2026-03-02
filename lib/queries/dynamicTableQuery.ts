@@ -3,6 +3,7 @@
  */
 
 import { TEMP_TABLES } from '@/constants/tables';
+import { MIN_MINUTES_FOR_GAME_QUALITY, LEAGUE_AVG_FG_PCT, LEAGUE_AVG_FT_PCT } from '@/constants/game';
 
 /**
  * Returns the SQL query for creating a dynamic stats table
@@ -24,18 +25,18 @@ export const getDynamicTableQuery = () => {
   from ${TEMP_TABLES.BOX_SCORES} bs
   join cte_schedule s on bs.game_id = s.game_id
   where bs.period = 'FullGame'
-  and substring(bs."minutes", 1, instr(bs."minutes", ':') - 1)::int >= 15
+  and substring(bs."minutes", 1, instr(bs."minutes", ':') - 1)::int >= ${MIN_MINUTES_FOR_GAME_QUALITY}
   group by all
   ),
   cte_prep as materialized  (
-  select 
+  select
     bs.game_id,
-    bs.entity_id,  
+    bs.entity_id,
     bs.player_name,
     CASE WHEN bs.fg_attempted > 0 then round(bs.fg_made / bs.fg_attempted,3) else 0 end as fg_pct,
     CASE WHEN bs.ft_attempted > 0 then round(bs.ft_made / bs.ft_attempted,3) else 0 end as ft_pct,
-    round((fg_pct - 0.47) * bs.fg_attempted,2) as fg_v,
-    round((ft_pct - 0.80) * bs.ft_attempted,2) as ft_v,
+    round((fg_pct - ${LEAGUE_AVG_FG_PCT}) * bs.fg_attempted,2) as fg_v,
+    round((ft_pct - ${LEAGUE_AVG_FT_PCT}) * bs.ft_attempted,2) as ft_v,
     bs.fg3_made,
     bs.points,
     bs.rebounds,
@@ -48,7 +49,7 @@ export const getDynamicTableQuery = () => {
   from ${TEMP_TABLES.BOX_SCORES} bs
   join cte_schedule s on bs.game_id = s.game_id
   where bs.period = 'FullGame'
-  and substring(bs."minutes", 1, instr(bs."minutes", ':') - 1)::int >= 15
+  and substring(bs."minutes", 1, instr(bs."minutes", ':') - 1)::int >= ${MIN_MINUTES_FOR_GAME_QUALITY}
   order by week_id, entity_id
 ),
   cte_missing_games as (
@@ -58,8 +59,8 @@ export const getDynamicTableQuery = () => {
     player_name,
     CASE WHEN fg_attempted > 0 then round(fg_made / fg_attempted,3) else 0 end as fg_pct,
     CASE WHEN ft_attempted > 0 then round(ft_made / ft_attempted,3) else 0 end as ft_pct,
-    round((fg_pct - 0.47) * fg_attempted,2) as fg_v,
-    round((ft_pct - 0.80) * ft_attempted,2) as ft_v,
+    round((fg_pct - ${LEAGUE_AVG_FG_PCT}) * fg_attempted,2) as fg_v,
+    round((ft_pct - ${LEAGUE_AVG_FT_PCT}) * ft_attempted,2) as ft_v,
     fg3_made,
     points,
     rebounds,
@@ -71,7 +72,7 @@ export const getDynamicTableQuery = () => {
   from box_scores bs
     join cte_schedule s on bs.game_id = s.game_id
   where period = 'FullGame'
-  and substring("minutes", 1, instr("minutes", ':') - 1)::int < 15
+  and substring("minutes", 1, instr("minutes", ':') - 1)::int < ${MIN_MINUTES_FOR_GAME_QUALITY}
   ),
   cte_final as (
 select

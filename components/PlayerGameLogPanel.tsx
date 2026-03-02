@@ -5,7 +5,14 @@ import { BoxScores as BoxScoreType } from '@/app/types/schema';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { TEMP_TABLES } from '@/constants/tables';
 import { utcToLocalDate } from '@/lib/dateUtils';
+import { sanitizeNumericId } from '@/lib/queryUtils';
 import { format } from 'date-fns';
+import dynamic from 'next/dynamic';
+
+const PlayerPerformanceTrend = dynamic(
+  () => import('./charts/PlayerPerformanceTrend'),
+  { ssr: false, loading: () => <div className="h-[300px]" /> }
+);
 
 interface PlayerGameLogPanelProps {
   entityId: string;
@@ -28,6 +35,7 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
 
   const [games, setGames] = useState<GameLogEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
   const { evaluateQuery } = useMotherDuckClientState();
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -46,37 +54,38 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
     const loadData = async () => {
       try {
         setLoading(true);
+        const safeEntityId = sanitizeNumericId(entityId);
         const result = await evaluateQuery(`
-          SELECT 
-            b.*, 
-            s.game_date, 
-            s.home_team_id, 
-            s.away_team_id, 
-            s.home_team_abbreviation, 
-            s.away_team_abbreviation, 
-            s.home_team_score, 
+          SELECT
+            b.*,
+            s.game_date,
+            s.home_team_id,
+            s.away_team_id,
+            s.home_team_abbreviation,
+            s.away_team_abbreviation,
+            s.home_team_score,
             s.away_team_score,
-            CASE 
-              WHEN b.team_id = s.home_team_abbreviation THEN 
-                CASE 
+            CASE
+              WHEN b.team_id = s.home_team_abbreviation THEN
+                CASE
                   WHEN s.home_team_score > s.away_team_score THEN 'W'
                   WHEN s.home_team_score < s.away_team_score THEN 'L'
                   ELSE 'T'
                 END
               ELSE
-                CASE 
+                CASE
                   WHEN s.away_team_score > s.home_team_score THEN 'W'
                   WHEN s.away_team_score < s.home_team_score THEN 'L'
                   ELSE 'T'
                 END
             END AS result,
-            CASE 
+            CASE
               WHEN b.team_id = s.home_team_abbreviation THEN s.home_team_score - s.away_team_score
               ELSE s.away_team_score - s.home_team_score
             END AS margin
           FROM ${TEMP_TABLES.BOX_SCORES} b
           JOIN ${TEMP_TABLES.SCHEDULE} s ON b.game_id = s.game_id
-          WHERE b.entity_id = '${entityId}' AND b.period = 'FullGame'
+          WHERE b.entity_id = '${safeEntityId}' AND b.period = 'FullGame'
           ORDER BY s.game_date DESC
         `);
 
@@ -143,17 +152,39 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold dark:text-white">{playerName} - Game Log</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded border border-gray-300 dark:border-gray-600 text-sm">
+              <button
+                onClick={() => setViewMode('table')}
+                className={`px-3 py-1 ${viewMode === 'table' ? 'bg-gray-200 dark:bg-gray-600' : ''}`}
+              >
+                Table
+              </button>
+              <button
+                onClick={() => setViewMode('chart')}
+                className={`px-3 py-1 ${viewMode === 'chart' ? 'bg-gray-200 dark:bg-gray-600' : ''}`}
+              >
+                Chart
+              </button>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            >
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
-        <div className="w-full">
+        {viewMode === 'chart' && !loading && games.length > 0 && (
+          <div className="mb-4">
+            <PlayerPerformanceTrend games={games} playerName={playerName} />
+          </div>
+        )}
+
+        <div className={`w-full ${viewMode === 'chart' ? 'hidden' : ''}`}>
           <table className="min-w-full table-auto">
             <thead>
               <tr className="bg-gray-100 dark:bg-gray-700">

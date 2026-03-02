@@ -4,6 +4,12 @@ import { useEffect, useState, useRef } from 'react';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { useDataLoader } from '@/lib/dataLoader';
 import { TEMP_TABLES } from '@/constants/tables';
+import dynamic from 'next/dynamic';
+
+const GameQualityDistribution = dynamic(
+  () => import('./charts/GameQualityDistribution'),
+  { ssr: false, loading: () => <div className="h-[250px]" /> }
+);
 
 interface DynamicStatsTableProps {
   parameters?: { [key: string]: unknown };
@@ -19,6 +25,7 @@ export default function DynamicStatsTable({ parameters, dataLoader: externalData
   const [tableData, setTableData] = useState<TableData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
   const { evaluateQuery } = useMotherDuckClientState();
   
   // Use the provided dataLoader or create a new one if not provided
@@ -27,6 +34,7 @@ export default function DynamicStatsTable({ parameters, dataLoader: externalData
 
   // Use a ref to track if we've already loaded data
   const hasLoadedRef = useRef(false);
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     // Skip loading if we've already loaded and parameters haven't changed
@@ -34,82 +42,84 @@ export default function DynamicStatsTable({ parameters, dataLoader: externalData
       return;
     }
 
+    let cancelled = false;
+
     const loadData = async () => {
       setIsLoading(true);
       setError(null);
-      
+
       try {
         // Check if the dynamic table exists
-        // If it doesn't exist, we'll show a message instead of trying to create it
-        // This ensures we don't trigger expensive calculations when the popover is opened
         let tableExists = false;
         try {
-          // First check if the dynamic table exists by running a simple query
           await evaluateQuery('SELECT 1 FROM temp_dynamic_stats LIMIT 1');
-          console.log('Dynamic table already exists');
           tableExists = true;
         } catch {
-          console.log('Dynamic table does not exist yet');
-          setError('Dynamic stats are still being calculated in the background. This may take a few moments to complete. Please close this popup and try again shortly.');
-          setIsLoading(false);
+          // Table not ready yet -- show waiting message and schedule retry
+          if (!cancelled) {
+            setError('Dynamic stats are still being calculated. Retrying...');
+            setIsLoading(false);
+            pollTimerRef.current = setTimeout(() => {
+              if (!cancelled) loadData();
+            }, 3000);
+          }
           return;
-        }
-        
-        // Only proceed if the table exists
-        if (!tableExists) {
-          return;
-        }
-        
-        // Query the dynamic table with specific columns in the requested order
-        const result = await evaluateQuery(`
-          SELECT 
-            week_id,
-            player_name, 
-            game_quality, 
-            points, 
-            rebounds, 
-            assists, 
-            steals, 
-            blocks, 
-            turnovers, 
-            fg_v, 
-            fg3_made, 
-            ft_v 
-          FROM ${TEMP_TABLES.DYNAMIC_STATS} 
-          WHERE game_quality > 0 
-          ORDER BY game_quality DESC 
-          LIMIT 100
-        `);
-        
-        // Convert MaterializedQueryResult to array of objects
-        const rows = result.data.toRows();
-        
-        if (rows && rows.length > 0) {
-          // Extract column names from the first row
-          const columns = Object.keys(rows[0]);
-          setTableData({
-            columns,
-            rows
-          });
-        } else {
-          setTableData({
-            columns: [],
-            rows: []
-          });
         }
 
-        // Mark that we've loaded data
-        hasLoadedRef.current = true;
+        if (!tableExists) return;
+
+        const result = await evaluateQuery(`
+          SELECT
+            week_id,
+            player_name,
+            game_quality,
+            points,
+            rebounds,
+            assists,
+            steals,
+            blocks,
+            turnovers,
+            fg_v,
+            fg3_made,
+            ft_v
+          FROM ${TEMP_TABLES.DYNAMIC_STATS}
+          WHERE game_quality > 0
+          ORDER BY game_quality DESC
+          LIMIT 100
+        `);
+
+        const rows = result.data.toRows();
+
+        if (!cancelled) {
+          if (rows && rows.length > 0) {
+            const columns = Object.keys(rows[0]);
+            setTableData({ columns, rows });
+          } else {
+            setTableData({ columns: [], rows: [] });
+          }
+          hasLoadedRef.current = true;
+        }
       } catch (err) {
         console.error('Error loading dynamic table data:', err);
-        setError('Failed to load data. Please try again.');
+        if (!cancelled) {
+          setError('Failed to load data. Please try again.');
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     };
-    
+
     loadData();
-    // Only re-run if parameters change or if dataLoader changes
+
+    return () => {
+      cancelled = true;
+      if (pollTimerRef.current) {
+        clearTimeout(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parameters, dataLoader]);
 
@@ -165,6 +175,26 @@ export default function DynamicStatsTable({ parameters, dataLoader: externalData
   
   return (
     <div className="w-full">
+      <div className="flex justify-end mb-2">
+        <div className="flex rounded border border-gray-300 dark:border-gray-600 text-sm">
+          <button
+            onClick={() => setViewMode('table')}
+            className={`px-3 py-1 ${viewMode === 'table' ? 'bg-gray-200 dark:bg-gray-600' : ''}`}
+          >
+            Table
+          </button>
+          <button
+            onClick={() => setViewMode('chart')}
+            className={`px-3 py-1 ${viewMode === 'chart' ? 'bg-gray-200 dark:bg-gray-600' : ''}`}
+          >
+            Chart
+          </button>
+        </div>
+      </div>
+
+      {viewMode === 'chart' ? (
+        <GameQualityDistribution rows={filteredRows} />
+      ) : (
       <table className="min-w-full table-auto">
         <thead>
           <tr className="bg-gray-100 dark:bg-gray-700">
@@ -223,6 +253,7 @@ export default function DynamicStatsTable({ parameters, dataLoader: externalData
           ))}
         </tbody>
       </table>
+      )}
     </div>
   );
 }
