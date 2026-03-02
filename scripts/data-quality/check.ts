@@ -14,6 +14,7 @@ import { impossibleStatsDetector } from './detectors/impossible-stats';
 import { scoreMismatchDetector } from './detectors/score-mismatch';
 import { duplicatesDetector } from './detectors/duplicates';
 import { autoResolve } from './auto-resolve';
+import { createIssuesForPending } from './github-issues';
 
 const ALL_DETECTORS: Detector[] = [
   teamSwitchDetector,
@@ -88,6 +89,14 @@ async function main(): Promise<void> {
     console.log('\n--- Auto-Resolution ---\n');
     const resolved = await autoResolve(db);
     console.log(`Auto-resolved ${resolved.resolved} team_switch record(s) via 3-game rule.`);
+
+    // Create GitHub Issues for remaining pending records
+    console.log('\n--- GitHub Issues ---\n');
+    try {
+      await createIssuesForPending(db);
+    } catch (err) {
+      console.warn(`GitHub issue creation skipped: ${err instanceof Error ? err.message : err}`);
+    }
 
     // Final quarantine status
     const pending = await db.query<{ cnt: number }>(

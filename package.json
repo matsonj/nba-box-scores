@@ -16,7 +16,8 @@
     "ingest:backfill": "tsx scripts/ingest/index.ts --all --season-concurrency 2 --concurrency 5",
     "ingest:playoffs": "tsx scripts/ingest/index.ts --all --season-type Playoffs",
     "ingest:status": "tsx scripts/ingest/status.ts",
-    "data-quality:check": "tsx scripts/data-quality/check.ts"
+    "data-quality:check": "tsx scripts/data-quality/check.ts",
+    "data-quality:issues": "tsx scripts/data-quality/github-issues.ts"
   },
   "dependencies": {
     "@duckdb/node-api": "^1.4.4-r.2",
