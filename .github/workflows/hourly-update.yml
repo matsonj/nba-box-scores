@@ -6,13 +6,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  ingest:
+  check-season:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
+    outputs:
+      active: ${{ steps.season-check.outputs.active }}
+      season_year: ${{ steps.season-check.outputs.season_year }}
     steps:
-      - uses: actions/checkout@v4
-
       - name: Check if NBA season is active and compute season year
         id: season-check
         run: |
@@ -35,13 +34,20 @@ jobs:
             echo "NBA season active (month $month), season year $season_year."
           fi
 
+  ingest:
+    needs: check-season
+    if: needs.check-season.outputs.active == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
-        if: steps.season-check.outputs.active == 'true'
         with:
           node-version: '22'
 
       - uses: actions/cache@v4
-        if: steps.season-check.outputs.active == 'true'
         with:
           path: node_modules
           key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
@@ -49,11 +55,9 @@ jobs:
             ${{ runner.os }}-node-modules-
 
       - name: Install dependencies
-        if: steps.season-check.outputs.active == 'true'
         run: npm ci
 
       - name: Run current season ingestion (low concurrency)
-        if: steps.season-check.outputs.active == 'true'
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: npm run ingest -- --season ${{ steps.season-check.outputs.season_year }} --concurrency 3
+        run: npm run ingest -- --season ${{ needs.check-season.outputs.season_year }} --concurrency 3

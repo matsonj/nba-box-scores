@@ -6,11 +6,11 @@ on:
       from_season:
         description: 'Start season year (e.g. 2020 for 2020-21)'
         required: true
-        type: number
+        type: string
       to_season:
         description: 'End season year inclusive (e.g. 2024 for 2024-25)'
         required: true
-        type: number
+        type: string
 
 jobs:
   backfill:
