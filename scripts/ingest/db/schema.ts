@@ -54,16 +54,19 @@ CREATE TABLE IF NOT EXISTS main.ingestion_log (
 
 export const CREATE_DATA_QUALITY_QUARANTINE = `
 CREATE TABLE IF NOT EXISTS main.data_quality_quarantine (
-  id INTEGER PRIMARY KEY,
-  game_id TEXT NOT NULL,
-  check_name TEXT NOT NULL,
-  severity TEXT NOT NULL DEFAULT 'warning',
-  message TEXT NOT NULL,
+  game_id VARCHAR NOT NULL,
+  entity_id VARCHAR NOT NULL,
+  player_name VARCHAR NOT NULL,
+  expected_team VARCHAR,
+  actual_team VARCHAR NOT NULL,
+  detection_type VARCHAR NOT NULL DEFAULT 'team_switch',
+  status VARCHAR NOT NULL DEFAULT 'pending',
   details TEXT,
-  detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  github_issue_number INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   resolved_at TIMESTAMP,
-  resolution TEXT,
-  github_issue_number INTEGER
+  resolved_by VARCHAR,
+  PRIMARY KEY (game_id, entity_id, detection_type)
 );`;
 
 export const CREATE_TEAM_STATS_VIEW = `
