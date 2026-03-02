@@ -2,7 +2,7 @@
  * Box score parser — converts raw NBA JSON box score data into BoxScoreRow[]
  * matching the v2 database schema.
  *
- * Ported from src/nba_box_scores/box_score_parser.py
+ * Ported from the original Python box_score_parser
  */
 
 import type { BoxScoreRow } from '../types';
