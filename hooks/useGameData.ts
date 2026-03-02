@@ -7,7 +7,6 @@ import { getTeamName } from '@/lib/teams';
 import { TEMP_TABLES, SOURCE_TABLES } from '@/constants/tables';
 import { useDataLoader } from '@/lib/dataLoader';
 import { utcToLocalDate } from '@/lib/dateUtils';
-import { GAME_ID_PREFIXES } from '@/constants/game';
 import { escapeSqlString } from '@/lib/queryUtils';
 import type { SeasonType } from '@/lib/seasonUtils';
 
@@ -21,17 +20,14 @@ function buildSeasonWhereClause(filters?: GameDataFilters, alias?: string): stri
   const prefix = alias ? `${alias}.` : '';
 
   if (filters?.seasonYear) {
-    // NBA season: Oct of seasonYear through Jun of seasonYear+1
-    const startDate = `${filters.seasonYear}-10-01`;
-    const endDate = `${filters.seasonYear + 1}-09-30`;
-    clauses.push(`${prefix}game_date >= '${startDate}' AND ${prefix}game_date <= '${endDate}'`);
+    clauses.push(`${prefix}season_year = ${filters.seasonYear}`);
   }
 
   if (filters?.seasonType && filters.seasonType !== 'all') {
     if (filters.seasonType === 'regular') {
-      clauses.push(`${prefix}game_id LIKE '${GAME_ID_PREFIXES.REGULAR_SEASON}%'`);
+      clauses.push(`${prefix}season_type = 'Regular Season'`);
     } else if (filters.seasonType === 'playoffs') {
-      clauses.push(`(${prefix}game_id LIKE '${GAME_ID_PREFIXES.PLAYOFFS}%' OR ${prefix}game_id LIKE '${GAME_ID_PREFIXES.PLAY_IN}%')`);
+      clauses.push(`${prefix}season_type IN ('Playoffs', 'Play-In')`);
     }
   }
 
@@ -48,7 +44,7 @@ export function useSchedule() {
 
       const whereClause = buildSeasonWhereClause(filters);
       const result = await evaluateQuery(`
-        SELECT * FROM nba_box_scores.main.schedule
+        SELECT * FROM ${SOURCE_TABLES.SCHEDULE}
         WHERE 1=1${whereClause}
       `);
 
@@ -95,15 +91,15 @@ export function useBoxScores() {
         const whereClause = buildSeasonWhereClause(filters, 's');
         query = `
           SELECT ts.game_id, ts.team_id, ts.period, ts.points
-          FROM nba_box_scores.main.team_stats ts
-          JOIN nba_box_scores.main.schedule s ON ts.game_id = s.game_id
+          FROM ${SOURCE_TABLES.TEAM_STATS} ts
+          JOIN ${SOURCE_TABLES.SCHEDULE} s ON ts.game_id = s.game_id
           WHERE ts.period != 'FullGame'${whereClause}
           ORDER BY ts.game_id, ts.team_id, CAST(ts.period AS INTEGER)
         `;
       } else {
         query = `
           SELECT game_id, team_id, period, points
-          FROM nba_box_scores.main.team_stats
+          FROM ${SOURCE_TABLES.TEAM_STATS}
           WHERE period != 'FullGame'
           ORDER BY game_id, team_id, CAST(period AS INTEGER)
         `;
