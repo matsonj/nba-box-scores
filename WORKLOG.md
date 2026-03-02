@@ -141,8 +141,21 @@
 - **Lines removed**: ~900 (dead code, duplicated logic)
 
 ## Numbers
-- **Issues completed this session**: 11 (#14, #15, #16, #17, #21, #22, #23, #24, #25, #31, #32, #34)
+### Session 2: 2026-03-02 — Continued with 3 new agents
+- **Model**: 3 agents (`pipeline-builder`, `frontend-dev`, `infra-dev`) on shared branch
+- **Wave 4**: #18 orchestrator (last P0!), #29 streaming mode, #35 status dashboard
+- **Wave 5**: #28 GitHub Actions, #20 Python removal, #26 data quality, #27 GH Issues automation
+- **Wave 6**: #33 frontend v2 swap (in progress)
+- **Validation**: Ran build + tests after every wave — all green throughout
+- **v1 vs v2 spot check**: Game 0022500825 — all stats match, found v1 minutes inflation bug
+
+## Numbers
+- **Issues completed**: 21 of 23 (91%) — only #19 (backfill, operational) and #30 (pre-2000, P3) remain
 - **Tests**: 93 passing across 9 suites
-- **New routes**: `/charts`
-- **Pipeline modules**: 10 (config, types, rate-limiter, client, pool, logger, shutdown, schema, connection, loader)
+- **Commits on branch**: 18
+- **New routes**: `/charts`, `/api/live-scores`
+- **Pipeline modules**: 12 (config, types, rate-limiter, client, pool, logger, shutdown, schema, connection, loader, season-worker, index)
+- **Data quality detectors**: 4 (team-switch, impossible-stats, score-mismatch, duplicates)
+- **GitHub Actions workflows**: 3 (nightly, hourly, backfill)
 - **Chart components**: 3 (PlayerPerformanceTrend, TeamComparisonChart, GameQualityDistribution)
+- **Python/legacy files removed**: ~10 files + entire `src/nba_box_scores/` directory
