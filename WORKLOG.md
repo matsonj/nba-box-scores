@@ -76,6 +76,23 @@
 - **Key decisions**: JSON logging to stdout/stderr (machine-parseable for GitHub Actions). Token-bucket rate limiter is singleton to prevent thundering herd. Worker pool uses shared queue pattern — items pulled on demand, not pre-distributed. 3x backoff multiplier on 429s (PBPStats rate limit is aggressive).
 - **Design note**: Config uses simple arg parsing (no external deps like yargs) — keeps pipeline dependency-light
 
+### 2026-03-02 — pipeline-builder agent — Build CLI orchestrator (#18)
+- **What was done**: Created `scripts/ingest/workers/season-worker.ts` (processSeason function) and `scripts/ingest/index.ts` (CLI entry point). Added 5 npm scripts (ingest, ingest:current, ingest:backfill, ingest:playoffs, ingest:status).
+- **Key decisions**: Season worker fetches game list, checks ingestion_log for incremental skip, fans out to game worker pool. Per-game errors logged but don't halt processing. CLI supports dry-run mode. Team stats view refreshed after all seasons complete.
+- **Milestone**: This was the last P0 — all 7 P0 issues now complete.
+
+### 2026-03-02 — frontend-dev agent — Build streaming mode foundation (#29)
+- **What was done**: Created server-side API proxy (`pages/api/live-scores.ts`), live polling hook (`hooks/useLivePolling.ts`), and header toggle (`components/LiveModeToggle.tsx`). Integrated into `app/layout.tsx`.
+- **Key decisions**: 5s in-memory cache on proxy to prevent API hammering. Polling pauses when tab hidden (visibility API). Pulsing green dot + time-ago display for UX.
+
+### 2026-03-02 — infra-dev agent — Build ingestion status dashboard (#35)
+- **What was done**: Created `scripts/ingest/status.ts` CLI tool and `scripts/ingest/db/queries.ts` with reusable status queries.
+- **Key decisions**: ASCII table output, supports --season and --errors flags.
+
+### 2026-03-02 — frontend-dev agent — Set up GitHub Actions (#28)
+- **What was done**: Created 3 workflow files: nightly-sync.yml (6AM UTC cron), hourly-update.yml (hourly Oct-Jun), backfill.yml (manual workflow_dispatch with season inputs).
+- **Key decisions**: Node 22, npm ci with cache, MOTHERDUCK_TOKEN as secret. Hourly limited to NBA season months. Backfill has 4hr timeout for 25 seasons.
+
 ### 2026-03-02 — schema-designer agent — MotherDuck database layer and batch loader (#17)
 - **What was done**: Created `scripts/ingest/db/connection.ts` (MotherDuckConnection class using @duckdb/node-api) and `scripts/ingest/db/loader.ts` (Loader class with batch operations)
 - **Loader methods**: `loadBoxScoreRows`, `loadScheduleRows`, `markIngested`, `isGameIngested`, `getIngestedGameIds`, `deriveTeamStats`, `ensureSchema`
