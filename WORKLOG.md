@@ -85,6 +85,13 @@
 - **What was done**: Ported `src/nba_box_scores/box_score_parser.py` to `scripts/ingest/parse/box-score-parser.ts` + `season-utils.ts`. 31 tests validated against 3 real JSON fixtures (regulation, single OT, double OT).
 - **Key decisions**: FullGame rows computed by aggregating per-period data (matches Python SQL view approach). Starter heuristic: top 5 scorers per team. FG mapping: fg_made = FG2M + FG3M. Minutes summed as MM:SS across periods. Season type derived from game_id prefix.
 
+### 2026-03-02 — Team Lead — v1 vs v2 parser validation (spot check)
+- **What was done**: Compared v1 MotherDuck data against new TypeScript parser output for game 0022500825 (CHI 99 - NYK 105, 2026-02-23)
+- **Result**: All core stats (PTS, REB, AST, STL, BLK, TO, FG, 3PT, FT) match perfectly across all 19 players
+- **Bug found in v1**: Minutes inflated by ~1:00 for 7 players. New parser matches raw JSON exactly. Example: Matas Buzelis v1=26:58, v2=25:58, rawJSON=25:58. Root cause likely in the Python parser's minutes handling.
+- **Starter diffs**: 5 players differ due to tie-breaking in "top 5 scorers" heuristic — neither is wrong, just different ordering
+- **Conclusion**: v2 parser is more accurate than v1. Safe to proceed with backfill.
+
 ## Data Quality
 *(To be filled as data quality issues are completed)*
 
