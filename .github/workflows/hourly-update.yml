@@ -1,0 +1,59 @@
+name: Hourly Live Update
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check if NBA season is active and compute season year
+        id: season-check
+        run: |
+          month=$(date -u +%-m)
+          year=$(date -u +%Y)
+          # NBA season runs October (10) through June (6)
+          # Skip July (7), August (8), September (9)
+          if [ "$month" -ge 7 ] && [ "$month" -le 9 ]; then
+            echo "active=false" >> "$GITHUB_OUTPUT"
+            echo "Off-season (month $month), skipping."
+          else
+            echo "active=true" >> "$GITHUB_OUTPUT"
+            # Season year: Oct-Dec = current year, Jan-Jun = prior year
+            if [ "$month" -ge 10 ]; then
+              season_year=$year
+            else
+              season_year=$((year - 1))
+            fi
+            echo "season_year=$season_year" >> "$GITHUB_OUTPUT"
+            echo "NBA season active (month $month), season year $season_year."
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.season-check.outputs.active == 'true'
+        with:
+          node-version: '22'
+
+      - uses: actions/cache@v4
+        if: steps.season-check.outputs.active == 'true'
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Install dependencies
+        if: steps.season-check.outputs.active == 'true'
+        run: npm ci
+
+      - name: Run current season ingestion (low concurrency)
+        if: steps.season-check.outputs.active == 'true'
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: npm run ingest -- --season ${{ steps.season-check.outputs.season_year }} --concurrency 3
