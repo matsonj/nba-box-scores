@@ -76,14 +76,49 @@
 - **Key decisions**: JSON logging to stdout/stderr (machine-parseable for GitHub Actions). Token-bucket rate limiter is singleton to prevent thundering herd. Worker pool uses shared queue pattern — items pulled on demand, not pre-distributed. 3x backoff multiplier on 429s (PBPStats rate limit is aggressive).
 - **Design note**: Config uses simple arg parsing (no external deps like yargs) — keeps pipeline dependency-light
 
+### 2026-03-02 — schema-designer agent — MotherDuck database layer and batch loader (#17)
+- **What was done**: Created `scripts/ingest/db/connection.ts` (MotherDuckConnection class using @duckdb/node-api) and `scripts/ingest/db/loader.ts` (Loader class with batch operations)
+- **Loader methods**: `loadBoxScoreRows`, `loadScheduleRows`, `markIngested`, `isGameIngested`, `getIngestedGameIds`, `deriveTeamStats`, `ensureSchema`
+- **Key decisions**: Batch INSERT OR REPLACE with configurable batch size (default 500). SQL values go through `esc()` (single-quote doubling) and `num()` (null-safe number) helpers. Connection uses `md:` prefix for MotherDuck.
+
+### 2026-03-02 — security-fixer agent — Rewrite box score parser Python→TypeScript (#16)
+- **What was done**: Ported `src/nba_box_scores/box_score_parser.py` to `scripts/ingest/parse/box-score-parser.ts` + `season-utils.ts`. 31 tests validated against 3 real JSON fixtures (regulation, single OT, double OT).
+- **Key decisions**: FullGame rows computed by aggregating per-period data (matches Python SQL view approach). Starter heuristic: top 5 scorers per team. FG mapping: fg_made = FG2M + FG3M. Minutes summed as MM:SS across periods. Season type derived from game_id prefix.
+
 ## Data Quality
 *(To be filled as data quality issues are completed)*
 
 ## UI Evolution
-*(To be filled as UI issues are completed)*
+
+### 2026-03-02 — code-cleaner agent — Season and playoff filtering (#24)
+- **What was done**: Created `components/SeasonFilter.tsx` (3 dropdowns) and `lib/seasonUtils.ts`. URL params (`?season=2024&type=playoffs&team=LAL`) persist filters. Updated hooks to accept filters. Playoff games get amber left border.
+- **Key decisions**: Season type derived from game_id prefix (002=regular, 004=playoffs) since v2 columns don't exist in v1 data yet. Season year derived from game_date (Oct+ = new season).
+
+### 2026-03-02 — code-cleaner agent — MViz data visualizations (#25)
+- **What was done**: Added recharts. Created 3 chart components: `PlayerPerformanceTrend` (line chart), `TeamComparisonChart` (bar chart), `GameQualityDistribution` (histogram). Added `/charts` route. Integrated charts as toggles in existing panels.
+- **Key decisions**: All charts use `dynamic(() => import(...), { ssr: false })` to avoid SSR hydration issues with recharts. Dark-mode-compatible styling.
+
+### 2026-03-02 — schema-designer agent — Responsive design and UI polish (#34)
+- **What was done**: Fixed text-[50%] → text-xs in BoxScorePanel, fixed sticky header overlap, added pagination (7 dates/page), added player name search with 300ms debounce, added DynamicStatsTable auto-retry polling, audited breakpoints.
+- **Key decisions**: Player search uses `escapeSqlString()` for injection protection. Pagination by date groups (not individual games) for natural browsing. Debounced search to avoid excessive MotherDuck queries.
 
 ## Team Execution
-*(To be filled as we observe coordination patterns)*
+
+### Session 1: 2026-03-02 — 3 parallel agents
+- **Model**: 3 agents (`schema-designer`, `security-fixer`, `code-cleaner`) on shared worktree, team lead coordinating
+- **Wave 1** (P0, no blockers): #14 schema, #21 SQL injection, #22 dead code — all 3 completed in parallel
+- **Wave 2** (P0+P1, unblocked by wave 1): #15 pipeline infra, #16 parser, #23 constants, #24 filtering, #31 tests
+- **Wave 3** (P1+P2, unblocked by wave 2): #17 DB layer, #25 MViz, #34 responsive
+- **What went well**: Dependency-aware task dispatch kept all agents busy. Pipeline critical path (#14→#15→#16→#17) completed in 4 waves.
+- **What to improve**: Agents initially on isolated worktrees caused merge complexity. Switched to shared worktree mid-session. Need clearer commit discipline per-agent.
+- **Issues completed**: 11 of 23 (48%) in one session
+- **Test coverage**: 0 → 93 tests across 9 suites
+- **Lines added**: ~4,000+ (new pipeline, charts, tests, utils)
+- **Lines removed**: ~900 (dead code, duplicated logic)
 
 ## Numbers
-*(To be filled: total games ingested, API calls, time to backfill, issues found)*
+- **Issues completed this session**: 11 (#14, #15, #16, #17, #21, #22, #23, #24, #25, #31, #32, #34)
+- **Tests**: 93 passing across 9 suites
+- **New routes**: `/charts`
+- **Pipeline modules**: 10 (config, types, rate-limiter, client, pool, logger, shutdown, schema, connection, loader)
+- **Chart components**: 3 (PlayerPerformanceTrend, TeamComparisonChart, GameQualityDistribution)
