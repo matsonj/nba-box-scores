@@ -16,7 +16,12 @@
     "load-box-scores": "tsx scripts/load-box-scores.ts",
     "query": "tsx scripts/query.ts",
     "test-box-scores": "tsx scripts/test-box-scores.ts",
-    "generate-schemas": "tsx scripts/generate-schemas.ts"
+    "generate-schemas": "tsx scripts/generate-schemas.ts",
+    "ingest": "tsx scripts/ingest/index.ts",
+    "ingest:current": "tsx scripts/ingest/index.ts --season 2025",
+    "ingest:backfill": "tsx scripts/ingest/index.ts --all --season-concurrency 2 --concurrency 5",
+    "ingest:playoffs": "tsx scripts/ingest/index.ts --all --season-type Playoffs",
+    "ingest:status": "tsx scripts/ingest/status.ts"
   },
   "dependencies": {
     "@duckdb/node-api": "^1.4.4-r.2",

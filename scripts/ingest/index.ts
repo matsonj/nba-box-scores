@@ -1,0 +1,112 @@
+#!/usr/bin/env tsx
+// CLI entry point for the v2 NBA box scores ingestion pipeline
+
+import { buildConfig } from './config';
+import { MotherDuckConnection } from './db/connection';
+import { Loader } from './db/loader';
+import { processSeason } from './workers/season-worker';
+import { runPool } from './workers/pool';
+import { shutdownSignal } from './util/shutdown';
+import { logger } from './util/logger';
+import type { SeasonProgress } from './types';
+
+async function main(): Promise<void> {
+  const config = buildConfig();
+
+  if (config.verbose) {
+    logger.setVerbose(true);
+  }
+
+  logger.info('NBA Box Scores Ingestion Pipeline v2', {
+    seasons: config.seasons.length,
+    concurrency: config.concurrency,
+    seasonConcurrency: config.seasonConcurrency,
+    force: config.force,
+    dryRun: config.dryRun,
+  });
+
+  // Dry-run: just print what would be processed
+  if (config.dryRun) {
+    logger.info('DRY RUN — no data will be written');
+    for (const s of config.seasons) {
+      logger.info(`  Would process: ${s.year}-${((s.year + 1) % 100).toString().padStart(2, '0')} (${s.type})`);
+    }
+  }
+
+  // Connect to MotherDuck
+  const db = new MotherDuckConnection(config.motherDuckToken, config.database);
+  await db.connect();
+
+  const loader = new Loader(db);
+
+  try {
+    // Ensure schema exists
+    await loader.ensureSchema();
+
+    // Build season tasks
+    const seasonTasks = config.seasons.map((s) => ({
+      year: s.year,
+      type: s.type,
+    }));
+
+    // Process seasons
+    const allProgress: SeasonProgress[] = [];
+
+    if (config.seasonConcurrency <= 1) {
+      // Sequential season processing
+      for (const task of seasonTasks) {
+        if (shutdownSignal.aborted) break;
+        const progress = await processSeason(
+          task.year,
+          task.type,
+          loader,
+          config,
+          shutdownSignal,
+        );
+        allProgress.push(progress);
+      }
+    } else {
+      // Parallel season processing via pool
+      const poolResult = await runPool(
+        seasonTasks,
+        async (task, signal) => {
+          return processSeason(task.year, task.type, loader, config, signal);
+        },
+        config.seasonConcurrency,
+        shutdownSignal,
+      );
+      allProgress.push(...poolResult.results);
+    }
+
+    // Derive team stats (unless dry-run)
+    if (!config.dryRun && !shutdownSignal.aborted) {
+      logger.info('Refreshing team_stats view...');
+      await loader.deriveTeamStats();
+    }
+
+    // Print summary
+    const totalCompleted = allProgress.reduce((s, p) => s + p.completed, 0);
+    const totalSkipped = allProgress.reduce((s, p) => s + p.skipped, 0);
+    const totalFailed = allProgress.reduce((s, p) => s + p.failed, 0);
+    const totalGames = allProgress.reduce((s, p) => s + p.totalGames, 0);
+
+    logger.info('Pipeline complete', {
+      seasons: allProgress.length,
+      totalGames,
+      completed: totalCompleted,
+      skipped: totalSkipped,
+      failed: totalFailed,
+    });
+
+    if (totalFailed > 0) {
+      process.exitCode = 1;
+    }
+  } finally {
+    db.close();
+  }
+}
+
+main().catch((err) => {
+  logger.error('Pipeline failed', { error: (err as Error).message });
+  process.exit(1);
+});
