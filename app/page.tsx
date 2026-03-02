@@ -9,7 +9,7 @@ import GameCard from '@/components/GameCard';
 import SeasonFilter from '@/components/SeasonFilter';
 import { getTeamName } from '@/lib/teams';
 import { parseGameDate } from '@/lib/dateUtils';
-import { useSchedule, useBoxScores } from '@/hooks/useGameData';
+import { useSchedule, useBoxScores, usePlayerSearch } from '@/hooks/useGameData';
 import { useDataLoader } from '@/lib/dataLoader';
 import { isPlayoffGame } from '@/lib/seasonUtils';
 import type { SeasonType } from '@/lib/seasonUtils';
@@ -50,14 +50,17 @@ function HomeContent() {
   const [loadingMessages, setLoadingMessages] = useState<Array<{ message: string; completed: boolean }>>([]);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [playerGameIds, setPlayerGameIds] = useState<Set<string> | null>(null);
   const dataLoader = useDataLoader();
   const { fetchSchedule } = useSchedule();
   const { fetchBoxScores } = useBoxScores();
+  const { searchPlayerGameIds } = usePlayerSearch();
 
   // Derive filters from URL params
   const season = searchParams?.get('season') ? Number(searchParams.get('season')) : undefined;
   const seasonType = (searchParams?.get('type') as SeasonType) || undefined;
   const team = searchParams?.get('team') || '';
+  const player = searchParams?.get('player') || '';
 
   const filters: GameDataFilters = useMemo(() => ({
     seasonYear: season,
@@ -71,21 +74,37 @@ function HomeContent() {
       groupByDate(
         Object.values(gamesByDate)
           .flat()
-          .filter(game =>
-            !team ||
-            game.home_team_abbreviation === team ||
-            game.away_team_abbreviation === team
-          )
+          .filter(game => {
+            if (team && game.home_team_abbreviation !== team && game.away_team_abbreviation !== team) {
+              return false;
+            }
+            if (playerGameIds && !playerGameIds.has(game.game_id)) {
+              return false;
+            }
+            return true;
+          })
       )
     )
       .map(([date, games]) => ({ date, games }))
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [gamesByDate, team]);
+  }, [gamesByDate, team, playerGameIds]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(0);
-  }, [team, season, seasonType]);
+  }, [team, season, seasonType, player]);
+
+  // Debounced player search
+  useEffect(() => {
+    if (!player) {
+      setPlayerGameIds(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      searchPlayerGameIds(player).then(setPlayerGameIds).catch(() => setPlayerGameIds(null));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [player, searchPlayerGameIds]);
 
   const totalPages = Math.max(1, Math.ceil(filteredGamesByDate.length / DATES_PER_PAGE));
   const paginatedDates = filteredGamesByDate.slice(

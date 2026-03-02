@@ -8,6 +8,7 @@ import { TEMP_TABLES, SOURCE_TABLES } from '@/constants/tables';
 import { useDataLoader } from '@/lib/dataLoader';
 import { utcToLocalDate } from '@/lib/dateUtils';
 import { GAME_ID_PREFIXES } from '@/constants/game';
+import { escapeSqlString } from '@/lib/queryUtils';
 import type { SeasonType } from '@/lib/seasonUtils';
 
 export interface GameDataFilters {
@@ -135,4 +136,25 @@ export function useBoxScores() {
   }, [evaluateQuery]);
 
   return { fetchBoxScores };
+}
+
+export function usePlayerSearch() {
+  const { evaluateQuery } = useMotherDuckClientState();
+
+  const searchPlayerGameIds = useCallback(async (playerName: string): Promise<Set<string>> => {
+    if (!playerName.trim()) return new Set();
+
+    const escaped = escapeSqlString(playerName.trim());
+    const result = await evaluateQuery(`
+      SELECT DISTINCT game_id
+      FROM ${SOURCE_TABLES.BOX_SCORES}
+      WHERE LOWER(player_name) LIKE LOWER('%${escaped}%')
+        AND period = 'FullGame'
+    `);
+
+    const rows = result.data.toRows() as unknown as { game_id: string }[];
+    return new Set(rows.map(r => r.game_id));
+  }, [evaluateQuery]);
+
+  return { searchPlayerGameIds };
 }

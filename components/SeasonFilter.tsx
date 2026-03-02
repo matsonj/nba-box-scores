@@ -2,7 +2,7 @@
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useCallback } from 'react';
-import { FunnelIcon } from '@heroicons/react/24/outline';
+import { FunnelIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { TEAM_ABBREVIATIONS } from '@/lib/teams';
 import { getAvailableSeasons, formatSeasonLabel } from '@/lib/seasonUtils';
 import type { SeasonType } from '@/lib/seasonUtils';
@@ -26,6 +26,7 @@ export default function SeasonFilter({ onFilterChange }: SeasonFilterProps) {
   const season = searchParams?.get('season') ? Number(searchParams.get('season')) : undefined;
   const seasonType = (searchParams?.get('type') as SeasonType) || 'all';
   const team = searchParams?.get('team') || '';
+  const player = searchParams?.get('player') || '';
 
   const updateParams = useCallback((key: string, value: string) => {
     const params = new URLSearchParams(searchParams?.toString() ?? '');
@@ -46,7 +47,7 @@ export default function SeasonFilter({ onFilterChange }: SeasonFilterProps) {
     });
   }, [searchParams, router, onFilterChange]);
 
-  const hasActiveFilters = season || seasonType !== 'all' || team;
+  const hasActiveFilters = season || seasonType !== 'all' || team || player;
 
   const clearAll = useCallback(() => {
     router.replace('/', { scroll: false });
@@ -87,6 +88,16 @@ export default function SeasonFilter({ onFilterChange }: SeasonFilterProps) {
               <option key={abbr} value={abbr}>{abbr}</option>
             ))}
           </select>
+          <div className="relative">
+            <MagnifyingGlassIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              value={player}
+              onChange={(e) => updateParams('player', e.target.value)}
+              placeholder="Search player..."
+              className="pl-7 pr-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm w-40"
+            />
+          </div>
         </div>
 
         {hasActiveFilters && (
