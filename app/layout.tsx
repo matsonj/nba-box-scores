@@ -3,6 +3,7 @@ import './globals.css'
 import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
 import { DynamicTablePopover } from './components/DynamicTablePopover'
+import { LiveModeToggle } from '@/components/LiveModeToggle'
 import { MotherDuckClientProvider } from '@/lib/MotherDuckContext'
 
 export const metadata: Metadata = {
@@ -27,6 +28,7 @@ export default function RootLayout({
                   <span className="text-lg italic text-gray-600 dark:text-gray-400">mega fast sports data</span>
                 </div>
                 <div className="flex items-center">
+                  <LiveModeToggle />
                   <DynamicTablePopover />
                   <ThemeToggle />
                 </div>
