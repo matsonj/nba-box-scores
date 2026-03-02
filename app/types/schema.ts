@@ -34,6 +34,8 @@ export interface Schedule {
   home_team_score: number;
   away_team_score: number;
   status: string;
+  season_year?: number;
+  season_type?: string;
   created_at: Date;
 }
 
