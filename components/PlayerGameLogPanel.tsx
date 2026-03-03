@@ -6,6 +6,7 @@ import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { TEMP_TABLES } from '@/constants/tables';
 import { utcToLocalDate } from '@/lib/dateUtils';
 import { sanitizeNumericId } from '@/lib/queryUtils';
+import { getAvailableSeasons, formatSeasonLabel } from '@/lib/seasonUtils';
 import { format } from 'date-fns';
 import dynamic from 'next/dynamic';
 
@@ -36,6 +37,8 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
   const [games, setGames] = useState<GameLogEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
+  const [seasonYear, setSeasonYear] = useState<number | undefined>(undefined);
+  const [seasonType, setSeasonType] = useState<string>('all');
   const { evaluateQuery } = useMotherDuckClientState();
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -86,6 +89,9 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
           FROM ${TEMP_TABLES.BOX_SCORES} b
           JOIN ${TEMP_TABLES.SCHEDULE} s ON b.game_id = s.game_id
           WHERE b.entity_id = '${safeEntityId}' AND b.period = 'FullGame'
+          ${seasonYear ? `AND s.season_year = ${Number(seasonYear)}` : ''}
+          ${seasonType === 'regular' ? `AND s.season_type = 'Regular Season'` : ''}
+          ${seasonType === 'playoffs' ? `AND s.season_type = 'Playoffs'` : ''}
           ORDER BY s.game_date DESC
         `);
 
@@ -138,7 +144,7 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
     return () => {
       cancelled = true;
     };
-  }, [entityId, evaluateQuery]);
+  }, [entityId, seasonYear, seasonType, evaluateQuery]);
 
   return (
     <div
@@ -153,6 +159,25 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold dark:text-white">{playerName} - Game Log</h2>
           <div className="flex items-center gap-2">
+            <select
+              value={seasonYear ?? ''}
+              onChange={(e) => setSeasonYear(e.target.value ? Number(e.target.value) : undefined)}
+              className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm"
+            >
+              <option value="">All Seasons</option>
+              {getAvailableSeasons().map((year) => (
+                <option key={year} value={year}>{formatSeasonLabel(year)}</option>
+              ))}
+            </select>
+            <select
+              value={seasonType}
+              onChange={(e) => setSeasonType(e.target.value)}
+              className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm"
+            >
+              <option value="all">All Types</option>
+              <option value="regular">Regular Season</option>
+              <option value="playoffs">Playoffs</option>
+            </select>
             <div className="flex rounded border border-gray-300 dark:border-gray-600 text-sm">
               <button
                 onClick={() => setViewMode('table')}
