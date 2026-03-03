@@ -19,15 +19,15 @@ export const duplicatesDetector: Detector = {
         d.entity_id,
         d.player_name,
         NULL AS expected_team,
-        d.team_id AS actual_team,
+        d.team_abbreviation AS actual_team,
         '${DETECTION_TYPE}' AS detection_type,
         'Duplicate count: ' || d.cnt || ' for period ' || d.period AS details
       FROM (
         SELECT
-          game_id, entity_id, period, team_id, player_name,
+          game_id, entity_id, period, team_abbreviation, player_name,
           COUNT(*) AS cnt
         FROM main.box_scores
-        GROUP BY game_id, entity_id, period, team_id, player_name
+        GROUP BY game_id, entity_id, period, team_abbreviation, player_name
         HAVING COUNT(*) > 1
       ) d
       WHERE NOT EXISTS (

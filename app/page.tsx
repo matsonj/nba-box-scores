@@ -55,7 +55,7 @@ function liveGameToSchedule(game: LiveScoreGame): ScheduleWithBoxScore {
     away_team_abbreviation: game.away_team_abbreviation,
     home_team_score: game.home_team_score,
     away_team_score: game.away_team_score,
-    status: game.status,
+    game_status: game.status,
     created_at: new Date(),
     boxScoreLoaded: true,
     isPlayoff: false,

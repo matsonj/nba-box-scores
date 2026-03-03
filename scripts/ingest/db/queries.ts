@@ -37,8 +37,8 @@ export async function getIngestionSummary(
       season_year,
       season_type,
       COUNT(*) AS total_games,
-      COUNT(*) FILTER (WHERE status = 'success') AS success_count,
-      COUNT(*) FILTER (WHERE status = 'error') AS error_count,
+      COUNT(*) FILTER (WHERE ingestion_status = 'success') AS success_count,
+      COUNT(*) FILTER (WHERE ingestion_status = 'error') AS error_count,
       MAX(ingested_at) AS last_ingested_at
     FROM ingestion_log
     ${where}
@@ -60,7 +60,7 @@ export async function getRecentErrors(
       ingested_at,
       error_message
     FROM ingestion_log
-    WHERE status = 'error'
+    WHERE ingestion_status = 'error'
     ORDER BY ingested_at DESC
     LIMIT ${limit}
   `);
@@ -72,7 +72,7 @@ export async function getOverallStats(
 ): Promise<OverallStats> {
   const rows = await db.query<OverallStats>(`
     SELECT
-      (SELECT COUNT(*) FROM ingestion_log WHERE status = 'success') AS total_games_ingested,
+      (SELECT COUNT(*) FROM ingestion_log WHERE ingestion_status = 'success') AS total_games_ingested,
       (SELECT COUNT(*) FROM box_scores WHERE period = 'FullGame') AS total_box_score_rows,
       (SELECT COUNT(DISTINCT entity_id) FROM box_scores WHERE period = 'FullGame') AS total_unique_players
   `);

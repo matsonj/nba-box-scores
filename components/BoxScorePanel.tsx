@@ -88,7 +88,7 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
 
         const boxScores = [...boxScoresResult.data.toRows()].map(row => ({
           game_id: String(row.game_id),
-          team_id: String(row.team_id),
+          team_abbreviation: String(row.team_abbreviation),
           entity_id: String(row.entity_id),
           player_name: String(row.player_name),
           minutes: String(row.minutes),
@@ -104,14 +104,13 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
           fg3_attempted: Number(row.fg3_attempted),
           ft_made: Number(row.ft_made),
           ft_attempted: Number(row.ft_attempted),
-          plus_minus: Number(row.plus_minus),
           starter: Number(row.starter),
           period: String(row.period)
         })) as BoxScoreType[];
 
         const teamStats = [...teamStatsResult.data.toRows()].map(row => ({
           game_id: String(row.game_id),
-          team_id: String(row.team_id),
+          team_abbreviation: String(row.team_abbreviation),
           period: String(row.period),
           minutes: String(row.minutes),
           points: Number(row.points),
@@ -126,8 +125,6 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
           fg3_attempted: Number(row.fg3_attempted),
           ft_made: Number(row.ft_made),
           ft_attempted: Number(row.ft_attempted),
-          offensive_possessions: Number(row.offensive_possessions),
-          defensive_possessions: Number(row.defensive_possessions)
         })) as TeamStats[];
 
 
@@ -137,11 +134,11 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
         const [gameInfo] = scheduleResult;
         if (!gameInfo) return;
 
-        const homeTeamPlayers = boxScores.filter(player => player.team_id === gameInfo.home_team_abbreviation);
-        const awayTeamPlayers = boxScores.filter(player => player.team_id === gameInfo.away_team_abbreviation);
+        const homeTeamPlayers = boxScores.filter(player => player.team_abbreviation === gameInfo.home_team_abbreviation);
+        const awayTeamPlayers = boxScores.filter(player => player.team_abbreviation === gameInfo.away_team_abbreviation);
 
-        const homeTeamStats = teamStats.find(stat => stat.team_id === gameInfo.home_team_abbreviation && stat.period === 'FullGame');
-        const awayTeamStats = teamStats.find(stat => stat.team_id === gameInfo.away_team_abbreviation && stat.period === 'FullGame');
+        const homeTeamStats = teamStats.find(stat => stat.team_abbreviation === gameInfo.home_team_abbreviation && stat.period === 'FullGame');
+        const awayTeamStats = teamStats.find(stat => stat.team_abbreviation === gameInfo.away_team_abbreviation && stat.period === 'FullGame');
 
         if (!cancelled) {
           setData({
@@ -167,7 +164,7 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
                 threePointersAttempted: player.fg3_attempted,
                 freeThrowsMade: player.ft_made,
                 freeThrowsAttempted: player.ft_attempted,
-                plusMinus: player.plus_minus,
+                plusMinus: 0,
                 starter: player.starter === 1
               })),
               ...homeTeamStats
@@ -193,7 +190,7 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
                 threePointersAttempted: player.fg3_attempted,
                 freeThrowsMade: player.ft_made,
                 freeThrowsAttempted: player.ft_attempted,
-                plusMinus: player.plus_minus,
+                plusMinus: 0,
                 starter: player.starter === 1
               })),
               ...awayTeamStats

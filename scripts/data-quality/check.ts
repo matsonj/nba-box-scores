@@ -100,10 +100,10 @@ async function main(): Promise<void> {
 
     // Final quarantine status
     const pending = await db.query<{ cnt: number }>(
-      `SELECT COUNT(*) AS cnt FROM main.data_quality_quarantine WHERE status = 'pending'`,
+      `SELECT COUNT(*) AS cnt FROM main.data_quality_quarantine WHERE resolution_status = 'pending'`,
     );
     const approved = await db.query<{ cnt: number }>(
-      `SELECT COUNT(*) AS cnt FROM main.data_quality_quarantine WHERE status = 'approved'`,
+      `SELECT COUNT(*) AS cnt FROM main.data_quality_quarantine WHERE resolution_status = 'approved'`,
     );
     console.log(`\nQuarantine status: ${pending[0]?.cnt ?? 0} pending, ${approved[0]?.cnt ?? 0} approved\n`);
   } finally {

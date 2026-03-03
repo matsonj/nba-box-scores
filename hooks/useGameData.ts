@@ -60,7 +60,7 @@ export function useSchedule() {
           away_team_abbreviation: game.away_team_abbreviation,
           home_team_score: game.home_team_score,
           away_team_score: game.away_team_score,
-          status: game.status,
+          game_status: game.game_status,
           created_at: game.created_at
         };
       });
@@ -83,18 +83,18 @@ export function useBoxScores() {
       if (filters?.seasonYear || (filters?.seasonType && filters.seasonType !== 'all')) {
         const whereClause = buildSeasonWhereClause(filters, 's');
         query = `
-          SELECT ts.game_id, ts.team_id, ts.period, ts.points
+          SELECT ts.game_id, ts.team_abbreviation, ts.period, ts.points
           FROM ${SOURCE_TABLES.TEAM_STATS} ts
           JOIN ${SOURCE_TABLES.SCHEDULE} s ON ts.game_id = s.game_id
           WHERE ts.period != 'FullGame'${whereClause}
-          ORDER BY ts.game_id, ts.team_id, CAST(ts.period AS INTEGER)
+          ORDER BY ts.game_id, ts.team_abbreviation, CAST(ts.period AS INTEGER)
         `;
       } else {
         query = `
-          SELECT game_id, team_id, period, points
+          SELECT game_id, team_abbreviation, period, points
           FROM ${SOURCE_TABLES.TEAM_STATS}
           WHERE period != 'FullGame'
-          ORDER BY game_id, team_id, CAST(period AS INTEGER)
+          ORDER BY game_id, team_abbreviation, CAST(period AS INTEGER)
         `;
       }
 
@@ -111,7 +111,7 @@ export function useBoxScores() {
       for (const score of periodScores) {
         const scores = gameScores.get(score.game_id)!;
         scores.push({
-          teamId: score.team_id,
+          teamId: score.team_abbreviation,
           period: score.period,
           points: Number(score.points)
         });

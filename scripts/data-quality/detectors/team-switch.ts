@@ -1,4 +1,4 @@
-// Detect players whose team_id changed from their most recent prior game.
+// Detect players whose team_abbreviation changed from their most recent prior game.
 // Idempotent: skips records already in quarantine.
 
 import type { MotherDuckConnection } from '../../ingest/db/connection';
@@ -19,13 +19,13 @@ export const teamSwitchDetector: Detector = {
         curr.game_id,
         curr.entity_id,
         curr.player_name,
-        prev.team_id AS expected_team,
-        curr.team_id AS actual_team,
+        prev.team_abbreviation AS expected_team,
+        curr.team_abbreviation AS actual_team,
         '${DETECTION_TYPE}' AS detection_type,
-        'Team changed from ' || prev.team_id || ' to ' || curr.team_id AS details
+        'Team changed from ' || prev.team_abbreviation || ' to ' || curr.team_abbreviation AS details
       FROM (
         SELECT
-          bs.game_id, bs.entity_id, bs.player_name, bs.team_id,
+          bs.game_id, bs.entity_id, bs.player_name, bs.team_abbreviation,
           s.game_date,
           ROW_NUMBER() OVER (PARTITION BY bs.entity_id ORDER BY s.game_date DESC, bs.game_id DESC) AS rn
         FROM main.box_scores bs
@@ -34,14 +34,14 @@ export const teamSwitchDetector: Detector = {
       ) curr
       JOIN (
         SELECT
-          bs.entity_id, bs.team_id,
+          bs.entity_id, bs.team_abbreviation,
           s.game_date,
           ROW_NUMBER() OVER (PARTITION BY bs.entity_id ORDER BY s.game_date DESC, bs.game_id DESC) AS rn
         FROM main.box_scores bs
         JOIN main.schedule s ON bs.game_id = s.game_id
         WHERE bs.period = 'FullGame'
       ) prev ON curr.entity_id = prev.entity_id AND prev.rn = curr.rn + 1
-      WHERE curr.team_id != prev.team_id
+      WHERE curr.team_abbreviation != prev.team_abbreviation
         AND NOT EXISTS (
           SELECT 1 FROM main.data_quality_quarantine dqq
           WHERE dqq.game_id = curr.game_id

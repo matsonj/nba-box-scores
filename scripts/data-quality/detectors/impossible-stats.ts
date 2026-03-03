@@ -19,7 +19,7 @@ export const impossibleStatsDetector: Detector = {
         bs.entity_id,
         bs.player_name,
         NULL AS expected_team,
-        bs.team_id AS actual_team,
+        bs.team_abbreviation AS actual_team,
         '${DETECTION_TYPE}' AS detection_type,
         CASE
           WHEN bs.points > 82 THEN 'Points: ' || bs.points

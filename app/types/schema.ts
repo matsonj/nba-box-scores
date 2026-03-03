@@ -3,7 +3,7 @@
 
 export interface BoxScores {
   game_id: string;
-  team_id: string;
+  team_abbreviation: string;
   entity_id: string;
   player_name: string;
   minutes: string;
@@ -19,7 +19,6 @@ export interface BoxScores {
   fg3_attempted: number;
   ft_made: number;
   ft_attempted: number;
-  plus_minus: number;
   starter: number;
   period: string;
 }
@@ -33,7 +32,7 @@ export interface Schedule {
   away_team_abbreviation: string;
   home_team_score: number;
   away_team_score: number;
-  status: string;
+  game_status: string;
   season_year?: number;
   season_type?: string;
   created_at: Date;
@@ -41,7 +40,7 @@ export interface Schedule {
 
 export interface TeamStats {
   game_id: string;
-  team_id: string;
+  team_abbreviation: string;
   period: string;
   minutes: string;
   points: number;
@@ -56,8 +55,6 @@ export interface TeamStats {
   fg3_attempted: number;
   ft_made: number;
   ft_attempted: number;
-  offensive_possessions: number;
-  defensive_possessions: number;
 }
 
 

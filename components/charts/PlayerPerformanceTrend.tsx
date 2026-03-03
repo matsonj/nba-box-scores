@@ -31,7 +31,6 @@ interface GameLogEntry {
   fg3_attempted: number;
   ft_made: number;
   ft_attempted: number;
-  plus_minus: number;
 }
 
 interface PlayerPerformanceTrendProps {
@@ -48,7 +47,6 @@ const STAT_OPTIONS = [
   { key: 'turnovers', label: 'TO', color: '#6b7280' },
   { key: 'fg3_made', label: '3PM', color: '#06b6d4' },
   { key: 'decimal_minutes', label: 'MIN', color: '#f97316' },
-  { key: 'plus_minus', label: '+/-', color: '#ec4899' },
 ] as const;
 
 type StatKey = typeof STAT_OPTIONS[number]['key'];

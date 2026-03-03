@@ -21,7 +21,7 @@ describe('parseBoxScore', () => {
   it('returns BoxScoreRow objects with all required fields', () => {
     const first = rows[0];
     expect(first).toHaveProperty('game_id');
-    expect(first).toHaveProperty('team_id');
+    expect(first).toHaveProperty('team_abbreviation');
     expect(first).toHaveProperty('entity_id');
     expect(first).toHaveProperty('player_name');
     expect(first).toHaveProperty('period');
@@ -38,7 +38,6 @@ describe('parseBoxScore', () => {
     expect(first).toHaveProperty('fg3_attempted');
     expect(first).toHaveProperty('ft_made');
     expect(first).toHaveProperty('ft_attempted');
-    expect(first).toHaveProperty('plus_minus');
     expect(first).toHaveProperty('starter');
   });
 
@@ -52,7 +51,7 @@ describe('parseBoxScore', () => {
   });
 
   it('produces rows for both teams', () => {
-    const teams = new Set(rows.map(r => r.team_id));
+    const teams = new Set(rows.map(r => r.team_abbreviation));
     expect(teams.has('NYK')).toBe(true);
     expect(teams.has('BOS')).toBe(true);
     expect(teams.size).toBe(2);
@@ -110,7 +109,7 @@ describe('parseBoxScore', () => {
   it('assigns starters: exactly 5 per team in FullGame rows', () => {
     const fullGameRows = rows.filter(r => r.period === 'FullGame');
     for (const team of ['NYK', 'BOS']) {
-      const teamFG = fullGameRows.filter(r => r.team_id === team);
+      const teamFG = fullGameRows.filter(r => r.team_abbreviation === team);
       const starters = teamFG.filter(r => r.starter === 1);
       const bench = teamFG.filter(r => r.starter === 0);
       expect(starters).toHaveLength(5);

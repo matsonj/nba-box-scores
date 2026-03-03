@@ -20,7 +20,7 @@ interface ScheduleRow {
   away_team_abbreviation: string;
   home_team_score: number;
   away_team_score: number;
-  status: string;
+  game_status: string;
 }
 
 function AnalyticsContent() {
@@ -152,7 +152,7 @@ function AnalyticsContent() {
                         {game.home_team_abbreviation}
                       </td>
                       <td className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                        {game.status}
+                        {game.game_status}
                       </td>
                     </tr>
                   );

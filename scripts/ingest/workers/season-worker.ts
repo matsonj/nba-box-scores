@@ -109,7 +109,7 @@ export async function processSeason(
     away_team_abbreviation: g.AwayTeamAbbreviation,
     home_team_score: g.HomePoints ?? 0,
     away_team_score: g.AwayPoints ?? 0,
-    status: 'Final',
+    game_status: 'Final',
     season_year: seasonYear,
     season_type: seasonType,
   }));
@@ -168,7 +168,7 @@ export async function processSeason(
         game_id: gameId,
         season_year: seasonYear,
         season_type: seasonType,
-        status: 'success',
+        ingestion_status: 'success',
       });
 
       progress.completed++;
@@ -200,7 +200,7 @@ export async function processSeason(
             game_id: gameId,
             season_year: seasonYear,
             season_type: seasonType,
-            status: 'error',
+            ingestion_status: 'error',
             error_message: error.message,
           })
           .catch((logErr) => {

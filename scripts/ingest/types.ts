@@ -58,7 +58,7 @@ export interface PBPStatsGamesResponse {
 /** Flat row matching the v2 box_scores table schema */
 export interface BoxScoreRow {
   game_id: string;
-  team_id: string;
+  team_abbreviation: string;
   entity_id: string;
   player_name: string;
   period: string;
@@ -75,7 +75,6 @@ export interface BoxScoreRow {
   fg3_attempted: number;
   ft_made: number;
   ft_attempted: number;
-  plus_minus: number | null;
   starter: number | null;
 }
 
@@ -89,7 +88,7 @@ export interface ScheduleRow {
   away_team_abbreviation: string;
   home_team_score: number;
   away_team_score: number;
-  status: string;
+  game_status: string;
   season_year: number;
   season_type: string;
 }
@@ -99,7 +98,7 @@ export interface IngestionLogEntry {
   game_id: string;
   season_year: number;
   season_type: string;
-  status: 'success' | 'error';
+  ingestion_status: 'success' | 'error';
   error_message?: string;
 }
 
