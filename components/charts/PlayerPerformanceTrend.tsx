@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useMemo } from 'react';
 import {
   ComposedChart,
   Scatter,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -54,6 +56,23 @@ type StatKey = typeof STAT_OPTIONS[number]['key'];
 const VOLUME_STATS: Set<StatKey> = new Set([
   'points', 'rebounds', 'assists', 'steals', 'blocks', 'turnovers', 'fg3_made',
 ]);
+
+function linearRegression(points: { x: number; y: number }[]): { slope: number; intercept: number } {
+  const n = points.length;
+  if (n < 2) return { slope: 0, intercept: points[0]?.y ?? 0 };
+  let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+  for (const p of points) {
+    sumX += p.x;
+    sumY += p.y;
+    sumXY += p.x * p.y;
+    sumX2 += p.x * p.x;
+  }
+  const denom = n * sumX2 - sumX * sumX;
+  if (denom === 0) return { slope: 0, intercept: sumY / n };
+  const slope = (n * sumXY - sumX * sumY) / denom;
+  const intercept = (sumY - slope * sumX) / n;
+  return { slope, intercept };
+}
 
 function parseMinutes(minutes: string): number {
   if (!minutes) return 0;
@@ -110,6 +129,29 @@ export default function PlayerPerformanceTrend({ games, playerName }: PlayerPerf
 
     return base;
   });
+
+  // Compute trendline data for each selected stat
+  const trendlineData = useMemo(() => {
+    if (chartData.length < 2) return [];
+    const xMin = 0;
+    const xMax = allDates.length - 1;
+    const lines: Record<string, unknown>[] = [{ x: xMin }, { x: xMax }];
+
+    for (const { key } of STAT_OPTIONS) {
+      if (!selectedStats.has(key)) continue;
+      const points = chartData.map(d => ({
+        x: d.x as number,
+        y: d[key] as number,
+      })).filter(p => p.y !== undefined && p.y !== null);
+      if (points.length < 2) continue;
+      const { slope, intercept } = linearRegression(points);
+      const trendKey = `${key}_trend`;
+      lines[0][trendKey] = Math.round((slope * xMin + intercept) * 10) / 10;
+      lines[1][trendKey] = Math.round((slope * xMax + intercept) * 10) / 10;
+    }
+
+    return lines;
+  }, [chartData, selectedStats, allDates.length]);
 
   const xTickCount = Math.min(12, allDates.length);
   const xTicks: number[] = [];
@@ -200,6 +242,20 @@ export default function PlayerPerformanceTrend({ games, playerName }: PlayerPerf
               name={label}
               fill={color}
               animationDuration={750}
+            />
+          ))}
+          {trendlineData.length >= 2 && STAT_OPTIONS.filter(({ key }) => selectedStats.has(key)).map(({ key, color }) => (
+            <Line
+              key={`${key}_trend`}
+              data={trendlineData}
+              dataKey={`${key}_trend`}
+              stroke={color}
+              strokeWidth={1.5}
+              strokeDasharray="6 3"
+              dot={false}
+              legendType="none"
+              isAnimationActive={false}
+              tooltipType="none"
             />
           ))}
         </ComposedChart>

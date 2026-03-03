@@ -11,12 +11,6 @@ import { getTeamName } from '@/lib/teams';
 import { parseGameDate } from '@/lib/dateUtils';
 import { sanitizeNumericId } from '@/lib/queryUtils';
 import type { CellState } from '@/app/types/live';
-import dynamic from 'next/dynamic';
-
-const TeamComparisonChart = dynamic(
-  () => import('./charts/TeamComparisonChart'),
-  { ssr: false, loading: () => <div className="h-[250px]" /> }
-);
 
 interface BoxScorePanelProps {
   gameId: string | null;
@@ -284,7 +278,6 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
                     highlightedCells={highlightedCells}
                     boldedCells={boldedCells}
                   />
-                  <TeamComparisonChart homeTeam={liveData.homeTeam} awayTeam={liveData.awayTeam} />
                 </div>
               </>
             ) : loading ? (
@@ -319,7 +312,6 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
                     awayTeam={data.awayTeam}
                     onPlayerClick={(entityId, playerName) => setSelectedPlayer({ entityId, name: playerName })}
                   />
-                  <TeamComparisonChart homeTeam={data.homeTeam} awayTeam={data.awayTeam} />
                 </div>
                 {selectedPlayer && (
                   <div className="fixed inset-0 z-[60] bg-black bg-opacity-50">
