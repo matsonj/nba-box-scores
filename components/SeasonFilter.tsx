@@ -4,7 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useCallback } from 'react';
 import { FunnelIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { TEAM_ABBREVIATIONS } from '@/lib/teams';
-import { getAvailableSeasons, formatSeasonLabel } from '@/lib/seasonUtils';
+import { getAvailableSeasons, formatSeasonLabel, getSeasonYearFromDate } from '@/lib/seasonUtils';
 import type { SeasonType } from '@/lib/seasonUtils';
 
 const SEASON_TYPES: { value: SeasonType; label: string }[] = [
@@ -23,7 +23,8 @@ export default function SeasonFilter({ onFilterChange }: SeasonFilterProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const season = searchParams?.get('season') ? Number(searchParams.get('season')) : undefined;
+  const currentSeason = getSeasonYearFromDate(new Date());
+  const season = searchParams?.get('season') ? Number(searchParams.get('season')) : currentSeason;
   const seasonType = (searchParams?.get('type') as SeasonType) || 'all';
   const team = searchParams?.get('team') || '';
   const player = searchParams?.get('player') || '';

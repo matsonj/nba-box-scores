@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { BoxScores as BoxScoreType } from '@/app/types/schema';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { TEMP_TABLES } from '@/constants/tables';
 import { utcToLocalDate } from '@/lib/dateUtils';
 import { sanitizeNumericId } from '@/lib/queryUtils';
-import { getAvailableSeasons, formatSeasonLabel } from '@/lib/seasonUtils';
+import { getAvailableSeasons, formatSeasonLabel, getSeasonYearFromDate } from '@/lib/seasonUtils';
 import { format } from 'date-fns';
 import dynamic from 'next/dynamic';
 
@@ -34,11 +35,16 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
     margin: number;
   }
 
+  const searchParams = useSearchParams();
+  const currentSeason = getSeasonYearFromDate(new Date());
+  const initialSeason = searchParams?.get('season') ? Number(searchParams.get('season')) : currentSeason;
+  const initialType = searchParams?.get('type') || 'all';
+
   const [games, setGames] = useState<GameLogEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
-  const [seasonYear, setSeasonYear] = useState<number | undefined>(undefined);
-  const [seasonType, setSeasonType] = useState<string>('all');
+  const [seasonYear, setSeasonYear] = useState<number | undefined>(initialSeason);
+  const [seasonType, setSeasonType] = useState<string>(initialType);
   const { evaluateQuery } = useMotherDuckClientState();
   const panelRef = useRef<HTMLDivElement>(null);
 

@@ -11,9 +11,12 @@ import { getTeamName } from '@/lib/teams';
 import { parseGameDate } from '@/lib/dateUtils';
 import { useSchedule, useBoxScores, usePlayerSearch } from '@/hooks/useGameData';
 import { useDataLoader } from '@/lib/dataLoader';
-import { isPlayoffGame } from '@/lib/seasonUtils';
+import { isPlayoffGame, getSeasonYearFromDate } from '@/lib/seasonUtils';
 import type { SeasonType } from '@/lib/seasonUtils';
 import type { GameDataFilters } from '@/hooks/useGameData';
+import { useLiveData } from '@/lib/LiveDataContext';
+import type { LiveScoreGame } from '@/app/types/live';
+import type { Team } from '@/app/types/schema';
 import dynamic from 'next/dynamic';
 
 const DynamicTableLoader = dynamic(
@@ -42,6 +45,24 @@ function groupByDate(games: ScheduleWithBoxScore[]) {
 
 const DATES_PER_PAGE = 7;
 
+function liveGameToSchedule(game: LiveScoreGame): ScheduleWithBoxScore {
+  return {
+    game_id: game.game_id,
+    game_date: new Date(game.game_date),
+    home_team_id: game.home_team_id,
+    away_team_id: game.away_team_id,
+    home_team_abbreviation: game.home_team_abbreviation,
+    away_team_abbreviation: game.away_team_abbreviation,
+    home_team_score: game.home_team_score,
+    away_team_score: game.away_team_score,
+    status: game.status,
+    created_at: new Date(),
+    boxScoreLoaded: true,
+    isPlayoff: false,
+    periodScores: game.periodScores,
+  };
+}
+
 function HomeContent() {
   const searchParams = useSearchParams();
   const [gamesByDate, setGamesByDate] = useState<Record<string, ScheduleWithBoxScore[]>>({});
@@ -49,6 +70,7 @@ function HomeContent() {
   const [error, setError] = useState('');
   const [loadingMessages, setLoadingMessages] = useState<Array<{ message: string; completed: boolean }>>([]);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+  const [selectedLiveGameId, setSelectedLiveGameId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [playerGameIds, setPlayerGameIds] = useState<Set<string> | null>(null);
   const dataLoader = useDataLoader();
@@ -56,8 +78,89 @@ function HomeContent() {
   const { fetchBoxScores } = useBoxScores();
   const { searchPlayerGameIds } = usePlayerSearch();
 
-  // Derive filters from URL params
-  const season = searchParams?.get('season') ? Number(searchParams.get('season')) : undefined;
+  const {
+    isLive,
+    liveGames,
+    liveBoxScore,
+    setSubscribedGameId,
+    highlightedCells,
+    boldedCells,
+  } = useLiveData();
+
+  // Filter to active games (in progress)
+  const activeLiveGames = useMemo(() => {
+    if (!isLive) return [];
+    return liveGames.filter((game) => {
+      const status = game.status.trim().toLowerCase();
+      return !status.includes('final') && status !== '' && Number(game.period) > 0;
+    });
+  }, [isLive, liveGames]);
+
+  const handleLiveGameSelect = useCallback((gameId: string) => {
+    setSelectedGameId(gameId);
+    setSelectedLiveGameId(gameId);
+    setSubscribedGameId(gameId);
+  }, [setSubscribedGameId]);
+
+  const handlePanelClose = useCallback(() => {
+    setSelectedGameId(null);
+    if (selectedLiveGameId) {
+      setSubscribedGameId(null);
+      setSelectedLiveGameId(null);
+    }
+  }, [selectedLiveGameId, setSubscribedGameId]);
+
+  // Build live box score data for BoxScorePanel
+  const liveBoxScoreData = useMemo(() => {
+    if (!selectedLiveGameId || !liveBoxScore) return null;
+
+    const mapPlayers = (players: typeof liveBoxScore.homeTeam.players) =>
+      players.map((p) => ({
+        playerId: p.personId,
+        playerName: p.playerName,
+        minutes: p.minutes,
+        points: p.points,
+        rebounds: p.rebounds,
+        assists: p.assists,
+        steals: p.steals,
+        blocks: p.blocks,
+        turnovers: p.turnovers,
+        fieldGoalsMade: p.fieldGoalsMade,
+        fieldGoalsAttempted: p.fieldGoalsAttempted,
+        threePointersMade: p.threePointersMade,
+        threePointersAttempted: p.threePointersAttempted,
+        freeThrowsMade: p.freeThrowsMade,
+        freeThrowsAttempted: p.freeThrowsAttempted,
+        plusMinus: p.plusMinus,
+        starter: p.starter,
+      }));
+
+    const homeTeam: Team = {
+      teamId: liveBoxScore.homeTeam.teamId,
+      teamName: getTeamName(liveBoxScore.homeTeam.teamTricode),
+      teamAbbreviation: liveBoxScore.homeTeam.teamTricode,
+      score: liveBoxScore.homeTeam.score,
+      players: mapPlayers(liveBoxScore.homeTeam.players),
+    };
+
+    const awayTeam: Team = {
+      teamId: liveBoxScore.awayTeam.teamId,
+      teamName: getTeamName(liveBoxScore.awayTeam.teamTricode),
+      teamAbbreviation: liveBoxScore.awayTeam.teamTricode,
+      score: liveBoxScore.awayTeam.score,
+      players: mapPlayers(liveBoxScore.awayTeam.players),
+    };
+
+    return {
+      homeTeam,
+      awayTeam,
+      gameStatus: liveBoxScore.gameStatus,
+    };
+  }, [selectedLiveGameId, liveBoxScore]);
+
+  // Derive filters from URL params — default to current season
+  const currentSeason = getSeasonYearFromDate(new Date());
+  const season = searchParams?.get('season') ? Number(searchParams.get('season')) : currentSeason;
   const seasonType = (searchParams?.get('type') as SeasonType) || undefined;
   const team = searchParams?.get('team') || '';
   const player = searchParams?.get('player') || '';
@@ -281,6 +384,26 @@ function HomeContent() {
       <div className="container mx-auto px-4 py-8 font-mono">
         <SeasonFilter />
 
+        {/* Live Games Section */}
+        {isLive && activeLiveGames.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+              Live Games
+            </h2>
+            <div className="grid grid-cols-1 max-md:landscape:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
+              {activeLiveGames.map((game) => (
+                <div key={game.game_id}>
+                  <GameCard
+                    game={liveGameToSchedule(game)}
+                    onGameSelect={handleLiveGameSelect}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
@@ -335,7 +458,10 @@ function HomeContent() {
         )}
         <BoxScorePanel
           gameId={selectedGameId}
-          onClose={() => setSelectedGameId(null)}
+          onClose={handlePanelClose}
+          liveData={liveBoxScoreData}
+          highlightedCells={selectedLiveGameId ? highlightedCells : undefined}
+          boldedCells={selectedLiveGameId ? boldedCells : undefined}
         />
       </div>
     </>

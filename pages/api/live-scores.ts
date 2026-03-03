@@ -1,22 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 
-interface LiveScoreGame {
-  game_id: string;
-  game_date: string;
-  home_team_abbreviation: string;
-  away_team_abbreviation: string;
-  home_team_score: number;
-  away_team_score: number;
-  status: string;
-  period: string;
-  clock: string;
-}
-
-interface LiveScoresResponse {
-  games: LiveScoreGame[];
-  timestamp: string;
-}
+import type { LiveScoreGame, LiveScoresResponse } from '@/app/types/live';
 
 let cachedResponse: LiveScoresResponse | null = null;
 let cacheTimestamp = 0;
@@ -56,16 +41,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const games: LiveScoreGame[] = (scoreboard?.games || []).map((game: Record<string, unknown>) => {
       const homeTeam = game.homeTeam as Record<string, unknown> | undefined;
       const awayTeam = game.awayTeam as Record<string, unknown> | undefined;
+
+      const homePeriods = (homeTeam?.periods as { period: number; score: number }[]) || [];
+      const awayPeriods = (awayTeam?.periods as { period: number; score: number }[]) || [];
+
+      const periodScores = [
+        ...homePeriods.map((p) => ({
+          teamId: String(homeTeam?.teamTricode || ''),
+          period: String(p.period),
+          points: Number(p.score || 0),
+        })),
+        ...awayPeriods.map((p) => ({
+          teamId: String(awayTeam?.teamTricode || ''),
+          period: String(p.period),
+          points: Number(p.score || 0),
+        })),
+      ];
+
       return {
         game_id: String(game.gameId || ''),
         game_date: String(game.gameTimeUTC || ''),
         home_team_abbreviation: String(homeTeam?.teamTricode || ''),
         away_team_abbreviation: String(awayTeam?.teamTricode || ''),
+        home_team_id: Number(homeTeam?.teamId || 0),
+        away_team_id: Number(awayTeam?.teamId || 0),
         home_team_score: Number(homeTeam?.score || 0),
         away_team_score: Number(awayTeam?.score || 0),
         status: String(game.gameStatusText || ''),
         period: String(game.period || '0'),
         clock: String(game.gameClock || ''),
+        periodScores,
       };
     });
 
