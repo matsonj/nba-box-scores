@@ -13,7 +13,7 @@
     "generate-schemas": "tsx scripts/generate-schemas.ts",
     "ingest": "tsx scripts/ingest/index.ts",
     "ingest:current": "tsx scripts/ingest/index.ts --season 2025",
-    "ingest:backfill": "tsx scripts/ingest/index.ts --all --season-concurrency 2 --concurrency 5",
+    "ingest:backfill": "tsx scripts/ingest/index.ts --all --delay 500",
     "ingest:playoffs": "tsx scripts/ingest/index.ts --all --season-type Playoffs",
     "ingest:status": "tsx scripts/ingest/status.ts",
     "data-quality:check": "tsx scripts/data-quality/check.ts",
