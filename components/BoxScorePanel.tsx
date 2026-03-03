@@ -10,6 +10,7 @@ import { TEMP_TABLES } from '@/constants/tables';
 import { getTeamName } from '@/lib/teams';
 import { parseGameDate } from '@/lib/dateUtils';
 import { sanitizeNumericId } from '@/lib/queryUtils';
+import type { CellState } from '@/app/types/live';
 import dynamic from 'next/dynamic';
 
 const TeamComparisonChart = dynamic(
@@ -20,9 +21,16 @@ const TeamComparisonChart = dynamic(
 interface BoxScorePanelProps {
   gameId: string | null;
   onClose: () => void;
+  liveData?: {
+    homeTeam: Team;
+    awayTeam: Team;
+    gameStatus: string;
+  } | null;
+  highlightedCells?: Map<string, CellState>;
+  boldedCells?: Map<string, CellState>;
 }
 
-export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
+export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCells, boldedCells }: BoxScorePanelProps) {
   const [data, setData] = useState<{
     homeTeam: Team | null;
     awayTeam: Team | null;
@@ -44,15 +52,19 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
     };
   }, [gameId]);
 
+  const isLiveView = !!liveData;
+
   // Reset state when gameId changes
   useEffect(() => {
-    setData({ homeTeam: null, awayTeam: null, gameInfo: null });
-    setLoading(true);
-  }, [gameId]);
+    if (!isLiveView) {
+      setData({ homeTeam: null, awayTeam: null, gameInfo: null });
+      setLoading(true);
+    }
+  }, [gameId, isLiveView]);
 
-  // Load data when gameId changes
+  // Load data when gameId changes (only for historical mode)
   useEffect(() => {
-    if (!gameId) return;
+    if (!gameId || isLiveView) return;
 
     let cancelled = false;
 
@@ -242,7 +254,40 @@ export default function BoxScorePanel({ gameId, onClose }: BoxScorePanelProps) {
           </div>
           
           <div className="p-3 md:text-base text-xs">
-            {loading ? (
+            {isLiveView && liveData ? (
+              <>
+                <div className="mb-3">
+                  <h2 className="md:text-2xl text-lg text-center dark:text-white">
+                    {liveData.awayTeam.score > liveData.homeTeam.score ? (
+                      <>
+                        <span className="font-bold">* {liveData.awayTeam.teamAbbreviation} {liveData.awayTeam.score}</span>
+                        {' - '}
+                        <span>{liveData.homeTeam.teamAbbreviation} {liveData.homeTeam.score}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>{liveData.awayTeam.teamAbbreviation} {liveData.awayTeam.score}</span>
+                        {' - '}
+                        <span className="font-bold">{liveData.homeTeam.teamAbbreviation} {liveData.homeTeam.score} *</span>
+                      </>
+                    )}
+                  </h2>
+                  <p className="text-green-600 dark:text-green-400 text-center mt-1 md:text-base text-sm flex items-center justify-center gap-2">
+                    <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    {liveData.gameStatus}
+                  </p>
+                </div>
+                <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 120px)', padding: 0, paddingRight: '2px' }}>
+                  <BoxScore
+                    homeTeam={liveData.homeTeam}
+                    awayTeam={liveData.awayTeam}
+                    highlightedCells={highlightedCells}
+                    boldedCells={boldedCells}
+                  />
+                  <TeamComparisonChart homeTeam={liveData.homeTeam} awayTeam={liveData.awayTeam} />
+                </div>
+              </>
+            ) : loading ? (
               <div className="flex items-center justify-center h-[calc(100vh-120px)]">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-300 dark:border-gray-600 border-t-blue-600 dark:border-t-blue-400" />
               </div>

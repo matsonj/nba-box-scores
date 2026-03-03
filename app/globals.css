@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.live-highlight-active {
+  background-color: rgba(250, 204, 21, 0.4);
+  border-radius: 2px;
+  padding: 0 2px;
+  transition: background-color 0.1s ease-in;
+}
+.live-highlight-fading {
+  background-color: transparent;
+  border-radius: 2px;
+  padding: 0 2px;
+  transition: background-color 1.5s ease-out;
+}
+.live-bold-active { font-weight: 700; }
+.live-bold-fading { font-weight: 400; transition: font-weight 2s ease-out; }
+.dark .live-highlight-active { background-color: rgba(250, 204, 21, 0.25); }

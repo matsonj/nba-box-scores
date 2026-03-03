@@ -1,14 +1,78 @@
 'use client';
 
 import { Team } from '@/app/types/schema';
+import type { CellState } from '@/app/types/live';
 
 interface BoxScoreProps {
   homeTeam: Team;
   awayTeam: Team;
   onPlayerClick?: (entityId: string, playerName: string) => void;
+  highlightedCells?: Map<string, CellState>;
+  boldedCells?: Map<string, CellState>;
 }
 
-export default function BoxScore({ homeTeam, awayTeam, onPlayerClick }: BoxScoreProps) {
+function getCellClasses(
+  playerId: string,
+  field: string,
+  highlightedCells?: Map<string, CellState>,
+  boldedCells?: Map<string, CellState>,
+): string {
+  if (!highlightedCells && !boldedCells) return '';
+
+  const key = `${playerId}:${field}`;
+  const classes: string[] = [];
+
+  const hState = highlightedCells?.get(key);
+  if (hState === 'active') classes.push('live-highlight-active');
+  else if (hState === 'fading') classes.push('live-highlight-fading');
+
+  const bState = boldedCells?.get(key);
+  if (bState === 'active') classes.push('live-bold-active');
+  else if (bState === 'fading') classes.push('live-bold-fading');
+
+  return classes.join(' ');
+}
+
+// For combined cells (FG, 3P, FT), highlight if either made or attempted changed
+function getCombinedCellClasses(
+  playerId: string,
+  madeField: string,
+  attemptedField: string,
+  highlightedCells?: Map<string, CellState>,
+  boldedCells?: Map<string, CellState>,
+): string {
+  if (!highlightedCells && !boldedCells) return '';
+
+  const madeKey = `${playerId}:${madeField}`;
+  const attemptedKey = `${playerId}:${attemptedField}`;
+  const classes: string[] = [];
+
+  const hMade = highlightedCells?.get(madeKey);
+  const hAttempted = highlightedCells?.get(attemptedKey);
+  const hState = hMade === 'active' || hAttempted === 'active'
+    ? 'active'
+    : hMade === 'fading' || hAttempted === 'fading'
+      ? 'fading'
+      : null;
+
+  if (hState === 'active') classes.push('live-highlight-active');
+  else if (hState === 'fading') classes.push('live-highlight-fading');
+
+  const bMade = boldedCells?.get(madeKey);
+  const bAttempted = boldedCells?.get(attemptedKey);
+  const bState = bMade === 'active' || bAttempted === 'active'
+    ? 'active'
+    : bMade === 'fading' || bAttempted === 'fading'
+      ? 'fading'
+      : null;
+
+  if (bState === 'active') classes.push('live-bold-active');
+  else if (bState === 'fading') classes.push('live-bold-fading');
+
+  return classes.join(' ');
+}
+
+export default function BoxScore({ homeTeam, awayTeam, onPlayerClick, highlightedCells, boldedCells }: BoxScoreProps) {
   const renderTeamStats = (team: Team) => {
     if (!team.players || team.players.length === 0) {
       return <div>No player stats available</div>;
@@ -90,20 +154,60 @@ export default function BoxScore({ homeTeam, awayTeam, onPlayerClick }: BoxScore
             <tbody>
               {sortedPlayers.map((player, index) => (
                 <tr key={player.playerName} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
-                  <td 
-                    className="md:px-2 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                  <td
+                    className={`md:px-2 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200${onPlayerClick ? ' cursor-pointer hover:text-blue-600 dark:hover:text-blue-400' : ''}`}
                     onClick={() => onPlayerClick?.(player.playerId, player.playerName)}
                   >{player.playerName}</td>
-                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.minutes || '0:00'}</td>
-                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.points}</td>
-                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.rebounds}</td>
-                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.assists}</td>
-                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.steals}</td>
-                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.blocks}</td>
-                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.turnovers}</td>
-                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.fieldGoalsMade}-{player.fieldGoalsAttempted}</td>
-                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.threePointersMade}-{player.threePointersAttempted}</td>
-                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.freeThrowsMade}-{player.freeThrowsAttempted}</td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">
+                    <span className={getCellClasses(player.playerId, 'minutes', highlightedCells, boldedCells)}>
+                      {player.minutes || '0:00'}
+                    </span>
+                  </td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">
+                    <span className={getCellClasses(player.playerId, 'points', highlightedCells, boldedCells)}>
+                      {player.points}
+                    </span>
+                  </td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">
+                    <span className={getCellClasses(player.playerId, 'rebounds', highlightedCells, boldedCells)}>
+                      {player.rebounds}
+                    </span>
+                  </td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">
+                    <span className={getCellClasses(player.playerId, 'assists', highlightedCells, boldedCells)}>
+                      {player.assists}
+                    </span>
+                  </td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">
+                    <span className={getCellClasses(player.playerId, 'steals', highlightedCells, boldedCells)}>
+                      {player.steals}
+                    </span>
+                  </td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">
+                    <span className={getCellClasses(player.playerId, 'blocks', highlightedCells, boldedCells)}>
+                      {player.blocks}
+                    </span>
+                  </td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">
+                    <span className={getCellClasses(player.playerId, 'turnovers', highlightedCells, boldedCells)}>
+                      {player.turnovers}
+                    </span>
+                  </td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">
+                    <span className={getCombinedCellClasses(player.playerId, 'fieldGoalsMade', 'fieldGoalsAttempted', highlightedCells, boldedCells)}>
+                      {player.fieldGoalsMade}-{player.fieldGoalsAttempted}
+                    </span>
+                  </td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">
+                    <span className={getCombinedCellClasses(player.playerId, 'threePointersMade', 'threePointersAttempted', highlightedCells, boldedCells)}>
+                      {player.threePointersMade}-{player.threePointersAttempted}
+                    </span>
+                  </td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">
+                    <span className={getCombinedCellClasses(player.playerId, 'freeThrowsMade', 'freeThrowsAttempted', highlightedCells, boldedCells)}>
+                      {player.freeThrowsMade}-{player.freeThrowsAttempted}
+                    </span>
+                  </td>
                 </tr>
               ))}
               {/* Total Row */}

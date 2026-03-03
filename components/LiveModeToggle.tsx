@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useLivePolling } from '@/hooks/useLivePolling';
+import { useLiveData } from '@/lib/LiveDataContext';
 
 function formatTimeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
@@ -12,7 +12,7 @@ function formatTimeAgo(date: Date): string {
 }
 
 export function LiveModeToggle() {
-  const { isLive, setIsLive, lastUpdated, activeGameCount } = useLivePolling(5000);
+  const { isLive, setIsLive, lastUpdated, activeGameCount } = useLiveData();
   const [mounted, setMounted] = useState(false);
   const [timeAgoText, setTimeAgoText] = useState('');
 
