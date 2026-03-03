@@ -13,7 +13,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { format, eachDayOfInterval } from 'date-fns';
+import { format } from 'date-fns';
 
 interface GameLogEntry {
   game_date: Date;
@@ -101,22 +101,16 @@ export default function PlayerPerformanceTrend({ games, playerName }: PlayerPerf
     });
   };
 
-  // Build date spine and scatter data
+  // Build chart data indexed by game order (not date spine) for reliable tooltips
   const sorted = [...games].sort((a, b) => a.game_date.getTime() - b.game_date.getTime());
 
-  const allDates = sorted.length >= 2
-    ? eachDayOfInterval({ start: sorted[0].game_date, end: sorted[sorted.length - 1].game_date })
-    : sorted.map(g => g.game_date);
+  const indexToLabel = new Map(sorted.map((g, i) => [i, format(g.game_date, 'MM/dd')]));
 
-  // Map each date to its index for the x-axis
-  const dateToIndex = new Map(allDates.map((d, i) => [format(d, 'yyyy-MM-dd'), i]));
-  const indexToLabel = new Map(allDates.map((d, i) => [i, format(d, 'MM/dd')]));
-
-  const chartData = sorted.map(game => {
+  const chartData = sorted.map((game, i) => {
     const decimalMinutes = parseMinutes(game.minutes);
     const base: Record<string, unknown> = {
       ...game,
-      x: dateToIndex.get(format(game.game_date, 'yyyy-MM-dd')) ?? 0,
+      x: i,
       decimal_minutes: Math.round(decimalMinutes * 10) / 10,
     };
 
@@ -134,7 +128,7 @@ export default function PlayerPerformanceTrend({ games, playerName }: PlayerPerf
   const trendlineData = useMemo(() => {
     if (chartData.length < 2) return [];
     const xMin = 0;
-    const xMax = allDates.length - 1;
+    const xMax = chartData.length - 1;
     const lines: Record<string, unknown>[] = [{ x: xMin }, { x: xMax }];
 
     for (const { key } of STAT_OPTIONS) {
@@ -151,14 +145,35 @@ export default function PlayerPerformanceTrend({ games, playerName }: PlayerPerf
     }
 
     return lines;
-  }, [chartData, selectedStats, allDates.length]);
+  }, [chartData, selectedStats]);
 
-  const xTickCount = Math.min(12, allDates.length);
+  // Compute Y-axis domain from selected stats only
+  const yDomain = useMemo(() => {
+    if (chartData.length === 0) return [0, 10];
+    let min = Infinity;
+    let max = -Infinity;
+    for (const d of chartData) {
+      for (const { key } of STAT_OPTIONS) {
+        if (!selectedStats.has(key)) continue;
+        const val = d[key] as number;
+        if (val !== undefined && val !== null) {
+          if (val < min) min = val;
+          if (val > max) max = val;
+        }
+      }
+    }
+    if (!isFinite(min)) return [0, 10];
+    const padding = Math.max(1, Math.ceil((max - min) * 0.1));
+    return [0, Math.ceil(max + padding)];
+  }, [chartData, selectedStats]);
+
+  const gameCount = chartData.length;
+  const xTickCount = Math.min(12, gameCount);
   const xTicks: number[] = [];
-  if (allDates.length > 0) {
-    const step = Math.max(1, Math.floor((allDates.length - 1) / (xTickCount - 1)));
-    for (let i = 0; i < allDates.length; i += step) xTicks.push(i);
-    if (xTicks[xTicks.length - 1] !== allDates.length - 1) xTicks.push(allDates.length - 1);
+  if (gameCount > 0) {
+    const step = Math.max(1, Math.floor((gameCount - 1) / (xTickCount - 1)));
+    for (let i = 0; i < gameCount; i += step) xTicks.push(i);
+    if (xTicks[xTicks.length - 1] !== gameCount - 1) xTicks.push(gameCount - 1);
   }
 
   if (chartData.length === 0) {
@@ -201,31 +216,31 @@ export default function PlayerPerformanceTrend({ games, playerName }: PlayerPerf
           <XAxis
             dataKey="x"
             type="number"
-            domain={[0, allDates.length - 1]}
+            domain={[0, gameCount - 1]}
             ticks={xTicks}
             tickFormatter={(val: number) => indexToLabel.get(val) ?? ''}
             tick={{ fontSize: 11 }}
             stroke="#9ca3af"
           />
-          <YAxis tick={{ fontSize: 11 }} stroke="#9ca3af" />
+          <YAxis tick={{ fontSize: 11 }} stroke="#9ca3af" domain={yDomain} />
           <Tooltip
-            contentStyle={{
-              backgroundColor: 'white',
-              border: '1px solid #d1d5db',
-              borderRadius: '0.375rem',
-              color: '#111827',
-              fontSize: '12px',
-            }}
-            labelFormatter={(val) => indexToLabel.get(Number(val)) ?? ''}
             isAnimationActive={false}
-            filterNull={true}
-            content={({ label, payload }) => {
-              const items = payload?.filter(p => p.dataKey !== 'x');
-              if (!items?.length) return null;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            content={({ active, payload }: any) => {
+              if (!active || !payload?.length) return null;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const items = payload.filter((p: any) => {
+                const dk = String(p.dataKey ?? '');
+                return dk !== 'x' && !dk.endsWith('_trend');
+              });
+              if (!items.length) return null;
+              const xVal = items[0]?.payload?.x;
+              const dateLabel = xVal !== undefined ? indexToLabel.get(Number(xVal)) ?? '' : '';
               return (
                 <div style={{ backgroundColor: 'white', border: '1px solid #d1d5db', borderRadius: '0.375rem', padding: '8px 12px', fontSize: '12px', color: '#111827' }}>
-                  <div style={{ marginBottom: 4 }}>{indexToLabel.get(Number(label)) ?? ''}</div>
-                  {items.map(item => (
+                  <div style={{ marginBottom: 4 }}>{dateLabel}</div>
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {items.map((item: any) => (
                     <div key={String(item.dataKey)} style={{ color: String(item.color) }}>
                       {item.name}: {item.value}
                     </div>
