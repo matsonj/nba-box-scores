@@ -6,7 +6,7 @@ export const TEMP_TABLES = {
 } as const;
 
 export const SOURCE_TABLES = {
-  SCHEDULE: 'nba_box_scores.main.schedule',
-  BOX_SCORES: 'nba_box_scores.main.box_scores',
-  TEAM_STATS: 'nba_box_scores.main.team_stats',
+  SCHEDULE: 'nba_box_scores_v2.main.schedule',
+  BOX_SCORES: 'nba_box_scores_v2.main.box_scores',
+  TEAM_STATS: 'nba_box_scores_v2.main.team_stats',
 } as const;

@@ -1,0 +1,40 @@
+name: Backfill Historical Seasons
+
+on:
+  workflow_dispatch:
+    inputs:
+      from_season:
+        description: 'Start season year (e.g. 2020 for 2020-21)'
+        required: true
+        type: string
+      to_season:
+        description: 'End season year inclusive (e.g. 2024 for 2024-25)'
+        required: true
+        type: string
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run backfill ingestion
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: npm run ingest -- --from ${{ inputs.from_season }} --to ${{ inputs.to_season }} --season-concurrency 2 --concurrency 5

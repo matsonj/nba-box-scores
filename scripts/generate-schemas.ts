@@ -122,6 +122,9 @@ async function generateSchemas(): Promise<void> {
       }
     }
 
+    // Switch to v2 database
+    await queryDb('USE nba_box_scores_v2;');
+
     // Get list of tables
     const tables = await queryDb('SHOW TABLES;');
     const tableNames = tables

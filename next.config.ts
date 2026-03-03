@@ -1,6 +1,7 @@
 import { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  turbopack: {},
   webpack: (config, { isServer }) => {
     // Add duckdb-lambda-x86 to externals for both client and server
     if (isServer) {

@@ -3,6 +3,7 @@ import './globals.css'
 import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
 import { DynamicTablePopover } from './components/DynamicTablePopover'
+import { LiveModeToggle } from '@/components/LiveModeToggle'
 import { MotherDuckClientProvider } from '@/lib/MotherDuckContext'
 
 export const metadata: Metadata = {
@@ -19,7 +20,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="bg-white dark:bg-gray-900 min-h-screen">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <MotherDuckClientProvider database="nba_box_scores">
+          <MotherDuckClientProvider>
             <header className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-md z-50">
               <div className="container mx-auto px-4 py-4 flex justify-between items-center">
                 <div className="flex items-end gap-3">
@@ -27,6 +28,7 @@ export default function RootLayout({
                   <span className="text-lg italic text-gray-600 dark:text-gray-400">mega fast sports data</span>
                 </div>
                 <div className="flex items-center">
+                  <LiveModeToggle />
                   <DynamicTablePopover />
                   <ThemeToggle />
                 </div>

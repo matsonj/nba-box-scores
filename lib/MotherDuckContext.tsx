@@ -14,7 +14,7 @@ interface MotherDuckContextValue {
 
 export const MotherDuckContext = createContext<MotherDuckContextValue | null>(null);
 
-export function MotherDuckClientProvider({ children, database }: { children: React.ReactNode, database?: string },) {
+export function MotherDuckClientProvider({ children }: { children: React.ReactNode },) {
   const connectionRef = useRef<PromiseWithResolvers<MDConnection | undefined>>(undefined);
 
   if (connectionRef.current === undefined) {
@@ -53,7 +53,7 @@ export function MotherDuckClientProvider({ children, database }: { children: Rea
     const initializeConnection = async () => {
       try {
         const mdToken = await fetchMotherDuckToken();
-        const result = await initMotherDuckConnection(mdToken, database);
+        const result = await initMotherDuckConnection(mdToken);
         if (connectionRef.current) {
           connectionRef.current.resolve(result);
         }
@@ -72,7 +72,7 @@ export function MotherDuckClientProvider({ children, database }: { children: Rea
         connectionRef.current.resolve(undefined);
       }
     };
-  }, [database]); // Add database to dependencies
+  }, []);
 
   const value = useMemo(() => ({
     evaluateQuery,
