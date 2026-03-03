@@ -4,10 +4,10 @@ import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { BoxScores as BoxScoreType } from '@/app/types/schema';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
-import { TEMP_TABLES } from '@/constants/tables';
+import { SOURCE_TABLES } from '@/constants/tables';
 import { utcToLocalDate } from '@/lib/dateUtils';
 import { sanitizeNumericId } from '@/lib/queryUtils';
-import { getAvailableSeasons, formatSeasonLabel, getSeasonYearFromDate } from '@/lib/seasonUtils';
+import { getSeasonYearFromDate } from '@/lib/seasonUtils';
 import { format } from 'date-fns';
 import dynamic from 'next/dynamic';
 
@@ -37,14 +37,12 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
 
   const searchParams = useSearchParams();
   const currentSeason = getSeasonYearFromDate(new Date());
-  const initialSeason = searchParams?.get('season') ? Number(searchParams.get('season')) : currentSeason;
-  const initialType = searchParams?.get('type') || 'all';
+  const seasonYear = searchParams?.get('season') ? Number(searchParams.get('season')) : currentSeason;
+  const seasonType = searchParams?.get('type') || 'all';
 
   const [games, setGames] = useState<GameLogEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
-  const [seasonYear, setSeasonYear] = useState<number | undefined>(initialSeason);
-  const [seasonType, setSeasonType] = useState<string>(initialType);
   const { evaluateQuery } = useMotherDuckClientState();
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -92,8 +90,8 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
               WHEN b.team_id = s.home_team_abbreviation THEN s.home_team_score - s.away_team_score
               ELSE s.away_team_score - s.home_team_score
             END AS margin
-          FROM ${TEMP_TABLES.BOX_SCORES} b
-          JOIN ${TEMP_TABLES.SCHEDULE} s ON b.game_id = s.game_id
+          FROM ${SOURCE_TABLES.BOX_SCORES} b
+          JOIN ${SOURCE_TABLES.SCHEDULE} s ON b.game_id = s.game_id
           WHERE b.entity_id = '${safeEntityId}' AND b.period = 'FullGame'
           ${seasonYear ? `AND s.season_year = ${Number(seasonYear)}` : ''}
           ${seasonType === 'regular' ? `AND s.season_type = 'Regular Season'` : ''}
@@ -165,25 +163,6 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold dark:text-white">{playerName} - Game Log</h2>
           <div className="flex items-center gap-2">
-            <select
-              value={seasonYear ?? ''}
-              onChange={(e) => setSeasonYear(e.target.value ? Number(e.target.value) : undefined)}
-              className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm"
-            >
-              <option value="">All Seasons</option>
-              {getAvailableSeasons().map((year) => (
-                <option key={year} value={year}>{formatSeasonLabel(year)}</option>
-              ))}
-            </select>
-            <select
-              value={seasonType}
-              onChange={(e) => setSeasonType(e.target.value)}
-              className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm"
-            >
-              <option value="all">All Types</option>
-              <option value="regular">Regular Season</option>
-              <option value="playoffs">Playoffs</option>
-            </select>
             <div className="flex rounded border border-gray-300 dark:border-gray-600 text-sm">
               <button
                 onClick={() => setViewMode('table')}

@@ -1,17 +1,28 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import DynamicStatsTable from '@/components/DynamicStatsTable';
 import { useDataLoader } from '@/lib/dataLoader';
 import { InformationCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { getSeasonYearFromDate } from '@/lib/seasonUtils';
+import type { SeasonType } from '@/lib/seasonUtils';
 
-export function DynamicTablePopover() {
+function DynamicTablePopoverContent() {
   const [isOpen, setIsOpen] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
-  
+  const searchParams = useSearchParams();
+
   // Create a stable dataLoader instance
   const dataLoader = useDataLoader();
+
+  // Read filters from URL search params
+  const currentSeason = getSeasonYearFromDate(new Date());
+  const season = searchParams?.get('season') ? Number(searchParams.get('season')) : currentSeason;
+  const seasonType = (searchParams?.get('type') as SeasonType) || undefined;
+  const team = searchParams?.get('team') || '';
+  const player = searchParams?.get('player') || '';
 
   // Close popover when clicking outside
   useEffect(() => {
@@ -65,8 +76,8 @@ export function DynamicTablePopover() {
                     className="focus:outline-none"
                     aria-label="Show information about Game Quality"
                   >
-                    <InformationCircleIcon 
-                      className="h-5 w-5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 cursor-pointer" 
+                    <InformationCircleIcon
+                      className="h-5 w-5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 cursor-pointer"
                     />
                   </button>
                 </div>
@@ -82,20 +93,23 @@ export function DynamicTablePopover() {
               </div>
             </div>
             <div className="p-4 font-mono">
-              {/* Only render the table once when the popover is opened */}
-              <DynamicStatsTable key="dynamic-stats-table" dataLoader={dataLoader} />
+              <DynamicStatsTable
+                key="dynamic-stats-table"
+                dataLoader={dataLoader}
+                filters={{ season, seasonType, team, player }}
+              />
             </div>
           </div>
         </div>
       )}
-      
+
       {/* Info Modal */}
       {showInfoModal && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[300]"
           onClick={() => setShowInfoModal(false)}
         >
-          <div 
+          <div
             className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full p-6 relative"
             onClick={(e) => e.stopPropagation()}
           >
@@ -106,9 +120,9 @@ export function DynamicTablePopover() {
             >
               <XMarkIcon className="h-6 w-6" />
             </button>
-            
+
             <h3 className="text-lg font-semibold mb-4 dark:text-white">About Game Quality (GQ)</h3>
-            
+
             <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
               <p>Game Quality (GQ) measures a player&apos;s statistical performance relative to other players in the same week.</p>
               <p>It compares 9 statistical categories (FGv, FTv, 3P, PTS, REB, AST, STL, BLK, TO) against every other player who played at least 15 minutes that week.</p>
@@ -119,5 +133,13 @@ export function DynamicTablePopover() {
         </div>
       )}
     </div>
+  );
+}
+
+export function DynamicTablePopover() {
+  return (
+    <Suspense fallback={<div className="w-10 h-10 mr-3" />}>
+      <DynamicTablePopoverContent />
+    </Suspense>
   );
 }

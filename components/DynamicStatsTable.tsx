@@ -4,16 +4,20 @@ import { useEffect, useState, useRef } from 'react';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { useDataLoader } from '@/lib/dataLoader';
 import { TEMP_TABLES } from '@/constants/tables';
-import dynamic from 'next/dynamic';
+import { SOURCE_TABLES } from '@/constants/tables';
+import type { SeasonType } from '@/lib/seasonUtils';
 
-const GameQualityDistribution = dynamic(
-  () => import('./charts/GameQualityDistribution'),
-  { ssr: false, loading: () => <div className="h-[250px]" /> }
-);
+interface DynamicStatsFilters {
+  season?: number;
+  seasonType?: SeasonType;
+  team?: string;
+  player?: string;
+}
 
 interface DynamicStatsTableProps {
   parameters?: { [key: string]: unknown };
   dataLoader?: ReturnType<typeof useDataLoader>;
+  filters?: DynamicStatsFilters;
 }
 
 interface TableData {
@@ -21,11 +25,10 @@ interface TableData {
   rows: readonly Record<string, unknown>[];
 }
 
-export default function DynamicStatsTable({ parameters, dataLoader: externalDataLoader }: DynamicStatsTableProps) {
+export default function DynamicStatsTable({ parameters, dataLoader: externalDataLoader, filters }: DynamicStatsTableProps) {
   const [tableData, setTableData] = useState<TableData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
   const { evaluateQuery } = useMotherDuckClientState();
   
   // Use the provided dataLoader or create a new one if not provided
@@ -35,6 +38,13 @@ export default function DynamicStatsTable({ parameters, dataLoader: externalData
   // Use a ref to track if we've already loaded data
   const hasLoadedRef = useRef(false);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const filtersKey = JSON.stringify(filters ?? {});
+
+  useEffect(() => {
+    // Reset loaded state when filters change so we re-fetch
+    hasLoadedRef.current = false;
+  }, [filtersKey]);
 
   useEffect(() => {
     // Skip loading if we've already loaded and parameters haven't changed
@@ -68,23 +78,50 @@ export default function DynamicStatsTable({ parameters, dataLoader: externalData
 
         if (!tableExists) return;
 
+        // Build filter clauses
+        const joins: string[] = [];
+        const whereClauses: string[] = ['ds.game_quality > 0'];
+
+        const needsScheduleJoin = filters?.season || (filters?.seasonType && filters.seasonType !== 'all') || filters?.team;
+        if (needsScheduleJoin) {
+          joins.push(`JOIN ${SOURCE_TABLES.SCHEDULE} s ON ds.game_id = s.game_id`);
+          if (filters?.season) {
+            whereClauses.push(`s.season_year = ${filters.season}`);
+          }
+          if (filters?.seasonType && filters.seasonType !== 'all') {
+            if (filters.seasonType === 'regular') {
+              whereClauses.push(`s.season_type = 'Regular Season'`);
+            } else if (filters.seasonType === 'playoffs') {
+              whereClauses.push(`s.season_type IN ('Playoffs', 'Play-In')`);
+            }
+          }
+          if (filters?.team) {
+            whereClauses.push(`(s.home_team_abbreviation = '${filters.team}' OR s.away_team_abbreviation = '${filters.team}')`);
+          }
+        }
+
+        if (filters?.player) {
+          whereClauses.push(`LOWER(ds.player_name) LIKE LOWER('%${filters.player.replace(/'/g, "''")}%')`);
+        }
+
         const result = await evaluateQuery(`
           SELECT
-            week_id,
-            player_name,
-            game_quality,
-            points,
-            rebounds,
-            assists,
-            steals,
-            blocks,
-            turnovers,
-            fg_v,
-            fg3_made,
-            ft_v
-          FROM ${TEMP_TABLES.DYNAMIC_STATS}
-          WHERE game_quality > 0
-          ORDER BY game_quality DESC
+            ds.week_id,
+            ds.player_name,
+            ds.game_quality,
+            ds.points,
+            ds.rebounds,
+            ds.assists,
+            ds.steals,
+            ds.blocks,
+            ds.turnovers,
+            ds.fg_v,
+            ds.fg3_made,
+            ds.ft_v
+          FROM ${TEMP_TABLES.DYNAMIC_STATS} ds
+          ${joins.join('\n          ')}
+          WHERE ${whereClauses.join('\n            AND ')}
+          ORDER BY ds.game_quality DESC
           LIMIT 100
         `);
 
@@ -121,7 +158,7 @@ export default function DynamicStatsTable({ parameters, dataLoader: externalData
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parameters, dataLoader]);
+  }, [parameters, dataLoader, filtersKey]);
 
   if (isLoading) {
     return <div className="p-4">Loading data...</div>;
@@ -175,26 +212,6 @@ export default function DynamicStatsTable({ parameters, dataLoader: externalData
   
   return (
     <div className="w-full">
-      <div className="flex justify-end mb-2">
-        <div className="flex rounded border border-gray-300 dark:border-gray-600 text-sm">
-          <button
-            onClick={() => setViewMode('table')}
-            className={`px-3 py-1 ${viewMode === 'table' ? 'bg-gray-200 dark:bg-gray-600' : ''}`}
-          >
-            Table
-          </button>
-          <button
-            onClick={() => setViewMode('chart')}
-            className={`px-3 py-1 ${viewMode === 'chart' ? 'bg-gray-200 dark:bg-gray-600' : ''}`}
-          >
-            Chart
-          </button>
-        </div>
-      </div>
-
-      {viewMode === 'chart' ? (
-        <GameQualityDistribution rows={filteredRows} />
-      ) : (
       <table className="min-w-full table-auto">
         <thead>
           <tr className="bg-gray-100 dark:bg-gray-700">
@@ -253,7 +270,6 @@ export default function DynamicStatsTable({ parameters, dataLoader: externalData
           ))}
         </tbody>
       </table>
-      )}
     </div>
   );
 }

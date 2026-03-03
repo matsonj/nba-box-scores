@@ -124,13 +124,11 @@ export default function PlayerPerformanceTrend({ games, playerName }: PlayerPerf
     return base;
   });
 
-  // Compute trendline data for each selected stat
-  const trendlineData = useMemo(() => {
-    if (chartData.length < 2) return [];
-    const xMin = 0;
-    const xMax = chartData.length - 1;
-    const lines: Record<string, unknown>[] = [{ x: xMin }, { x: xMax }];
+  // Compute trendline values at every data point so tooltips activate everywhere
+  const chartDataWithTrends = useMemo(() => {
+    if (chartData.length < 2) return chartData;
 
+    const regressions = new Map<string, { slope: number; intercept: number }>();
     for (const { key } of STAT_OPTIONS) {
       if (!selectedStats.has(key)) continue;
       const points = chartData.map(d => ({
@@ -138,13 +136,19 @@ export default function PlayerPerformanceTrend({ games, playerName }: PlayerPerf
         y: d[key] as number,
       })).filter(p => p.y !== undefined && p.y !== null);
       if (points.length < 2) continue;
-      const { slope, intercept } = linearRegression(points);
-      const trendKey = `${key}_trend`;
-      lines[0][trendKey] = Math.round((slope * xMin + intercept) * 10) / 10;
-      lines[1][trendKey] = Math.round((slope * xMax + intercept) * 10) / 10;
+      regressions.set(key, linearRegression(points));
     }
 
-    return lines;
+    if (regressions.size === 0) return chartData;
+
+    return chartData.map(d => {
+      const x = d.x as number;
+      const trendValues: Record<string, unknown> = {};
+      for (const [key, { slope, intercept }] of regressions) {
+        trendValues[`${key}_trend`] = Math.round((slope * x + intercept) * 10) / 10;
+      }
+      return { ...d, ...trendValues };
+    });
   }, [chartData, selectedStats]);
 
   // Compute Y-axis domain from selected stats only
@@ -211,7 +215,7 @@ export default function PlayerPerformanceTrend({ games, playerName }: PlayerPerf
       </div>
 
       <ResponsiveContainer width="100%" height={300}>
-        <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+        <ComposedChart data={chartDataWithTrends} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
           <XAxis
             dataKey="x"
@@ -259,10 +263,9 @@ export default function PlayerPerformanceTrend({ games, playerName }: PlayerPerf
               animationDuration={750}
             />
           ))}
-          {trendlineData.length >= 2 && STAT_OPTIONS.filter(({ key }) => selectedStats.has(key)).map(({ key, color }) => (
+          {chartDataWithTrends.length >= 2 && STAT_OPTIONS.filter(({ key }) => selectedStats.has(key)).map(({ key, color }) => (
             <Line
               key={`${key}_trend`}
-              data={trendlineData}
               dataKey={`${key}_trend`}
               stroke={color}
               strokeWidth={1.5}

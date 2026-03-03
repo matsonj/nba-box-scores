@@ -241,10 +241,6 @@ function HomeContent() {
         await dataLoader.waitForWasm();
         updateLoadingMessage(0);
 
-        addLoadingMessage('Initializing essential tables...');
-        await dataLoader.loadEssentialTables();
-        updateLoadingMessage(1);
-
         setError('');
 
         addLoadingMessage('Fetching game data...');
@@ -252,7 +248,7 @@ function HomeContent() {
           fetchSchedule(currentFilters),
           fetchBoxScores(currentFilters)
         ]);
-        updateLoadingMessage(2);
+        updateLoadingMessage(1);
 
         await new Promise(resolve => setTimeout(resolve, 100));
 
