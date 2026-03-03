@@ -3,7 +3,7 @@
 import type { PipelineConfig } from './types';
 
 const USAGE = `
-Usage: tsx scripts/ingest/main.ts [options]
+Usage: tsx scripts/ingest/index.ts [options]
 
 Season selection (at least one required):
   --season <year>               Single season (e.g. 2025 for 2025-26)
@@ -12,8 +12,10 @@ Season selection (at least one required):
 
 Options:
   --season-type <type>          "Regular Season" | "Playoffs"  [default: "Regular Season"]
-  --concurrency <n>             Parallel game workers          [default: 10]
-  --season-concurrency <n>      Parallel season workers        [default: 3]
+  --delay <ms>                  Base delay between API requests [default: 500]
+  --min-delay <ms>              Minimum delay (adaptive floor)  [default: 200]
+  --max-delay <ms>              Maximum delay (adaptive cap)    [default: 10000]
+  --season-concurrency <n>      Parallel season workers         [default: 1]
   --force                       Re-ingest even if already logged
   --dry-run                     Log actions without writing to DB
   --verbose                     Enable debug-level logging
@@ -43,7 +45,9 @@ export function buildConfig(args: string[] = process.argv.slice(2)): PipelineCon
   let to: number | undefined;
   let all = false;
   let seasonType = 'Regular Season';
-  let concurrency = 5;
+  let delay = 500;
+  let minDelay = 200;
+  let maxDelay = 10_000;
   let seasonConcurrency = 1;
   let force = false;
   let dryRun = false;
@@ -92,13 +96,37 @@ export function buildConfig(args: string[] = process.argv.slice(2)): PipelineCon
         seasonType = val;
         break;
       }
-      case '--concurrency': {
+      case '--delay': {
         const val = argv.shift();
-        if (!val) fail('--concurrency requires a value');
-        concurrency = parseInt(val, 10);
-        if (isNaN(concurrency) || concurrency < 1) {
-          fail(`Invalid concurrency: ${val}`);
+        if (!val) fail('--delay requires a value');
+        delay = parseInt(val, 10);
+        if (isNaN(delay) || delay < 0) {
+          fail(`Invalid delay: ${val}`);
         }
+        break;
+      }
+      case '--min-delay': {
+        const val = argv.shift();
+        if (!val) fail('--min-delay requires a value');
+        minDelay = parseInt(val, 10);
+        if (isNaN(minDelay) || minDelay < 0) {
+          fail(`Invalid min-delay: ${val}`);
+        }
+        break;
+      }
+      case '--max-delay': {
+        const val = argv.shift();
+        if (!val) fail('--max-delay requires a value');
+        maxDelay = parseInt(val, 10);
+        if (isNaN(maxDelay) || maxDelay < 0) {
+          fail(`Invalid max-delay: ${val}`);
+        }
+        break;
+      }
+      case '--concurrency': {
+        // Legacy flag — consume value if present, ignore silently
+        const next = argv[0];
+        if (next && !next.startsWith('--')) argv.shift();
         break;
       }
       case '--season-concurrency': {
@@ -148,6 +176,14 @@ export function buildConfig(args: string[] = process.argv.slice(2)): PipelineCon
     fail('At least one of --season, --from/--to, or --all is required');
   }
 
+  // Validate delay bounds
+  if (minDelay > maxDelay) {
+    fail(`--min-delay (${minDelay}) must be <= --max-delay (${maxDelay})`);
+  }
+  if (delay < minDelay || delay > maxDelay) {
+    fail(`--delay (${delay}) must be between --min-delay (${minDelay}) and --max-delay (${maxDelay})`);
+  }
+
   // Validate MOTHERDUCK_TOKEN
   const motherDuckToken = process.env.MOTHERDUCK_TOKEN;
   if (!motherDuckToken) {
@@ -156,7 +192,9 @@ export function buildConfig(args: string[] = process.argv.slice(2)): PipelineCon
 
   return {
     seasons,
-    concurrency,
+    delay,
+    minDelay,
+    maxDelay,
     seasonConcurrency,
     force,
     dryRun,

@@ -57,7 +57,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run current season ingestion (low concurrency)
+      - name: Run current season ingestion
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: npm run ingest -- --season ${{ needs.check-season.outputs.season_year }} --concurrency 3
+        run: npm run ingest -- --season ${{ needs.check-season.outputs.season_year }} --delay 500

@@ -37,4 +37,4 @@ jobs:
       - name: Run backfill ingestion
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: npm run ingest -- --from ${{ inputs.from_season }} --to ${{ inputs.to_season }} --season-concurrency 2 --concurrency 5
+        run: npm run ingest -- --from ${{ inputs.from_season }} --to ${{ inputs.to_season }} --delay 500

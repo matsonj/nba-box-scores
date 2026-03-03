@@ -118,7 +118,9 @@ export interface SeasonProgress {
 /** Pipeline configuration (output of buildConfig) */
 export interface PipelineConfig {
   seasons: Array<{ year: number; type: string }>;
-  concurrency: number;
+  delay: number;
+  minDelay: number;
+  maxDelay: number;
   seasonConcurrency: number;
   force: boolean;
   dryRun: boolean;

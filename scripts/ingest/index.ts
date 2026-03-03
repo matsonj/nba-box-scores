@@ -2,6 +2,7 @@
 // CLI entry point for the v2 NBA box scores ingestion pipeline
 
 import { buildConfig } from './config';
+import { configure } from './api/rate-limiter';
 import { MotherDuckConnection } from './db/connection';
 import { Loader } from './db/loader';
 import { processSeason } from './workers/season-worker';
@@ -17,13 +18,24 @@ async function main(): Promise<void> {
     logger.setVerbose(true);
   }
 
+  // Configure adaptive throttle
+  configure({
+    baseDelay: config.delay,
+    minDelay: config.minDelay,
+    maxDelay: config.maxDelay,
+  });
+
   logger.info('NBA Box Scores Ingestion Pipeline v2', {
     seasons: config.seasons.length,
-    concurrency: config.concurrency,
+    delay: `${config.delay}ms (${config.minDelay}-${config.maxDelay}ms)`,
     seasonConcurrency: config.seasonConcurrency,
     force: config.force,
     dryRun: config.dryRun,
   });
+
+  if (config.seasonConcurrency > 1) {
+    logger.warn('season-concurrency > 1: multiple seasons share one rate limiter, may overshoot API limits');
+  }
 
   // Dry-run: just print what would be processed
   if (config.dryRun) {

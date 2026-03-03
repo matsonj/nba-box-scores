@@ -1,7 +1,7 @@
 // HTTP client for PBPStats API with retry and backoff
 
 import axios, { type AxiosError } from 'axios';
-import { acquire } from './rate-limiter';
+import { acquire, recordSuccess, recordThrottle } from './rate-limiter';
 import { logger } from '../util/logger';
 import type { PBPStatsBoxScoreResponse, PBPStatsGamesResponse } from '../types';
 
@@ -41,6 +41,7 @@ async function fetchWithRetry<T>(
         headers: DEFAULT_HEADERS,
         signal,
       });
+      recordSuccess();
       return response.data;
     } catch (err) {
       const axErr = err as AxiosError;
@@ -52,6 +53,11 @@ async function fetchWithRetry<T>(
       // Don't retry 4xx errors (except 429 rate limit)
       if (status && status >= 400 && status < 500 && status !== 429) {
         throw err;
+      }
+
+      // Signal throttle for adaptive rate limiting
+      if (status === 429 || status === 503) {
+        recordThrottle();
       }
 
       if (attempt === MAX_RETRIES) throw err;
