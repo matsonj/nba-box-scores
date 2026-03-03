@@ -24,32 +24,41 @@ export class DataLoader {
     }
   }
 
-  private async createTempTables() {
+  private async createTempTables(seasonYear?: number) {
+    const seasonFilter = seasonYear ? ` AND s.season_year = ${seasonYear}` : '';
+    const scheduleSeasonFilter = seasonYear ? ` AND season_year = ${seasonYear}` : '';
+
+    // Drop existing temp tables first so filter changes take effect
+    await Promise.all([
+      this.evaluateQuery(`DROP TABLE IF EXISTS ${TEMP_TABLES.SCHEDULE}`),
+      this.evaluateQuery(`DROP TABLE IF EXISTS ${TEMP_TABLES.BOX_SCORES}`),
+      this.evaluateQuery(`DROP TABLE IF EXISTS ${TEMP_TABLES.TEAM_STATS}`),
+    ]);
+
     const queries = [
-      // Create schedule temp table
-      `CREATE TEMP TABLE IF NOT EXISTS ${TEMP_TABLES.SCHEDULE} AS 
-       SELECT * FROM ${SOURCE_TABLES.SCHEDULE} 
-       WHERE game_id NOT LIKE '006%'`,
+      `CREATE TEMP TABLE ${TEMP_TABLES.SCHEDULE} AS
+       SELECT * FROM ${SOURCE_TABLES.SCHEDULE}
+       WHERE game_id NOT LIKE '006%'${scheduleSeasonFilter}`,
 
-      // Create box scores temp table
-      `CREATE TEMP TABLE IF NOT EXISTS ${TEMP_TABLES.BOX_SCORES} AS 
-       SELECT * FROM ${SOURCE_TABLES.BOX_SCORES} 
-       WHERE period = 'FullGame'`,
+      `CREATE TEMP TABLE ${TEMP_TABLES.BOX_SCORES} AS
+       SELECT b.* FROM ${SOURCE_TABLES.BOX_SCORES} b
+       JOIN ${SOURCE_TABLES.SCHEDULE} s ON b.game_id = s.game_id
+       WHERE b.period = 'FullGame'${seasonFilter}`,
 
-      // Create team stats temp table
-      `CREATE TEMP TABLE IF NOT EXISTS ${TEMP_TABLES.TEAM_STATS} AS 
-       SELECT * FROM ${SOURCE_TABLES.TEAM_STATS}`
+      `CREATE TEMP TABLE ${TEMP_TABLES.TEAM_STATS} AS
+       SELECT t.* FROM ${SOURCE_TABLES.TEAM_STATS} t
+       JOIN ${SOURCE_TABLES.SCHEDULE} s ON t.game_id = s.game_id
+       WHERE 1=1${seasonFilter}`
     ];
 
-    // Execute all queries in parallel
     await Promise.all(queries.map(query => this.evaluateQuery(query)));
   }
 
   /**
-   * Loads only the essential tables needed for the main page
-   * Returns a promise that resolves when the essential tables are loaded
+   * Loads only the essential tables needed for the dynamic table computation.
+   * Accepts an optional season filter to limit data pulled into WASM.
    */
-  async loadEssentialTables(): Promise<void> {
+  async loadEssentialTables(seasonYear?: number): Promise<void> {
     if (this.isLoading) {
       return this.loadPromise!;
     }
@@ -57,7 +66,7 @@ export class DataLoader {
     this.isLoading = true;
     this.loadPromise = (async () => {
       try {
-        await this.createTempTables();
+        await this.createTempTables(seasonYear);
       } catch (error) {
         console.error('Error loading essential tables:', error);
         throw error;
@@ -77,18 +86,11 @@ export class DataLoader {
    * This is an expensive operation that should only be called
    * after the main application has fully loaded
    */
-  async createDynamicTable(): Promise<void> {
+  async createDynamicTable(seasonYear?: number): Promise<void> {
     try {
       console.log('Starting dynamic table creation...');
-      // First check if essential tables exist
-      try {
-        await this.evaluateQuery(`SELECT 1 FROM ${TEMP_TABLES.SCHEDULE} LIMIT 1`);
-        await this.evaluateQuery(`SELECT 1 FROM ${TEMP_TABLES.BOX_SCORES} LIMIT 1`);
-        await this.evaluateQuery(`SELECT 1 FROM ${TEMP_TABLES.TEAM_STATS} LIMIT 1`);
-      } catch {
-        console.log('Essential tables not loaded yet, loading them first...');
-        await this.loadEssentialTables();
-      }
+      // Always recreate temp tables with the current season filter
+      await this.loadEssentialTables(seasonYear);
       
       // Now create the dynamic table
       const dynamicTableName = 'temp_dynamic_stats';

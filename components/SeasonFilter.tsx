@@ -16,10 +16,11 @@ const SEASON_TYPES: { value: SeasonType; label: string }[] = [
 const availableSeasons = getAvailableSeasons();
 
 interface SeasonFilterProps {
+  basePath?: string;
   onFilterChange?: (filters: { season?: number; type?: SeasonType; team?: string }) => void;
 }
 
-export default function SeasonFilter({ onFilterChange }: SeasonFilterProps) {
+export default function SeasonFilter({ basePath = '/', onFilterChange }: SeasonFilterProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -37,7 +38,7 @@ export default function SeasonFilter({ onFilterChange }: SeasonFilterProps) {
       params.delete(key);
     }
     const queryString = params.toString();
-    router.replace(queryString ? `?${queryString}` : '/', { scroll: false });
+    router.replace(queryString ? `${basePath}?${queryString}` : basePath, { scroll: false });
 
     // Notify parent of filter change
     const newParams = new URLSearchParams(queryString);
@@ -46,14 +47,14 @@ export default function SeasonFilter({ onFilterChange }: SeasonFilterProps) {
       type: (newParams.get('type') as SeasonType) || undefined,
       team: newParams.get('team') || undefined,
     });
-  }, [searchParams, router, onFilterChange]);
+  }, [searchParams, router, basePath, onFilterChange]);
 
   const hasActiveFilters = season || seasonType !== 'all' || team || player;
 
   const clearAll = useCallback(() => {
-    router.replace('/', { scroll: false });
+    router.replace(basePath, { scroll: false });
     onFilterChange?.({});
-  }, [router, onFilterChange]);
+  }, [router, basePath, onFilterChange]);
 
   return (
     <div className="sticky top-16 bg-white dark:bg-gray-900 pt-4 pb-4 border-b border-gray-200 dark:border-gray-700 z-10">

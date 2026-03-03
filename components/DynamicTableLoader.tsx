@@ -1,39 +1,44 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useDataLoader } from '@/lib/dataLoader';
+import { getSeasonYearFromDate } from '@/lib/seasonUtils';
 
 /**
- * This component is responsible for loading the dynamic table in the background
- * It doesn't render anything visible and is only used for its side effects
+ * This component is responsible for loading the dynamic table in the background.
+ * It reads the current season filter from URL params so temp tables only
+ * contain the selected season's data.
  */
 export default function DynamicTableLoader() {
   const [isLoading, setIsLoading] = useState(false);
   const dataLoader = useDataLoader();
+  const searchParams = useSearchParams();
+
+  const currentSeason = getSeasonYearFromDate(new Date());
+  const season = searchParams?.get('season') ? Number(searchParams.get('season')) : currentSeason;
 
   useEffect(() => {
-    // Only attempt to load once
     if (isLoading) return;
-    
-    // Set a long delay before starting the dynamic table load
-    // This ensures the main application is fully loaded and interactive
+
     const timer = setTimeout(() => {
-      console.log('DynamicTableLoader: Starting dynamic table calculation in background...');
+      console.log(`DynamicTableLoader: Creating dynamic table for season ${season}...`);
       setIsLoading(true);
-      
-      // Skip loading essential tables since they're already loaded by the main app
-      dataLoader.createDynamicTable()
+
+      dataLoader.createDynamicTable(season)
         .then(() => {
           console.log('DynamicTableLoader: Dynamic table created successfully');
         })
         .catch(error => {
           console.error('DynamicTableLoader: Error creating dynamic table:', error);
+        })
+        .finally(() => {
+          setIsLoading(false);
         });
-    }, 5000); // 5 second delay to ensure main app is fully loaded
-    
-    return () => clearTimeout(timer);
-  }, [dataLoader, isLoading]);
+    }, 5000);
 
-  // This component doesn't render anything
+    return () => clearTimeout(timer);
+  }, [dataLoader, isLoading, season]);
+
   return null;
 }

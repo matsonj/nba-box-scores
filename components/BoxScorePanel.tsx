@@ -6,7 +6,7 @@ import BoxScore from './BoxScore';
 import PlayerGameLogPanel from './PlayerGameLogPanel';
 import { Team, Schedule, BoxScores as BoxScoreType, TeamStats } from '@/app/types/schema';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
-import { TEMP_TABLES } from '@/constants/tables';
+import { SOURCE_TABLES } from '@/constants/tables';
 import { getTeamName } from '@/lib/teams';
 import { parseGameDate } from '@/lib/dateUtils';
 import { sanitizeNumericId } from '@/lib/queryUtils';
@@ -71,9 +71,9 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
           boxScoresResult,
           teamStatsResult
         ] = await Promise.all([
-          evaluateQuery(`SELECT * FROM ${TEMP_TABLES.SCHEDULE} WHERE game_id = '${safeGameId}'`),
-          evaluateQuery(`SELECT * FROM ${TEMP_TABLES.BOX_SCORES} WHERE game_id = '${safeGameId}' AND period = 'FullGame'`),
-          evaluateQuery(`SELECT * FROM ${TEMP_TABLES.TEAM_STATS} WHERE game_id = '${safeGameId}'`)
+          evaluateQuery(`SELECT * FROM ${SOURCE_TABLES.SCHEDULE} WHERE game_id = '${safeGameId}'`),
+          evaluateQuery(`SELECT * FROM ${SOURCE_TABLES.BOX_SCORES} WHERE game_id = '${safeGameId}' AND period = 'FullGame'`),
+          evaluateQuery(`SELECT * FROM ${SOURCE_TABLES.TEAM_STATS} WHERE game_id = '${safeGameId}'`)
         ]);
 
         const scheduleResult = [...gameInfoResult.data.toRows()].map(row => ({

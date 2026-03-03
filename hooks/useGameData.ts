@@ -4,8 +4,7 @@ import { useCallback } from 'react';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { Schedule, TeamStats } from '@/types/schema';
 import { getTeamName } from '@/lib/teams';
-import { TEMP_TABLES, SOURCE_TABLES } from '@/constants/tables';
-import { useDataLoader } from '@/lib/dataLoader';
+import { SOURCE_TABLES } from '@/constants/tables';
 import { utcToLocalDate } from '@/lib/dateUtils';
 import { escapeSqlString } from '@/lib/queryUtils';
 import type { SeasonType } from '@/lib/seasonUtils';
@@ -36,12 +35,9 @@ function buildSeasonWhereClause(filters?: GameDataFilters, alias?: string): stri
 
 export function useSchedule() {
   const { evaluateQuery } = useMotherDuckClientState();
-  const dataLoader = useDataLoader();
 
   const fetchSchedule = useCallback(async (filters?: GameDataFilters) => {
     try {
-      await dataLoader.loadEssentialTables();
-
       const whereClause = buildSeasonWhereClause(filters);
       const result = await evaluateQuery(`
         SELECT * FROM ${SOURCE_TABLES.SCHEDULE}
@@ -79,12 +75,9 @@ export function useSchedule() {
 
 export function useBoxScores() {
   const { evaluateQuery } = useMotherDuckClientState();
-  const dataLoader = useDataLoader();
 
   const fetchBoxScores = useCallback(async (filters?: GameDataFilters) => {
     try {
-      await dataLoader.loadEssentialTables();
-
       // When filters are active, join with schedule to limit results
       let query: string;
       if (filters?.seasonYear || (filters?.seasonType && filters.seasonType !== 'all')) {
