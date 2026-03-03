@@ -15,10 +15,28 @@ export function LiveModeToggle() {
   const { isLive, setIsLive, lastUpdated, activeGameCount } = useLiveData();
   const [mounted, setMounted] = useState(false);
   const [timeAgoText, setTimeAgoText] = useState('');
+  const [checkedNoGames, setCheckedNoGames] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // When live and we get a response with 0 active games, disable live mode
+  useEffect(() => {
+    if (isLive && lastUpdated && activeGameCount === 0) {
+      setCheckedNoGames(true);
+      setIsLive(false);
+    } else if (isLive && activeGameCount > 0) {
+      setCheckedNoGames(false);
+    }
+  }, [isLive, lastUpdated, activeGameCount, setIsLive]);
+
+  // Clear "no games" state when user manually toggles off
+  useEffect(() => {
+    if (!isLive && !checkedNoGames) {
+      setCheckedNoGames(false);
+    }
+  }, [isLive, checkedNoGames]);
 
   // Update the "time ago" text every second when live
   useEffect(() => {
@@ -39,7 +57,10 @@ export function LiveModeToggle() {
   return (
     <div className="flex items-center gap-2 mr-3">
       <button
-        onClick={() => setIsLive(!isLive)}
+        onClick={() => {
+          setCheckedNoGames(false);
+          setIsLive(!isLive);
+        }}
         className={`
           flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
           ${isLive
@@ -65,7 +86,12 @@ export function LiveModeToggle() {
           </span>
         )}
       </button>
-      {isLive && lastUpdated && timeAgoText && (
+      {checkedNoGames && (
+        <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">
+          no live games
+        </span>
+      )}
+      {!checkedNoGames && isLive && lastUpdated && timeAgoText && (
         <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">
           {timeAgoText}
         </span>
