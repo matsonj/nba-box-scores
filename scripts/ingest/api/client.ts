@@ -94,8 +94,8 @@ export async function getGames(
 ): Promise<PBPStatsGamesResponse> {
   logger.debug('Fetching games list', { season, seasonType });
   return fetchWithRetry<PBPStatsGamesResponse>(
-    `${PBPSTATS_BASE}/get-games`,
-    { Season: season, SeasonType: seasonType, League: 'nba' },
+    `${PBPSTATS_BASE}/get-games/nba`,
+    { Season: season, SeasonType: seasonType },
     signal,
   );
 }

@@ -58,58 +58,71 @@ export default function BoxScore({ homeTeam, awayTeam, onPlayerClick }: BoxScore
       <div>
         <h3 className="font-bold text-lg mb-1 dark:text-white">{team.teamName}</h3>
         <div className="w-full">
-          <table className="min-w-full table-auto">
+          <table className="min-w-full table-fixed tabular-nums">
+            <colgroup>
+              <col className="w-[28%]" />
+              <col className="w-[7%]" />
+              <col className="w-[5%]" />
+              <col className="w-[5%]" />
+              <col className="w-[5%]" />
+              <col className="w-[5%]" />
+              <col className="w-[5%]" />
+              <col className="w-[5%]" />
+              <col className="w-[10%]" />
+              <col className="w-[10%]" />
+              <col className="w-[10%]" />
+            </colgroup>
             <thead>
               <tr className="bg-gray-100 dark:bg-gray-700">
-                <th className="md:px-1 md:py-0.5 p-0.5 text-left md:text-base text-xs dark:text-gray-200 bg-transparent">Player</th>
-                <th className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">MIN</th>
-                <th className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">PTS</th>
-                <th className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">REB</th>
-                <th className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">AST</th>
-                <th className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">STL</th>
-                <th className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">BLK</th>
-                <th className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">TO</th>
-                <th className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">FG</th>
-                <th className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">3P</th>
-                <th className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">FT</th>
+                <th className="md:px-2 md:py-0.5 p-0.5 text-left md:text-base text-xs dark:text-gray-200 bg-transparent">Player</th>
+                <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">MIN</th>
+                <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">PTS</th>
+                <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">REB</th>
+                <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">AST</th>
+                <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">STL</th>
+                <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">BLK</th>
+                <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">TO</th>
+                <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">FG</th>
+                <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">3P</th>
+                <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">FT</th>
               </tr>
             </thead>
             <tbody>
               {sortedPlayers.map((player, index) => (
                 <tr key={player.playerName} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
                   <td 
-                    className="md:px-1 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                    className="md:px-2 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
                     onClick={() => onPlayerClick?.(player.playerId, player.playerName)}
                   >{player.playerName}</td>
-                  <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.minutes || '0:00'}</td>
-                  <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.points}</td>
-                  <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.rebounds}</td>
-                  <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.assists}</td>
-                  <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.steals}</td>
-                  <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.blocks}</td>
-                  <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.turnovers}</td>
-                  <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.fieldGoalsMade}-{player.fieldGoalsAttempted}</td>
-                  <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.threePointersMade}-{player.threePointersAttempted}</td>
-                  <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.freeThrowsMade}-{player.freeThrowsAttempted}</td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.minutes || '0:00'}</td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.points}</td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.rebounds}</td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.assists}</td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.steals}</td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.blocks}</td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.turnovers}</td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.fieldGoalsMade}-{player.fieldGoalsAttempted}</td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.threePointersMade}-{player.threePointersAttempted}</td>
+                  <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{player.freeThrowsMade}-{player.freeThrowsAttempted}</td>
                 </tr>
               ))}
               {/* Total Row */}
               <tr className="bg-blue-50 dark:bg-gray-600 font-bold">
-                <td className="md:px-1 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200 font-bold">TOTAL</td>
-                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">-</td>
-                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">{totals.points}</td>
-                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">{totals.rebounds}</td>
-                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">{totals.assists}</td>
-                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">{totals.steals}</td>
-                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">{totals.blocks}</td>
-                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">{totals.turnovers}</td>
-                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">
+                <td className="md:px-2 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200 font-bold">TOTAL</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">-</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">{totals.points}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">{totals.rebounds}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">{totals.assists}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">{totals.steals}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">{totals.blocks}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">{totals.turnovers}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">
                   {totals.fgMade}-{totals.fgAttempted}
                 </td>
-                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">
                   {totals.threePMade}-{totals.threePAttempted}
                 </td>
-                <td className="md:px-1 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 font-bold">
                   {totals.ftMade}-{totals.ftAttempted}
                 </td>
               </tr>

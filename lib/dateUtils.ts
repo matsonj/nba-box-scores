@@ -12,8 +12,10 @@ export function utcToLocalDate(dateStr: string): Date {
  * Parses a game date value (string or Date) into a consistent Date object.
  * Handles UTC strings that may or may not have a Z suffix.
  */
-export function parseGameDate(dateValue: string | Date): Date {
+export function parseGameDate(dateValue: unknown): Date {
   if (dateValue instanceof Date) return dateValue;
-  const str = dateValue.endsWith('Z') ? dateValue : dateValue + 'Z';
-  return new Date(str);
+  if (typeof dateValue === 'number' || typeof dateValue === 'bigint') return new Date(Number(dateValue));
+  // Coerce to string for DuckDB WASM objects or other types
+  const str = String(dateValue);
+  return new Date(str.endsWith('Z') ? str : str + 'Z');
 }

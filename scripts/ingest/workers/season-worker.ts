@@ -88,9 +88,9 @@ export async function processSeason(
     away_team_id: parseInt(g.AwayTeamId, 10),
     home_team_abbreviation: g.HomeTeamAbbreviation,
     away_team_abbreviation: g.AwayTeamAbbreviation,
-    home_team_score: 0, // not available from game list
-    away_team_score: 0,
-    status: g.Status,
+    home_team_score: g.HomePoints ?? 0,
+    away_team_score: g.AwayPoints ?? 0,
+    status: 'Final',
     season_year: seasonYear,
     season_type: seasonType,
   }));

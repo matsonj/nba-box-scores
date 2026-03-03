@@ -43,8 +43,8 @@ export function buildConfig(args: string[] = process.argv.slice(2)): PipelineCon
   let to: number | undefined;
   let all = false;
   let seasonType = 'Regular Season';
-  let concurrency = 10;
-  let seasonConcurrency = 3;
+  let concurrency = 5;
+  let seasonConcurrency = 1;
   let force = false;
   let dryRun = false;
   let verbose = false;

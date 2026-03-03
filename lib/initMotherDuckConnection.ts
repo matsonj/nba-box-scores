@@ -3,7 +3,7 @@
 import type { MDConnection } from "@motherduck/wasm-client"
 
 // Create a connection to MotherDuck to be used in the frontend throughout a session.
-export default async function initMotherDuckConnection(mdToken: string, database?: string): Promise<MDConnection> {
+export default async function initMotherDuckConnection(mdToken: string): Promise<MDConnection> {
     if (typeof Worker === "undefined") {
         throw new Error("Web Workers are not supported in this environment.");
     }
@@ -21,15 +21,8 @@ export default async function initMotherDuckConnection(mdToken: string, database
         // Wait for initialization to complete
         await _connection.isInitialized();
 
-        if (database) {
-            try {
-                // Try to connect to the database
-                await _connection.evaluateQuery(`USE ${database};`);
-            } catch (error) {
-                throw error;
-            }
-        }
-
+        // No USE needed — all queries use fully-qualified table names
+        // (e.g. nba_box_scores_v2.main.schedule)
         return _connection;
     } catch (error) {
         throw error;

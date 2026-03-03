@@ -47,7 +47,8 @@ export interface PBPStatsGamesResponse {
     AwayTeamId: string;
     HomeTeamAbbreviation: string;
     AwayTeamAbbreviation: string;
-    Status: string;
+    HomePoints: number;
+    AwayPoints: number;
     [key: string]: unknown;
   }>;
 }

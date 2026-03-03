@@ -69,7 +69,7 @@ export const getDynamicTableQuery = () => {
     blocks,
     turnovers,
     s.week_id
-  from box_scores bs
+  from ${TEMP_TABLES.BOX_SCORES} bs
     join cte_schedule s on bs.game_id = s.game_id
   where period = 'FullGame'
   and substring("minutes", 1, instr("minutes", ':') - 1)::int < ${MIN_MINUTES_FOR_GAME_QUALITY}

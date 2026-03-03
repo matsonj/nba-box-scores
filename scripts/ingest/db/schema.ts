@@ -89,7 +89,7 @@ WITH period_scores AS (
     SUM(fg3_attempted) as fg3_attempted,
     SUM(ft_made) as ft_made,
     SUM(ft_attempted) as ft_attempted
-  FROM box_scores
+  FROM nba_box_scores_v2.main.box_scores
   WHERE period != 'FullGame'
   GROUP BY game_id, team_id, period
 )

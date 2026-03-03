@@ -86,7 +86,7 @@ export class DataLoader {
         await this.evaluateQuery(`SELECT 1 FROM ${TEMP_TABLES.BOX_SCORES} LIMIT 1`);
         await this.evaluateQuery(`SELECT 1 FROM ${TEMP_TABLES.TEAM_STATS} LIMIT 1`);
       } catch {
-        console.error('Essential tables not loaded yet, loading them first...');
+        console.log('Essential tables not loaded yet, loading them first...');
         await this.loadEssentialTables();
       }
       

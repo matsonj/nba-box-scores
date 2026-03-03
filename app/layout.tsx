@@ -20,7 +20,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="bg-white dark:bg-gray-900 min-h-screen">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <MotherDuckClientProvider database="nba_box_scores_v2">
+          <MotherDuckClientProvider>
             <header className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-md z-50">
               <div className="container mx-auto px-4 py-4 flex justify-between items-center">
                 <div className="flex items-end gap-3">

@@ -18,10 +18,15 @@ export class MotherDuckConnection {
   async connect(): Promise<void> {
     logger.info('Connecting to MotherDuck', { database: this.database });
 
+    // Connect to MotherDuck without specifying a database first,
+    // then CREATE DATABASE IF NOT EXISTS and USE it.
     this.instance = await DuckDBInstance.create(
-      `md:${this.database}?motherduck_token=${this.motherDuckToken}`,
+      `md:?motherduck_token=${this.motherDuckToken}`,
     );
     this.conn = await this.instance.connect();
+
+    await this.conn.run(`CREATE DATABASE IF NOT EXISTS ${this.database}`);
+    await this.conn.run(`USE ${this.database}`);
 
     logger.info('Connected to MotherDuck');
   }
