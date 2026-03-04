@@ -26,15 +26,18 @@ interface LiveDataContextValue {
   setSubscribedGameId: (id: string | null) => void;
   highlightedCells: Map<string, CellState>;
   boldedCells: Map<string, CellState>;
+  forceRefresh: () => void;
+  pollInterval: number;
+  pollTick: number;
 }
 
 const LiveDataContext = createContext<LiveDataContextValue | null>(null);
 
-const POLL_INTERVAL = 5000;
-const HIGHLIGHT_ACTIVE_MS = 2000;
-const HIGHLIGHT_FADE_MS = 10000;
-const BOLD_ACTIVE_MS = 15000;
-const BOLD_FADE_MS = 20000;
+const POLL_INTERVAL = 10000;
+const HIGHLIGHT_ACTIVE_MS = 18000;
+const HIGHLIGHT_FADE_MS = 20000;
+const BOLD_ACTIVE_MS = 38000;
+const BOLD_FADE_MS = 40000;
 
 // Stat fields to diff for change detection
 const DIFF_FIELDS = [
@@ -53,6 +56,7 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
   const [subscribedGameId, setSubscribedGameId] = useState<string | null>(null);
   const [highlightedCells, setHighlightedCells] = useState<Map<string, CellState>>(new Map());
   const [boldedCells, setBoldedCells] = useState<Map<string, CellState>>(new Map());
+  const [pollTick, setPollTick] = useState(0);
 
   const prevBoxScoreRef = useRef<LiveBoxScoreResponse | null>(null);
   const highlightTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -187,6 +191,7 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
         return !status.includes('final') && status !== '' && Number(game.period) > 0;
       });
       setActiveGameCount(active.length);
+      setPollTick((t) => t + 1);
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
       console.error('Live scoreboard poll error:', error);
@@ -317,6 +322,28 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Force refresh: fetch immediately and reset interval timers
+  const forceRefresh = useCallback(() => {
+    if (!isLive) return;
+
+    fetchScoreboard();
+
+    // Reset scoreboard interval
+    if (scoreIntervalRef.current) {
+      clearInterval(scoreIntervalRef.current);
+    }
+    scoreIntervalRef.current = setInterval(fetchScoreboard, POLL_INTERVAL);
+
+    // Also refresh box score if subscribed
+    if (subscribedGameId) {
+      fetchBoxScore(subscribedGameId);
+      if (boxIntervalRef.current) {
+        clearInterval(boxIntervalRef.current);
+      }
+      boxIntervalRef.current = setInterval(() => fetchBoxScore(subscribedGameId), POLL_INTERVAL);
+    }
+  }, [isLive, subscribedGameId, fetchScoreboard, fetchBoxScore]);
+
   const value: LiveDataContextValue = {
     isLive,
     setIsLive,
@@ -328,6 +355,9 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
     setSubscribedGameId,
     highlightedCells,
     boldedCells,
+    forceRefresh,
+    pollInterval: POLL_INTERVAL,
+    pollTick,
   };
 
   return (
