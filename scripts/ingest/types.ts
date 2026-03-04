@@ -122,6 +122,7 @@ export interface PipelineConfig {
   maxDelay: number;
   seasonConcurrency: number;
   force: boolean;
+  fillRaw: boolean;
   dryRun: boolean;
   verbose: boolean;
   motherDuckToken: string;

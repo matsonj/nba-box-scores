@@ -64,13 +64,19 @@ export async function processSeason(
   }
 
   // 2. Check which games are already ingested (for incremental skip)
-  const ingestedIds = config.force
-    ? new Set<string>()
-    : await loader.getIngestedGameIds(seasonYear, seasonType);
+  let skipIds: Set<string>;
+  if (config.force) {
+    skipIds = new Set<string>();
+  } else if (config.fillRaw) {
+    // In fill-raw mode, skip games that already have raw JSON
+    skipIds = await loader.getRawGameIds(seasonYear, seasonType);
+  } else {
+    skipIds = await loader.getIngestedGameIds(seasonYear, seasonType);
+  }
 
   // 3. Filter to games that need processing
   const gamesToProcess = games.filter((g) => {
-    if (ingestedIds.has(g.GameId)) {
+    if (skipIds.has(g.GameId)) {
       progress.skipped++;
       return false;
     }
@@ -168,14 +174,17 @@ export async function processSeason(
         rawGameData.game, rawGameData.boxScore.stats,
       );
 
-      const rows = parseBoxScore(rawGameData);
-      await loader.loadBoxScoreRows(rows);
-      await loader.markIngested({
-        game_id: gameId,
-        season_year: seasonYear,
-        season_type: seasonType,
-        ingestion_status: 'success',
-      });
+      // In fill-raw mode, only store raw JSON — skip box_scores and ingestion_log
+      if (!config.fillRaw) {
+        const rows = parseBoxScore(rawGameData);
+        await loader.loadBoxScoreRows(rows);
+        await loader.markIngested({
+          game_id: gameId,
+          season_year: seasonYear,
+          season_type: seasonType,
+          ingestion_status: 'success',
+        });
+      }
 
       progress.completed++;
       logProgress();
