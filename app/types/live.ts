@@ -40,6 +40,8 @@ export interface LivePlayerStats {
   freeThrowsAttempted: number;
   plusMinus: number;
   starter: boolean;
+  oncourt: boolean;
+  played: boolean;
 }
 
 export interface LiveBoxScoreTeam {
@@ -52,6 +54,7 @@ export interface LiveBoxScoreTeam {
 export interface LiveBoxScoreResponse {
   gameId: string;
   gameStatus: string;
+  lastPlay: string | null;
   homeTeam: LiveBoxScoreTeam;
   awayTeam: LiveBoxScoreTeam;
 }

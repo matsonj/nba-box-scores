@@ -4,6 +4,8 @@ import { useEffect, useState, useRef } from 'react';
 
 import BoxScore from './BoxScore';
 import PlayerGameLogPanel from './PlayerGameLogPanel';
+import { CountdownRing } from './LiveRefreshButton';
+import { useLiveData } from '@/lib/LiveDataContext';
 import { Team, Schedule, BoxScores as BoxScoreType, TeamStats } from '@/app/types/schema';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { resolveTable } from '@/constants/tables';
@@ -19,6 +21,7 @@ interface BoxScorePanelProps {
     homeTeam: Team;
     awayTeam: Team;
     gameStatus: string;
+    lastPlay?: string | null;
   } | null;
   highlightedCells?: Map<string, CellState>;
   boldedCells?: Map<string, CellState>;
@@ -33,6 +36,7 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
   const [loading, setLoading] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<{ entityId: string; name: string } | null>(null);
   const { evaluateQuery } = useMotherDuckClientState();
+  const { pollInterval, pollTick } = useLiveData();
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -237,7 +241,18 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
         tabIndex={-1}
       >
         <div className="relative h-full">
-          <div className="absolute top-2 right-2 z-50">
+          <div className="absolute top-2 right-2 z-50 flex items-center gap-1.5">
+            {isLiveView && liveData && (
+              <div className="flex items-center gap-1.5 mr-1">
+                <span className="relative inline-flex items-center justify-center w-4 h-4 flex-shrink-0 text-green-600 dark:text-green-400">
+                  <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+                  <CountdownRing key={pollTick} durationMs={pollInterval} size={16} />
+                </span>
+                <span className="hidden md:inline text-green-600 dark:text-green-400 text-sm font-medium">
+                  Live
+                </span>
+              </div>
+            )}
             <button
               onClick={handleClose}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
@@ -268,10 +283,14 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
                       </>
                     )}
                   </h2>
-                  <p className="text-green-600 dark:text-green-400 text-center mt-1 md:text-base text-sm flex items-center justify-center gap-2">
-                    <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <p className="text-gray-500 dark:text-gray-400 text-center mt-1 text-base">
                     {liveData.gameStatus}
                   </p>
+                  {liveData.lastPlay && (
+                    <p className="text-gray-500 dark:text-gray-400 text-center mt-1 text-sm italic truncate max-w-md mx-auto">
+                      {liveData.lastPlay}
+                    </p>
+                  )}
                 </div>
                 <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 120px)', padding: 0, paddingRight: '2px' }}>
                   <BoxScore
@@ -279,8 +298,19 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
                     awayTeam={liveData.awayTeam}
                     highlightedCells={highlightedCells}
                     boldedCells={boldedCells}
+                    onPlayerClick={(entityId, playerName) => setSelectedPlayer({ entityId, name: playerName })}
                   />
                 </div>
+                {selectedPlayer && (
+                  <div className="fixed inset-0 z-[60] bg-black bg-opacity-50">
+                    <PlayerGameLogPanel
+                      entityId={selectedPlayer.entityId}
+                      playerName={selectedPlayer.name}
+                      onClose={() => setSelectedPlayer(null)}
+                      isLive
+                    />
+                  </div>
+                )}
               </>
             ) : loading ? (
               <div className="flex items-center justify-center h-[calc(100vh-120px)]">

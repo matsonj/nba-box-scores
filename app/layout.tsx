@@ -24,10 +24,10 @@ export default function RootLayout({
           <MotherDuckClientProvider>
             <LiveDataProvider>
               <header className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-md z-50">
-                <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-                  <div className="flex items-end gap-3">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">NBA Box Scores</h1>
-                    <span className="text-lg italic text-gray-600 dark:text-gray-400">mega fast sports data</span>
+                <div className="container mx-auto px-2 md:px-4 py-3 md:py-4 flex justify-between items-center">
+                  <div className="flex items-end gap-3 min-w-0">
+                    <h1 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white whitespace-nowrap">NBA Box Scores</h1>
+                    <span className="hidden md:inline text-lg italic text-gray-600 dark:text-gray-400">mega fast sports data</span>
                   </div>
                   <div className="flex items-center">
                     <LiveModeToggle />

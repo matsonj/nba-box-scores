@@ -2,23 +2,15 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useLiveData } from '@/lib/LiveDataContext';
+import { CountdownRing } from './LiveRefreshButton';
 
 type LiveButtonState = 'off' | 'checking' | 'live' | 'no-games';
-
-function formatTimeAgo(date: Date): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (seconds < 5) return 'just now';
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}m ago`;
-}
 
 const MIN_CHECK_DURATION_MS = 1000;
 
 export function LiveModeToggle() {
-  const { isLive, setIsLive, lastUpdated, activeGameCount } = useLiveData();
+  const { isLive, setIsLive, lastUpdated, activeGameCount, pollInterval, pollTick } = useLiveData();
   const [mounted, setMounted] = useState(false);
-  const [timeAgoText, setTimeAgoText] = useState('');
   const [buttonState, setButtonState] = useState<LiveButtonState>('off');
   const checkStartedAt = useRef<number | null>(null);
   const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -65,17 +57,6 @@ export function LiveModeToggle() {
     }
   }, [isLive, lastUpdated, activeGameCount, buttonState, setIsLive]);
 
-  useEffect(() => {
-    if (buttonState !== 'live' || !lastUpdated) return;
-
-    setTimeAgoText(formatTimeAgo(lastUpdated));
-    const timer = setInterval(() => {
-      setTimeAgoText(formatTimeAgo(lastUpdated));
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [buttonState, lastUpdated]);
-
   const handleClick = () => {
     if (buttonState === 'off' || buttonState === 'no-games') {
       checkStartedAt.current = Date.now();
@@ -92,7 +73,6 @@ export function LiveModeToggle() {
     return null;
   }
 
-  const isActive = buttonState !== 'off';
   const isDisabled = buttonState === 'no-games';
 
   const outerBorderColor = (() => {
@@ -126,72 +106,58 @@ export function LiveModeToggle() {
       case 'checking':
         return 'bg-yellow-500 animate-pulse';
       case 'live':
-        return 'bg-green-500 animate-[pulse_3s_ease-in-out_infinite]';
+        return 'bg-green-500';
       default:
         return 'bg-gray-400 dark:bg-gray-500';
     }
   })();
 
-  const statusText = (() => {
-    switch (buttonState) {
-      case 'checking':
-        return 'checking...';
-      case 'no-games':
-        return 'no games';
-      case 'live':
-        return lastUpdated && timeAgoText ? timeAgoText : null;
-      default:
-        return null;
-    }
-  })();
-
-  const statusColor = buttonState === 'checking'
-    ? 'text-yellow-600 dark:text-yellow-400'
-    : 'text-gray-500 dark:text-gray-400';
-
   return (
-    <div className="mr-3 self-center relative h-10 overflow-visible">
-      <button
-        onClick={handleClick}
-        disabled={isDisabled}
-        className={`
-          relative overflow-hidden rounded-lg border transition-all duration-300
-          ${outerBorderColor}
-          ${isActive ? 'h-[42px]' : 'h-10'}
-          w-[72px] px-0
-        `}
-        aria-label={
-          buttonState === 'live' ? 'Disable live mode' :
-          buttonState === 'checking' ? 'Checking for live games...' :
-          buttonState === 'no-games' ? 'No games available' :
-          'Enable live mode'
+    <>
+      <style jsx global>{`
+        @keyframes countdown-ring {
+          from { stroke-dashoffset: 0; }
+          to { stroke-dashoffset: ${2 * Math.PI * 7}; }
         }
-      >
-        {/* Inner slider that slides up when active */}
-        <div className={`
-          flex items-center gap-2 px-3 text-sm font-medium whitespace-nowrap
-          transition-all duration-300 rounded-[5px]
-          ${innerBgColor}
-          ${isActive ? 'h-[24px] mt-0' : 'h-full'}
-        `}>
-          <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 transition-colors duration-300 ${dotClasses}`} />
-          Live
-          {buttonState === 'live' && activeGameCount > 0 && (
-            <span className="text-xs opacity-75">
-              ({activeGameCount})
+      `}</style>
+      <div className="mr-2 md:mr-3 self-start relative h-10 overflow-visible flex items-start">
+        <button
+          onClick={handleClick}
+          disabled={isDisabled}
+          className={`
+            relative overflow-hidden rounded-lg border transition-all duration-300
+            ${outerBorderColor}
+            h-10
+            w-10 md:w-[72px] px-0
+          `}
+          aria-label={
+            buttonState === 'live' ? 'Disable live mode' :
+            buttonState === 'checking' ? 'Checking for live games...' :
+            buttonState === 'no-games' ? 'No games available' :
+            'Enable live mode'
+          }
+        >
+          <div className={`
+            flex items-center justify-center md:justify-start gap-2 md:px-3 text-sm font-medium whitespace-nowrap
+            transition-all duration-300 rounded-[5px]
+            ${innerBgColor}
+            h-full
+          `}>
+            <span className="relative inline-flex items-center justify-center w-4 h-4 flex-shrink-0">
+              <span className={`inline-block w-2 h-2 rounded-full transition-colors duration-300 ${dotClasses}`} />
+              {buttonState === 'live' && (
+                <CountdownRing key={pollTick} durationMs={pollInterval} size={16} />
+              )}
             </span>
-          )}
-        </div>
-        {/* Status text area below the slider */}
-        <div className={`
-          text-[10px] leading-none px-2 flex items-center justify-center
-          transition-opacity duration-300
-          ${isActive ? 'opacity-100 h-[16px]' : 'opacity-0 h-0'}
-          ${statusColor}
-        `}>
-          {statusText || '\u00A0'}
-        </div>
-      </button>
-    </div>
+            <span className="hidden md:inline">Live</span>
+            {buttonState === 'live' && activeGameCount > 0 && (
+              <span className="hidden md:inline text-xs opacity-75">
+                ({activeGameCount})
+              </span>
+            )}
+          </div>
+        </button>
+      </div>
+    </>
   );
 }

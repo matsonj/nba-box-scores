@@ -73,13 +73,20 @@ function getCombinedCellClasses(
 }
 
 export default function BoxScore({ homeTeam, awayTeam, onPlayerClick, highlightedCells, boldedCells }: BoxScoreProps) {
+  const isLive = !!(highlightedCells || boldedCells);
+
   const renderTeamStats = (team: Team) => {
     if (!team.players || team.players.length === 0) {
       return <div>No player stats available</div>;
     }
 
+    // In live mode, only show players who have played
+    const activePlayers = isLive
+      ? team.players.filter(p => p.played === true)
+      : team.players;
+
     // Sort players by minutes played (descending)
-    const sortedPlayers = [...team.players].sort((a, b) => {
+    const sortedPlayers = [...activePlayers].sort((a, b) => {
       // Convert minutes string (e.g., "12:34") to total seconds for comparison
       const getSeconds = (min: string) => {
         if (!min) return 0;
@@ -155,9 +162,9 @@ export default function BoxScore({ homeTeam, awayTeam, onPlayerClick, highlighte
               {sortedPlayers.map((player, index) => (
                 <tr key={player.playerName} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
                   <td
-                    className={`md:px-2 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200${onPlayerClick ? ' cursor-pointer hover:text-blue-600 dark:hover:text-blue-400' : ''}`}
+                    className={`md:px-2 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200${onPlayerClick ? ' cursor-pointer hover:text-blue-600 dark:hover:text-blue-400' : ''}${isLive && player.oncourt ? ' font-bold' : ''}`}
                     onClick={() => onPlayerClick?.(player.playerId, player.playerName)}
-                  >{player.playerName}</td>
+                  >{player.playerName}{isLive && player.oncourt ? ' *' : ''}</td>
                   <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">
                     <span className={getCellClasses(player.playerId, 'minutes', highlightedCells, boldedCells)}>
                       {player.minutes || '0:00'}

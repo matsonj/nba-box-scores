@@ -20,9 +20,10 @@ interface PlayerGameLogPanelProps {
   entityId: string;
   playerName: string;
   onClose: () => void;
+  isLive?: boolean;
 }
 
-export default function PlayerGameLogPanel({ entityId, playerName, onClose }: PlayerGameLogPanelProps) {
+export default function PlayerGameLogPanel({ entityId, playerName, onClose, isLive }: PlayerGameLogPanelProps) {
   interface GameLogEntry extends BoxScoreType {
     game_date: Date;
     home_team_id: string;
@@ -190,6 +191,12 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
             </button>
           </div>
         </div>
+
+        {isLive && (
+          <p className="text-sm text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 rounded px-3 py-1.5 mb-3">
+            Current game in progress — stats below do not include today&#39;s game.
+          </p>
+        )}
 
         {viewMode === 'chart' && !loading && games.length > 0 && (
           <div className="mb-4">
