@@ -28,24 +28,17 @@ export class DataLoader {
     const seasonFilter = seasonYear ? ` AND s.season_year = ${seasonYear}` : '';
     const scheduleSeasonFilter = seasonYear ? ` AND season_year = ${seasonYear}` : '';
 
-    // Drop existing temp tables first so filter changes take effect
-    await Promise.all([
-      this.evaluateQuery(`DROP TABLE IF EXISTS ${TEMP_TABLES.SCHEDULE}`),
-      this.evaluateQuery(`DROP TABLE IF EXISTS ${TEMP_TABLES.BOX_SCORES}`),
-      this.evaluateQuery(`DROP TABLE IF EXISTS ${TEMP_TABLES.TEAM_STATS}`),
-    ]);
-
     const queries = [
-      `CREATE TEMP TABLE ${TEMP_TABLES.SCHEDULE} AS
+      `CREATE OR REPLACE TEMP TABLE ${TEMP_TABLES.SCHEDULE} AS
        SELECT * FROM ${SOURCE_TABLES.SCHEDULE}
        WHERE game_id NOT LIKE '006%'${scheduleSeasonFilter}`,
 
-      `CREATE TEMP TABLE ${TEMP_TABLES.BOX_SCORES} AS
+      `CREATE OR REPLACE TEMP TABLE ${TEMP_TABLES.BOX_SCORES} AS
        SELECT b.* FROM ${SOURCE_TABLES.BOX_SCORES} b
        JOIN ${SOURCE_TABLES.SCHEDULE} s ON b.game_id = s.game_id
        WHERE b.period = 'FullGame'${seasonFilter}`,
 
-      `CREATE TEMP TABLE ${TEMP_TABLES.TEAM_STATS} AS
+      `CREATE OR REPLACE TEMP TABLE ${TEMP_TABLES.TEAM_STATS} AS
        SELECT t.* FROM ${SOURCE_TABLES.TEAM_STATS} t
        JOIN ${SOURCE_TABLES.SCHEDULE} s ON t.game_id = s.game_id
        WHERE 1=1${seasonFilter}`
