@@ -121,32 +121,8 @@ SELECT DISTINCT entity_id, player_name
 FROM nba_box_scores_v2.main.box_scores
 WHERE period = 'FullGame';`;
 
-export const SCHEMA_COMMENTS = `
-COMMENT ON TABLE main.schedule IS 'Game schedule with one row per NBA game. Grain: game_id.';
-COMMENT ON COLUMN main.schedule.game_id IS 'Unique NBA game identifier (e.g., 0022400061).';
-COMMENT ON COLUMN main.schedule.game_status IS 'Game completion status (e.g., Final). Renamed from status to avoid ambiguity.';
-COMMENT ON COLUMN main.schedule.home_team_abbreviation IS 'Three-letter team code (e.g., BOS). Joins to box_scores.team_abbreviation.';
-COMMENT ON COLUMN main.schedule.away_team_abbreviation IS 'Three-letter team code (e.g., NYK). Joins to box_scores.team_abbreviation.';
-
-COMMENT ON TABLE main.box_scores IS 'Per-player per-period box score stats. Grain: (game_id, entity_id, period).';
-COMMENT ON COLUMN main.box_scores.game_id IS 'Foreign key to schedule.game_id.';
-COMMENT ON COLUMN main.box_scores.entity_id IS 'Unique player identifier from NBA API.';
-COMMENT ON COLUMN main.box_scores.team_abbreviation IS 'Three-letter team code. Joins to schedule.home_team_abbreviation or schedule.away_team_abbreviation.';
-COMMENT ON COLUMN main.box_scores.period IS 'Game period: 1-4 for quarters, 5+ for OT, FullGame for aggregated totals.';
-COMMENT ON COLUMN main.box_scores.minutes IS 'Playing time in MM:SS format.';
-COMMENT ON COLUMN main.box_scores.starter IS 'Starter flag: 1=starter, 0=bench. Only set on FullGame rows; NULL for per-period rows.';
-
-COMMENT ON TABLE main.ingestion_log IS 'Tracks which games have been ingested and their outcome. Grain: game_id.';
-COMMENT ON COLUMN main.ingestion_log.ingestion_status IS 'Outcome of the ingestion attempt: success or error. Renamed from status to avoid ambiguity.';
-
-COMMENT ON TABLE main.data_quality_quarantine IS 'Detected data anomalies pending review. Grain: (game_id, entity_id, detection_type).';
-COMMENT ON COLUMN main.data_quality_quarantine.resolution_status IS 'Review status: pending, approved, or rejected. Renamed from status to avoid ambiguity.';
-
-COMMENT ON VIEW main.team_stats IS 'Aggregated team stats per game per period. Derived from box_scores via SUM.';
-COMMENT ON COLUMN main.team_stats.team_abbreviation IS 'Three-letter team code. Joins to schedule.home_team_abbreviation or schedule.away_team_abbreviation.';
-
-COMMENT ON VIEW main.players IS 'Distinct player dimension derived from FullGame box_scores rows.';
-`;
+// Schema comments are now generated dynamically by metadata-generator
+// after ingest. See scripts/ingest/db/metadata.ts and `npm run metadata:refresh`.
 
 export const ALL_DDL = [
   CREATE_SCHEDULE,
@@ -155,5 +131,4 @@ export const ALL_DDL = [
   CREATE_DATA_QUALITY_QUARANTINE,
   CREATE_TEAM_STATS_VIEW,
   CREATE_PLAYERS_VIEW,
-  SCHEMA_COMMENTS,
 ] as const;
