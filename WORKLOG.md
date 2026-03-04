@@ -159,3 +159,34 @@
 - **GitHub Actions workflows**: 3 (nightly, hourly, backfill)
 - **Chart components**: 3 (PlayerPerformanceTrend, TeamComparisonChart, GameQualityDistribution)
 - **Python/legacy files removed**: ~10 files + entire `src/nba_box_scores/` directory
+
+## Raw Data Lake
+
+### 2026-03-04 — Raw PBPStats JSON storage (raw_game_data_pbpstats)
+
+**Problem**: The PBPStats API returns 90+ fields per player per period, but `box_scores` only captures 19 columns. Re-fetching a full season takes ~90 minutes due to API rate limits. Every time we want a new analytic (shot quality, possessions, usage rate), we'd need a full re-fetch.
+
+**Decision**: Store the complete raw API response in a `raw_game_data_pbpstats` table. This makes `box_scores` a derived data mart that can be regenerated at any time without re-fetching from the API.
+
+**Why this table name**: Named `raw_game_data_pbpstats` (not generic `raw_game_data`) because multiple raw sources are planned — `raw_game_data_nba` for pre-2000 data via the NBA API (issue #30). Each source gets its own raw table.
+
+**Schema design**:
+- `game_json` stores the `game` object (metadata, arena, teams)
+- `box_score_json` stores `boxScore.stats` (all player stats per period — the expensive part)
+- `season_year`/`season_type` denormalized for efficient filtering during hydration
+- `source_version` nullable, for future API version tracking
+
+**Why DELETE + INSERT for hydration (not INSERT OR REPLACE)**:
+- Row counts can change if parser logic evolves (e.g., new periods, different entity handling)
+- DELETE + INSERT is a clean slate per game — no stale rows left behind
+- Matches the standard "drop and reload" pattern in data warehousing
+
+**Storage estimate**: ~1.1 GB raw JSON for all ~4,684 games; DuckDB compresses to ~250-350 MB.
+
+**New scripts**:
+- `npm run raw:backfill` — loads ~2,178 games from local `data/box_scores/` cache
+- `npm run hydrate -- --season 2024` — re-derives `box_scores` from raw JSON
+- Season worker now stores raw JSON automatically during normal ingestion
+
+**Files changed**: `schema.ts`, `loader.ts`, `season-worker.ts`, `package.json`
+**Files created**: `backfill-raw.ts`, `hydrate.ts`
