@@ -225,6 +225,17 @@ SELECT *,
   CASE WHEN wins != -1 THEN round(CAST(wins AS DOUBLE) / gm_count, 4) ELSE -1 END AS game_quality
 FROM cte_final;`;
 
+export const CREATE_RAW_GAME_DATA_PBPSTATS = `
+CREATE TABLE IF NOT EXISTS main.raw_game_data_pbpstats (
+  game_id TEXT PRIMARY KEY,
+  season_year INTEGER NOT NULL,
+  season_type TEXT NOT NULL,
+  game_json JSON NOT NULL,
+  box_score_json JSON NOT NULL,
+  source_version TEXT,
+  ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);`;
+
 // Schema comments are now generated dynamically by metadata-generator
 // after ingest. See scripts/ingest/db/metadata.ts and `npm run metadata:refresh`.
 
@@ -233,6 +244,7 @@ export const ALL_DDL = [
   CREATE_BOX_SCORES,
   CREATE_INGESTION_LOG,
   CREATE_DATA_QUALITY_QUARANTINE,
+  CREATE_RAW_GAME_DATA_PBPSTATS,
   CREATE_TEAM_STATS_VIEW,
   CREATE_PLAYERS_VIEW,
   CREATE_GAME_QUALITY_VIEW,

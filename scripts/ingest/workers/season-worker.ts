@@ -162,6 +162,12 @@ export async function processSeason(
         },
       };
 
+      // Store full raw JSON for the data lake before parsing
+      await loader.storeRawPbpstats(
+        gameId, seasonYear, seasonType,
+        rawGameData.game, rawGameData.boxScore.stats,
+      );
+
       const rows = parseBoxScore(rawGameData);
       await loader.loadBoxScoreRows(rows);
       await loader.markIngested({

@@ -19,6 +19,8 @@
     "data-quality:check": "tsx scripts/data-quality/check.ts",
     "data-quality:re-audit": "tsx scripts/data-quality/check.ts --re-audit",
     "data-quality:issues": "tsx scripts/data-quality/github-issues.ts",
+    "raw:backfill": "tsx scripts/ingest/backfill-raw.ts",
+    "hydrate": "tsx scripts/ingest/hydrate.ts",
     "metadata:refresh": "cd ~/code/metadata_generator && uv run metadata-generator --database nba_box_scores_v2 comments main -x --refresh"
   },
   "dependencies": {

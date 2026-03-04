@@ -143,6 +143,22 @@ export class Loader {
     return new Set(rows.map((r) => r.game_id));
   }
 
+  /** Insert or replace a raw PBPStats game into the raw data lake */
+  async storeRawPbpstats(
+    gameId: string,
+    seasonYear: number,
+    seasonType: string,
+    gameJson: unknown,
+    boxScoreJson: unknown,
+  ): Promise<void> {
+    await this.db.execute(
+      `INSERT OR REPLACE INTO main.raw_game_data_pbpstats
+       (game_id, season_year, season_type, game_json, box_score_json)
+       VALUES (${esc(gameId)}, ${num(seasonYear)}, ${esc(seasonType)},
+               ${esc(JSON.stringify(gameJson))}, ${esc(JSON.stringify(boxScoreJson))})`,
+    );
+  }
+
   /** Recreate the team_stats view from the schema DDL */
   async deriveTeamStats(): Promise<void> {
     await this.db.execute(CREATE_TEAM_STATS_VIEW);
