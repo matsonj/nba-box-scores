@@ -10,3 +10,22 @@ export const SOURCE_TABLES = {
   BOX_SCORES: 'nba_box_scores_v2.main.box_scores',
   TEAM_STATS: 'nba_box_scores_v2.main.team_stats',
 } as const;
+
+type TableKey = keyof typeof TEMP_TABLES & keyof typeof SOURCE_TABLES;
+
+/**
+ * Returns the temp table name if it exists in the WASM session,
+ * otherwise falls back to the remote source table.
+ */
+export async function resolveTable(
+  key: TableKey,
+  evaluateQuery: (sql: string) => Promise<unknown>,
+): Promise<string> {
+  const temp = TEMP_TABLES[key];
+  try {
+    await evaluateQuery(`SELECT 1 FROM ${temp} LIMIT 0`);
+    return temp;
+  } catch {
+    return SOURCE_TABLES[key];
+  }
+}

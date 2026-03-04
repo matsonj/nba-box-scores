@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { BoxScores as BoxScoreType } from '@/app/types/schema';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
-import { SOURCE_TABLES } from '@/constants/tables';
+import { resolveTable } from '@/constants/tables';
 import { utcToLocalDate } from '@/lib/dateUtils';
 import { sanitizeNumericId } from '@/lib/queryUtils';
 import { getSeasonYearFromDate } from '@/lib/seasonUtils';
@@ -62,6 +62,10 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
       try {
         setLoading(true);
         const safeEntityId = sanitizeNumericId(entityId);
+        const [boxScoresTable, scheduleTable] = await Promise.all([
+          resolveTable('BOX_SCORES', evaluateQuery),
+          resolveTable('SCHEDULE', evaluateQuery),
+        ]);
         const result = await evaluateQuery(`
           SELECT
             b.*,
@@ -90,8 +94,8 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
               WHEN b.team_abbreviation = s.home_team_abbreviation THEN s.home_team_score - s.away_team_score
               ELSE s.away_team_score - s.home_team_score
             END AS margin
-          FROM ${SOURCE_TABLES.BOX_SCORES} b
-          JOIN ${SOURCE_TABLES.SCHEDULE} s ON b.game_id = s.game_id
+          FROM ${boxScoresTable} b
+          JOIN ${scheduleTable} s ON b.game_id = s.game_id
           WHERE b.entity_id = '${safeEntityId}' AND b.period = 'FullGame'
           ${seasonYear ? `AND s.season_year = ${Number(seasonYear)}` : ''}
           ${seasonType === 'regular' ? `AND s.season_type = 'Regular Season'` : ''}
