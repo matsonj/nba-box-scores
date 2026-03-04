@@ -3,14 +3,18 @@
 // Idempotent: skips records already in quarantine.
 
 import type { MotherDuckConnection } from '../../ingest/db/connection';
-import type { Detector, DetectorResult } from '../types';
+import type { Detector, DetectorOptions, DetectorResult } from '../types';
 
 const DETECTION_TYPE = 'impossible_stats';
 
 export const impossibleStatsDetector: Detector = {
   name: DETECTION_TYPE,
 
-  async run(db: MotherDuckConnection): Promise<DetectorResult> {
+  async run(db: MotherDuckConnection, options?: DetectorOptions): Promise<DetectorResult> {
+    const gameFilter = options?.incremental
+      ? `AND bs.game_id IN (SELECT game_id FROM _unaudited_games)`
+      : '';
+
     const sql = `
       INSERT INTO main.data_quality_quarantine
         (game_id, entity_id, player_name, expected_team, actual_team, detection_type, details)
@@ -23,7 +27,7 @@ export const impossibleStatsDetector: Detector = {
         '${DETECTION_TYPE}' AS detection_type,
         CASE
           WHEN bs.points > 82 THEN 'Points: ' || bs.points
-          WHEN bs.rebounds > 30 THEN 'Rebounds: ' || bs.rebounds
+          WHEN bs.rebounds > 35 THEN 'Rebounds: ' || bs.rebounds
           WHEN bs.assists > 30 THEN 'Assists: ' || bs.assists
           WHEN bs.steals > 15 THEN 'Steals: ' || bs.steals
           WHEN bs.blocks > 15 THEN 'Blocks: ' || bs.blocks
@@ -31,7 +35,8 @@ export const impossibleStatsDetector: Detector = {
         END AS details
       FROM main.box_scores bs
       WHERE bs.period = 'FullGame'
-        AND (bs.points > 82 OR bs.rebounds > 30 OR bs.assists > 30 OR bs.steals > 15 OR bs.blocks > 15)
+        AND (bs.points > 82 OR bs.rebounds > 35 OR bs.assists > 30 OR bs.steals > 15 OR bs.blocks > 15)
+        ${gameFilter}
         AND NOT EXISTS (
           SELECT 1 FROM main.data_quality_quarantine dqq
           WHERE dqq.game_id = bs.game_id
@@ -43,14 +48,14 @@ export const impossibleStatsDetector: Detector = {
     const before = await db.query<{ cnt: number }>(
       `SELECT COUNT(*) AS cnt FROM main.data_quality_quarantine WHERE detection_type = '${DETECTION_TYPE}'`,
     );
-    const beforeCount = before[0]?.cnt ?? 0;
+    const beforeCount = Number(before[0]?.cnt ?? 0);
 
     await db.execute(sql);
 
     const after = await db.query<{ cnt: number }>(
       `SELECT COUNT(*) AS cnt FROM main.data_quality_quarantine WHERE detection_type = '${DETECTION_TYPE}'`,
     );
-    const afterCount = after[0]?.cnt ?? 0;
+    const afterCount = Number(after[0]?.cnt ?? 0);
 
     return { name: DETECTION_TYPE, found: afterCount, inserted: afterCount - beforeCount };
   },
