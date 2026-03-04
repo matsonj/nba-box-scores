@@ -9,6 +9,7 @@ import { processSeason } from './workers/season-worker';
 import { runPool } from './workers/pool';
 import { shutdownSignal } from './util/shutdown';
 import { logger } from './util/logger';
+import { refreshMetadata } from './db/metadata';
 import type { SeasonProgress } from './types';
 
 async function main(): Promise<void> {
@@ -94,6 +95,11 @@ async function main(): Promise<void> {
     if (!config.dryRun && !shutdownSignal.aborted) {
       logger.info('Refreshing team_stats view...');
       await loader.deriveTeamStats();
+    }
+
+    // Refresh dynamic metadata comments (unless dry-run)
+    if (!config.dryRun && !shutdownSignal.aborted) {
+      await refreshMetadata(config.database);
     }
 
     // Print summary
