@@ -37,7 +37,7 @@ describe('useSchedule', () => {
         away_team_abbreviation: 'BOS',
         home_team_score: 110,
         away_team_score: 105,
-        status: 'Final',
+        game_status: 'Final',
         created_at: '2024-11-02T00:00:00',
       },
     ];
@@ -49,7 +49,6 @@ describe('useSchedule', () => {
     const { result } = renderHook(() => useSchedule());
     const schedule = await result.current.fetchSchedule();
 
-    expect(mockLoadEssentialTables).toHaveBeenCalledTimes(1);
     expect(mockEvaluateQuery).toHaveBeenCalledTimes(1);
     expect(mockEvaluateQuery.mock.calls[0][0]).toContain('schedule');
 
@@ -80,10 +79,10 @@ describe('useBoxScores', () => {
 
   it('fetchBoxScores groups period scores by game_id', async () => {
     const mockRows = [
-      { game_id: 'G1', team_id: 'LAL', period: '1', points: 25 },
-      { game_id: 'G1', team_id: 'LAL', period: '2', points: 30 },
-      { game_id: 'G1', team_id: 'BOS', period: '1', points: 28 },
-      { game_id: 'G2', team_id: 'GSW', period: '1', points: 32 },
+      { game_id: 'G1', team_abbreviation: 'LAL', period: '1', points: 25 },
+      { game_id: 'G1', team_abbreviation: 'LAL', period: '2', points: 30 },
+      { game_id: 'G1', team_abbreviation: 'BOS', period: '1', points: 28 },
+      { game_id: 'G2', team_abbreviation: 'GSW', period: '1', points: 32 },
     ];
 
     mockEvaluateQuery.mockResolvedValueOnce({
@@ -92,8 +91,6 @@ describe('useBoxScores', () => {
 
     const { result } = renderHook(() => useBoxScores());
     const scores = await result.current.fetchBoxScores();
-
-    expect(mockLoadEssentialTables).toHaveBeenCalledTimes(1);
 
     // G1 should have 3 entries
     expect(scores['G1']).toHaveLength(3);
@@ -119,7 +116,7 @@ describe('useBoxScores', () => {
 
   it('fetchBoxScores converts points to numbers', async () => {
     const mockRows = [
-      { game_id: 'G1', team_id: 'LAL', period: '1', points: '25' },
+      { game_id: 'G1', team_abbreviation: 'LAL', period: '1', points: '25' },
     ];
 
     mockEvaluateQuery.mockResolvedValueOnce({

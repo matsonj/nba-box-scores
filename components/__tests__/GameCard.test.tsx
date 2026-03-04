@@ -13,7 +13,7 @@ const makeGame = (overrides?: Partial<ScheduleWithBoxScore>): ScheduleWithBoxSco
   away_team_abbreviation: 'BOS',
   home_team_score: 110,
   away_team_score: 105,
-  status: 'Final',
+  game_status: 'Final',
   created_at: new Date('2024-11-02T00:00:00Z'),
   ...overrides,
 });

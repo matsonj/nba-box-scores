@@ -150,7 +150,7 @@ export async function createIssuesForPending(db: MotherDuckConnection): Promise<
       CAST(s.game_date AS VARCHAR) AS game_date
     FROM main.data_quality_quarantine dqq
     LEFT JOIN main.schedule s ON dqq.game_id = s.game_id
-    WHERE dqq.status = 'pending'
+    WHERE dqq.resolution_status = 'pending'
       AND dqq.github_issue_number IS NULL
     ORDER BY dqq.created_at ASC
   `);

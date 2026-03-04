@@ -4,7 +4,7 @@
 
 export const box_scoresColumns = [
   "game_id",
-  "team_id",
+  "team_abbreviation",
   "entity_id",
   "player_name",
   "minutes",
@@ -20,7 +20,6 @@ export const box_scoresColumns = [
   "fg3_attempted",
   "ft_made",
   "ft_attempted",
-  "plus_minus",
   "starter",
   "period"
 ] as const;
@@ -35,14 +34,14 @@ export const scheduleColumns = [
   "away_team_abbreviation",
   "home_team_score",
   "away_team_score",
-  "status",
+  "game_status",
   "created_at"
 ] as const;
 export type ScheduleColumn = typeof scheduleColumns[number];
 
 export const team_statsColumns = [
   "game_id",
-  "team_id",
+  "team_abbreviation",
   "period",
   "minutes",
   "points",
@@ -56,9 +55,7 @@ export const team_statsColumns = [
   "fg3_made",
   "fg3_attempted",
   "ft_made",
-  "ft_attempted",
-  "offensive_possessions",
-  "defensive_possessions"
+  "ft_attempted"
 ] as const;
 export type TeamStatsColumn = typeof team_statsColumns[number];
 
@@ -69,9 +66,9 @@ export function generateSelectQuery(
 ): string {
   const columnsStr = columns.join(',\n        ');
   const baseQuery = `
-      SELECT 
+      SELECT
         ${columnsStr}
       FROM ${tableName}`;
-  
+
   return whereClause ? `${baseQuery}\n      ${whereClause}` : baseQuery;
 }

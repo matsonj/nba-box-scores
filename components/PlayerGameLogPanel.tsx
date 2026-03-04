@@ -73,7 +73,7 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
             s.home_team_score,
             s.away_team_score,
             CASE
-              WHEN b.team_id = s.home_team_abbreviation THEN
+              WHEN b.team_abbreviation = s.home_team_abbreviation THEN
                 CASE
                   WHEN s.home_team_score > s.away_team_score THEN 'W'
                   WHEN s.home_team_score < s.away_team_score THEN 'L'
@@ -87,7 +87,7 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
                 END
             END AS result,
             CASE
-              WHEN b.team_id = s.home_team_abbreviation THEN s.home_team_score - s.away_team_score
+              WHEN b.team_abbreviation = s.home_team_abbreviation THEN s.home_team_score - s.away_team_score
               ELSE s.away_team_score - s.home_team_score
             END AS margin
           FROM ${SOURCE_TABLES.BOX_SCORES} b
@@ -104,7 +104,7 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
         const gameLog = [...result.data.toRows()].map(row => ({
           game_date: utcToLocalDate(String(row.game_date)),
           game_id: String(row.game_id),
-          team_id: String(row.team_id),
+          team_abbreviation: String(row.team_abbreviation),
           entity_id: String(row.entity_id),
           player_name: String(row.player_name),
           minutes: String(row.minutes),
@@ -120,7 +120,6 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose }: Pl
           fg3_attempted: Number(row.fg3_attempted),
           ft_made: Number(row.ft_made),
           ft_attempted: Number(row.ft_attempted),
-          plus_minus: Number(row.plus_minus),
           starter: Number(row.starter),
           period: String(row.period),
           home_team_id: String(row.home_team_id),

@@ -9,7 +9,7 @@ export interface Game {
   away_team_abbreviation: string;
   home_team_score: number;
   away_team_score: number;
-  status: string;
+  game_status: string;
   homeTeam: Team;
   awayTeam: Team;
   boxScoreLoaded: boolean;

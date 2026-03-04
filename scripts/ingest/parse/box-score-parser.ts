@@ -96,7 +96,7 @@ function parsePlayerPeriod(
 
   return {
     game_id: gameId,
-    team_id: teamAbbr,
+    team_abbreviation: teamAbbr,
     entity_id: raw.EntityId,
     player_name: raw.Name,
     period,
@@ -113,7 +113,6 @@ function parsePlayerPeriod(
     fg3_attempted: num(raw.FG3A),
     ft_made: num(raw.FtPoints),
     ft_attempted: num(raw.FTA),
-    plus_minus: null, // not available in the raw data per-period
     starter: null, // assigned later via heuristic
   };
 }
@@ -126,11 +125,11 @@ function parsePlayerPeriod(
 function assignStarters(fullGameRows: BoxScoreRow[]): void {
   const byTeam = new Map<string, BoxScoreRow[]>();
   for (const row of fullGameRows) {
-    const list = byTeam.get(row.team_id);
+    const list = byTeam.get(row.team_abbreviation);
     if (list) {
       list.push(row);
     } else {
-      byTeam.set(row.team_id, [row]);
+      byTeam.set(row.team_abbreviation, [row]);
     }
   }
 
@@ -185,7 +184,7 @@ export function parseBoxScore(data: unknown): BoxScoreRow[] {
   // Compute FullGame rows by aggregating per-period data for each player
   const playerMap = new Map<string, BoxScoreRow[]>();
   for (const row of periodRows) {
-    const key = `${row.team_id}:${row.entity_id}`;
+    const key = `${row.team_abbreviation}:${row.entity_id}`;
     const list = playerMap.get(key);
     if (list) {
       list.push(row);
@@ -199,7 +198,7 @@ export function parseBoxScore(data: unknown): BoxScoreRow[] {
     const first = periods[0];
     const fullGame: BoxScoreRow = {
       game_id: first.game_id,
-      team_id: first.team_id,
+      team_abbreviation: first.team_abbreviation,
       entity_id: first.entity_id,
       player_name: first.player_name,
       period: 'FullGame',
@@ -216,7 +215,6 @@ export function parseBoxScore(data: unknown): BoxScoreRow[] {
       fg3_attempted: periods.reduce((s, p) => s + p.fg3_attempted, 0),
       ft_made: periods.reduce((s, p) => s + p.ft_made, 0),
       ft_attempted: periods.reduce((s, p) => s + p.ft_attempted, 0),
-      plus_minus: null,
       starter: null,
     };
     fullGameRows.push(fullGame);
