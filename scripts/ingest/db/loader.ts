@@ -143,6 +143,16 @@ export class Loader {
     return new Set(rows.map((r) => r.game_id));
   }
 
+  /** Get all game IDs that already have raw JSON for a season */
+  async getRawGameIds(seasonYear: number, seasonType: string): Promise<Set<string>> {
+    const rows = await this.db.query<{ game_id: string }>(
+      `SELECT game_id FROM main.raw_game_data_pbpstats
+       WHERE season_year = ${num(seasonYear)}
+         AND season_type = ${esc(seasonType)}`,
+    );
+    return new Set(rows.map((r) => r.game_id));
+  }
+
   /** Insert or replace a raw PBPStats game into the raw data lake */
   async storeRawPbpstats(
     gameId: string,

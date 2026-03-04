@@ -17,6 +17,7 @@ Options:
   --max-delay <ms>              Maximum delay (adaptive cap)    [default: 10000]
   --season-concurrency <n>      Parallel season workers         [default: 1]
   --force                       Re-ingest even if already logged
+  --fill-raw                    Only fetch raw JSON for games missing it
   --dry-run                     Log actions without writing to DB
   --verbose                     Enable debug-level logging
   --help                        Show this help message
@@ -50,6 +51,7 @@ export function buildConfig(args: string[] = process.argv.slice(2)): PipelineCon
   let maxDelay = 10_000;
   let seasonConcurrency = 1;
   let force = false;
+  let fillRaw = false;
   let dryRun = false;
   let verbose = false;
 
@@ -141,6 +143,9 @@ export function buildConfig(args: string[] = process.argv.slice(2)): PipelineCon
       case '--force':
         force = true;
         break;
+      case '--fill-raw':
+        fillRaw = true;
+        break;
       case '--dry-run':
         dryRun = true;
         break;
@@ -197,6 +202,7 @@ export function buildConfig(args: string[] = process.argv.slice(2)): PipelineCon
     maxDelay,
     seasonConcurrency,
     force,
+    fillRaw,
     dryRun,
     verbose,
     motherDuckToken,
