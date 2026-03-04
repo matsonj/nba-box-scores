@@ -18,7 +18,11 @@ export interface DetectorResult {
   inserted: number;
 }
 
+export interface DetectorOptions {
+  incremental: boolean;
+}
+
 export interface Detector {
   name: string;
-  run(db: MotherDuckConnection): Promise<DetectorResult>;
+  run(db: MotherDuckConnection, options?: DetectorOptions): Promise<DetectorResult>;
 }

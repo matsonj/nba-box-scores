@@ -1,13 +1,15 @@
-// Detect games where the sum of individual player points does not match
-// the team total from the schedule table.
+// Detect players whose team_abbreviation in box_scores doesn't match
+// either team playing in the game according to the schedule.
+// This catches upstream data issues where players are tagged to a team
+// that isn't even in the game.
 // Idempotent: skips records already in quarantine.
 
 import type { MotherDuckConnection } from '../../ingest/db/connection';
 import type { Detector, DetectorOptions, DetectorResult } from '../types';
 
-const DETECTION_TYPE = 'score_mismatch';
+const DETECTION_TYPE = 'wrong_team';
 
-export const scoreMismatchDetector: Detector = {
+export const wrongTeamDetector: Detector = {
   name: DETECTION_TYPE,
 
   async run(db: MotherDuckConnection, options?: DetectorOptions): Promise<DetectorResult> {
@@ -15,39 +17,26 @@ export const scoreMismatchDetector: Detector = {
       ? `AND bs.game_id IN (SELECT game_id FROM _unaudited_games)`
       : '';
 
-    // Compare sum of player points per team per game against schedule scores.
-    // entity_id is used as a placeholder since this is a team-level check.
     const sql = `
       INSERT INTO main.data_quality_quarantine
         (game_id, entity_id, player_name, expected_team, actual_team, detection_type, details)
       SELECT
-        m.game_id,
-        m.team_abbreviation AS entity_id,
-        'TEAM' AS player_name,
-        NULL AS expected_team,
-        m.team_abbreviation AS actual_team,
+        bs.game_id,
+        bs.entity_id,
+        bs.player_name,
+        s.home_team_abbreviation || '/' || s.away_team_abbreviation AS expected_team,
+        bs.team_abbreviation AS actual_team,
         '${DETECTION_TYPE}' AS detection_type,
-        'Player sum: ' || m.player_sum || ', Schedule score: ' || m.schedule_score AS details
-      FROM (
-        SELECT
-          bs.game_id,
-          bs.team_abbreviation,
-          SUM(bs.points) AS player_sum,
-          CASE
-            WHEN bs.team_abbreviation = s.home_team_abbreviation THEN s.home_team_score
-            ELSE s.away_team_score
-          END AS schedule_score
-        FROM main.box_scores bs
-        JOIN main.schedule s ON bs.game_id = s.game_id
-        WHERE bs.period = 'FullGame'
-          ${gameFilter}
-        GROUP BY bs.game_id, bs.team_abbreviation, s.home_team_abbreviation, s.away_team_abbreviation, s.home_team_score, s.away_team_score
-      ) m
-      WHERE m.player_sum != m.schedule_score
+        'Player tagged as ' || bs.team_abbreviation || ' but game is ' || s.home_team_abbreviation || ' vs ' || s.away_team_abbreviation AS details
+      FROM main.box_scores bs
+      JOIN main.schedule s ON bs.game_id = s.game_id
+      WHERE bs.period = 'FullGame'
+        AND bs.team_abbreviation NOT IN (s.home_team_abbreviation, s.away_team_abbreviation)
+        ${gameFilter}
         AND NOT EXISTS (
           SELECT 1 FROM main.data_quality_quarantine dqq
-          WHERE dqq.game_id = m.game_id
-            AND dqq.entity_id = m.team_abbreviation
+          WHERE dqq.game_id = bs.game_id
+            AND dqq.entity_id = bs.entity_id
             AND dqq.detection_type = '${DETECTION_TYPE}'
         )
     `;

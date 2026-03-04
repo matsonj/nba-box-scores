@@ -3,14 +3,18 @@
 // Idempotent: skips records already in quarantine.
 
 import type { MotherDuckConnection } from '../../ingest/db/connection';
-import type { Detector, DetectorResult } from '../types';
+import type { Detector, DetectorOptions, DetectorResult } from '../types';
 
 const DETECTION_TYPE = 'duplicate';
 
 export const duplicatesDetector: Detector = {
   name: DETECTION_TYPE,
 
-  async run(db: MotherDuckConnection): Promise<DetectorResult> {
+  async run(db: MotherDuckConnection, options?: DetectorOptions): Promise<DetectorResult> {
+    const gameFilter = options?.incremental
+      ? `WHERE game_id IN (SELECT game_id FROM _unaudited_games)`
+      : '';
+
     const sql = `
       INSERT INTO main.data_quality_quarantine
         (game_id, entity_id, player_name, expected_team, actual_team, detection_type, details)
@@ -27,6 +31,7 @@ export const duplicatesDetector: Detector = {
           game_id, entity_id, period, team_abbreviation, player_name,
           COUNT(*) AS cnt
         FROM main.box_scores
+        ${gameFilter}
         GROUP BY game_id, entity_id, period, team_abbreviation, player_name
         HAVING COUNT(*) > 1
       ) d
@@ -41,14 +46,14 @@ export const duplicatesDetector: Detector = {
     const before = await db.query<{ cnt: number }>(
       `SELECT COUNT(*) AS cnt FROM main.data_quality_quarantine WHERE detection_type = '${DETECTION_TYPE}'`,
     );
-    const beforeCount = before[0]?.cnt ?? 0;
+    const beforeCount = Number(before[0]?.cnt ?? 0);
 
     await db.execute(sql);
 
     const after = await db.query<{ cnt: number }>(
       `SELECT COUNT(*) AS cnt FROM main.data_quality_quarantine WHERE detection_type = '${DETECTION_TYPE}'`,
     );
-    const afterCount = after[0]?.cnt ?? 0;
+    const afterCount = Number(after[0]?.cnt ?? 0);
 
     return { name: DETECTION_TYPE, found: afterCount, inserted: afterCount - beforeCount };
   },

@@ -48,7 +48,8 @@ CREATE TABLE IF NOT EXISTS main.ingestion_log (
   season_type TEXT NOT NULL,
   ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   ingestion_status TEXT NOT NULL DEFAULT 'success',
-  error_message TEXT
+  error_message TEXT,
+  audited_at TIMESTAMP
 );`;
 
 export const CREATE_DATA_QUALITY_QUARANTINE = `

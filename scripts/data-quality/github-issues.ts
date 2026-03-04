@@ -31,8 +31,8 @@ function escSql(val: string): string {
 }
 
 function buildIssueTitle(record: PendingRecord): string {
-  if (record.detection_type === 'team_switch' && record.expected_team) {
-    return `Data Quality: ${record.player_name} team switch ${record.expected_team} \u2192 ${record.actual_team}`;
+  if (record.detection_type === 'wrong_team') {
+    return `Data Quality: ${record.player_name} wrong team ${record.actual_team} in game ${record.game_id}`;
   }
   return `Data Quality: ${record.player_name} ${record.detection_type}`;
 }
@@ -46,18 +46,10 @@ function buildIssueBody(record: PendingRecord): string {
     ? `**Expected Team**: ${record.expected_team}`
     : '**Expected Team**: N/A';
 
-  let resolutionSection: string;
-  if (record.detection_type === 'team_switch') {
-    resolutionSection = [
-      '### Auto-Resolution',
-      `Will auto-resolve as 'approved' once player has played 3+ games on ${record.actual_team}.`,
-    ].join('\n');
-  } else {
-    resolutionSection = [
-      '### Auto-Resolution',
-      `No auto-resolution rule for detection type \`${record.detection_type}\`. Requires manual review.`,
-    ].join('\n');
-  }
+  const resolutionSection = [
+    '### Resolution',
+    `No auto-resolution rule for detection type \`${record.detection_type}\`. Requires manual review.`,
+  ].join('\n');
 
   const lines = [
     '## Data Quality Alert',
