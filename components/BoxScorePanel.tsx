@@ -19,6 +19,7 @@ interface BoxScorePanelProps {
     homeTeam: Team;
     awayTeam: Team;
     gameStatus: string;
+    lastPlay?: string | null;
   } | null;
   highlightedCells?: Map<string, CellState>;
   boldedCells?: Map<string, CellState>;
@@ -272,6 +273,11 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
                     <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                     {liveData.gameStatus}
                   </p>
+                  {liveData.lastPlay && (
+                    <p className="text-gray-500 dark:text-gray-400 text-center mt-1 text-xs italic truncate max-w-md mx-auto">
+                      {liveData.lastPlay}
+                    </p>
+                  )}
                 </div>
                 <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 120px)', padding: 0, paddingRight: '2px' }}>
                   <BoxScore

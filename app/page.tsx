@@ -133,6 +133,8 @@ function HomeContent() {
         freeThrowsAttempted: p.freeThrowsAttempted,
         plusMinus: p.plusMinus,
         starter: p.starter,
+        oncourt: p.oncourt,
+        played: p.played,
       }));
 
     const homeTeam: Team = {
@@ -155,6 +157,7 @@ function HomeContent() {
       homeTeam,
       awayTeam,
       gameStatus: liveBoxScore.gameStatus,
+      lastPlay: liveBoxScore.lastPlay,
     };
   }, [selectedLiveGameId, liveBoxScore]);
 

@@ -76,6 +76,8 @@ export interface Player {
   freeThrowsAttempted: number;
   plusMinus: number;
   starter: boolean;
+  oncourt?: boolean;
+  played?: boolean;
 }
 
 export interface Team {

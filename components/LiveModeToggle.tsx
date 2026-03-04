@@ -5,20 +5,11 @@ import { useLiveData } from '@/lib/LiveDataContext';
 
 type LiveButtonState = 'off' | 'checking' | 'live' | 'no-games';
 
-function formatTimeAgo(date: Date): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (seconds < 5) return 'just now';
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}m ago`;
-}
-
 const MIN_CHECK_DURATION_MS = 1000;
 
 export function LiveModeToggle() {
   const { isLive, setIsLive, lastUpdated, activeGameCount } = useLiveData();
   const [mounted, setMounted] = useState(false);
-  const [timeAgoText, setTimeAgoText] = useState('');
   const [buttonState, setButtonState] = useState<LiveButtonState>('off');
   const checkStartedAt = useRef<number | null>(null);
   const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -65,16 +56,6 @@ export function LiveModeToggle() {
     }
   }, [isLive, lastUpdated, activeGameCount, buttonState, setIsLive]);
 
-  useEffect(() => {
-    if (buttonState !== 'live' || !lastUpdated) return;
-
-    setTimeAgoText(formatTimeAgo(lastUpdated));
-    const timer = setInterval(() => {
-      setTimeAgoText(formatTimeAgo(lastUpdated));
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [buttonState, lastUpdated]);
 
   const handleClick = () => {
     if (buttonState === 'off' || buttonState === 'no-games') {
@@ -132,23 +113,6 @@ export function LiveModeToggle() {
     }
   })();
 
-  const statusText = (() => {
-    switch (buttonState) {
-      case 'checking':
-        return 'checking...';
-      case 'no-games':
-        return 'no games';
-      case 'live':
-        return lastUpdated && timeAgoText ? timeAgoText : null;
-      default:
-        return null;
-    }
-  })();
-
-  const statusColor = buttonState === 'checking'
-    ? 'text-yellow-600 dark:text-yellow-400'
-    : 'text-gray-500 dark:text-gray-400';
-
   return (
     <div className="mr-3 self-center relative h-10 overflow-visible">
       <button
@@ -157,7 +121,7 @@ export function LiveModeToggle() {
         className={`
           relative overflow-hidden rounded-lg border transition-all duration-300
           ${outerBorderColor}
-          ${isActive ? 'h-[42px]' : 'h-10'}
+          h-10
           w-[72px] px-0
         `}
         aria-label={
@@ -167,12 +131,11 @@ export function LiveModeToggle() {
           'Enable live mode'
         }
       >
-        {/* Inner slider that slides up when active */}
         <div className={`
           flex items-center gap-2 px-3 text-sm font-medium whitespace-nowrap
           transition-all duration-300 rounded-[5px]
           ${innerBgColor}
-          ${isActive ? 'h-[24px] mt-0' : 'h-full'}
+          h-full
         `}>
           <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 transition-colors duration-300 ${dotClasses}`} />
           Live
@@ -181,15 +144,6 @@ export function LiveModeToggle() {
               ({activeGameCount})
             </span>
           )}
-        </div>
-        {/* Status text area below the slider */}
-        <div className={`
-          text-[10px] leading-none px-2 flex items-center justify-center
-          transition-opacity duration-300
-          ${isActive ? 'opacity-100 h-[16px]' : 'opacity-0 h-0'}
-          ${statusColor}
-        `}>
-          {statusText || '\u00A0'}
         </div>
       </button>
     </div>

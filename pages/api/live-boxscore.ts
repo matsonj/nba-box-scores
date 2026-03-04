@@ -77,8 +77,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           freeThrowsAttempted: Number(stats?.freeThrowsAttempted || 0),
           plusMinus: Number(stats?.plusMinusPoints || 0),
           starter: p.starter === '1' || p.starter === 1,
+          oncourt: p.oncourt === '1' || p.oncourt === 1,
+          played: p.played === '1' || p.played === 1,
         };
       });
+
+    // Fetch last play from play-by-play endpoint (best effort)
+    let lastPlay: string | null = null;
+    try {
+      const pbpResponse = await axios.get(
+        `https://cdn.nba.com/static/json/liveData/playbyplay/playbyplay_${gameId}.json`,
+        { timeout: 3000, headers: { 'Accept': 'application/json' } }
+      );
+      const actions = pbpResponse.data?.game?.actions as Record<string, unknown>[] | undefined;
+      if (actions && actions.length > 0) {
+        // Walk backwards to find the last action with a description (skip "Period End" etc.)
+        for (let i = actions.length - 1; i >= 0; i--) {
+          const desc = actions[i].description as string | undefined;
+          const actionType = actions[i].actionType as string | undefined;
+          if (desc && actionType !== 'game' && actionType !== 'period') {
+            lastPlay = desc;
+            break;
+          }
+        }
+      }
+    } catch {
+      // play-by-play is optional, don't fail the request
+    }
 
     const homeTeam = game.homeTeam as Record<string, unknown>;
     const awayTeam = game.awayTeam as Record<string, unknown>;
@@ -86,6 +111,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const result: LiveBoxScoreResponse = {
       gameId,
       gameStatus: String(game.gameStatusText || ''),
+      lastPlay,
       homeTeam: {
         teamId: String(homeTeam?.teamId || ''),
         teamTricode: String(homeTeam?.teamTricode || ''),
