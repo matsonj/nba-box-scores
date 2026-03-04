@@ -62,7 +62,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return {
           personId: String(p.personId || ''),
           playerName: `${p.firstName || ''} ${p.familyName || ''}`.trim(),
-          minutes: parseMinutes(String(stats?.minutesCalculated || '')),
+          minutes: parseMinutes(String(stats?.minutes || '')),
           points: Number(stats?.points || 0),
           rebounds: Number(stats?.reboundsTotal || 0),
           assists: Number(stats?.assists || 0),

@@ -31,10 +31,10 @@ interface LiveDataContextValue {
 const LiveDataContext = createContext<LiveDataContextValue | null>(null);
 
 const POLL_INTERVAL = 5000;
-const HIGHLIGHT_ACTIVE_MS = 500;
-const HIGHLIGHT_FADE_MS = 2000;
-const BOLD_ACTIVE_MS = 8000;
-const BOLD_FADE_MS = 10000;
+const HIGHLIGHT_ACTIVE_MS = 2000;
+const HIGHLIGHT_FADE_MS = 10000;
+const BOLD_ACTIVE_MS = 15000;
+const BOLD_FADE_MS = 20000;
 
 // Stat fields to diff for change detection
 const DIFF_FIELDS = [
