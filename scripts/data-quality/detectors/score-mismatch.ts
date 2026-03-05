@@ -16,13 +16,14 @@ export const scoreMismatchDetector: Detector = {
       : '';
 
     // Compare sum of player points per team per game against schedule scores.
-    // entity_id is used as a placeholder since this is a team-level check.
+    // entity_id is set to '0' (matching the team-aggregate convention in box_scores)
+    // since this is a team-level check, not player-level.
     const sql = `
       INSERT INTO main.data_quality_quarantine
         (game_id, entity_id, player_name, expected_team, actual_team, detection_type, details)
       SELECT
         m.game_id,
-        m.team_abbreviation AS entity_id,
+        'TEAM_' || m.team_abbreviation AS entity_id,
         'TEAM' AS player_name,
         NULL AS expected_team,
         m.team_abbreviation AS actual_team,
@@ -47,7 +48,7 @@ export const scoreMismatchDetector: Detector = {
         AND NOT EXISTS (
           SELECT 1 FROM main.data_quality_quarantine dqq
           WHERE dqq.game_id = m.game_id
-            AND dqq.entity_id = m.team_abbreviation
+            AND dqq.actual_team = m.team_abbreviation
             AND dqq.detection_type = '${DETECTION_TYPE}'
         )
     `;
