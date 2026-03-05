@@ -80,51 +80,30 @@ Speaker notes:
 
 **NBA Box Scores** — real data, real pipeline, real users
 
+<div class="columns">
+<div>
+
 - Game scores, player stats, box scores
-- Live game updates with real-time highlighting
-- Player search, season filters, trend charts
+- Live updates with real-time highlighting
+- Player search, trend charts, season filters
+
+</div>
+<div>
+
+- 26 seasons of NBA data (2000–2025)
+- Adaptive rate limiting, incremental ingestion
 - **All queries run in your browser** via MotherDuck WASM
+
+</div>
+</div>
 
 <!--
 Speaker notes:
 - SHOW THE APP — either live demo or animated GIF
 - Click through: home grid → box score panel → live mode toggle
 - Player search autocomplete → performance trend chart
-- "This is what we're building toward. Let me show you how we got here."
-- ~2 min
--->
-
----
-
-# The Features
-
-<div class="columns">
-<div>
-
-**Data Pipeline**
-- 26 seasons of NBA data (2000–2025)
-- Adaptive rate limiting
-- Incremental ingestion
-- Raw data lake + derived marts
-
-</div>
-<div>
-
-**Frontend**
-- Live score polling with cell highlighting
-- Player performance trend charts
-- Season/team/player filtering
-- Dark mode, responsive, paginated
-
-</div>
-</div>
-
-<!-- TODO: Replace with GIF montage of interactive features -->
-
-<!--
-Speaker notes:
-- Quick tour of features — don't dwell, just establish scope
 - "Full stack. All TypeScript. And I built it in a weekend with AI."
+- ~2 min
 -->
 
 ---
@@ -139,34 +118,22 @@ The app **worked**. But under the hood:
 - 💀 Dead code, magic numbers, zero tests
 - 📝 No schema versioning, no data quality checks
 
-> A prototype pretending to be production.
+> A prototype pretending to be production. And **23 GitHub issues** staring at me.
+
+| Priority | Issues | Examples |
+|----------|--------|---------|
+| **P0** | 7 | Schema design, SQL injection, dead code |
+| **P1** | 8 | Parser rewrite, test suite, DB layer |
+| **P2–P3** | 8 | Charts, CI/CD, live mode, backfill |
 
 <!--
 Speaker notes:
 - "Vibe coding is great for getting something up. But eventually you need
-  to make it real. And I had 23 GitHub issues staring at me."
--->
-
----
-
-# 23 Issues, One Weekend
-
-| Priority | Issues | Examples |
-|----------|--------|---------|
-| **P0** | 7 | Schema design, SQL injection, dead code, pipeline infra |
-| **P1** | 8 | Parser rewrite, test suite, DB layer, orchestrator |
-| **P2** | 6 | Charts, CI/CD, live mode, responsive design |
-| **P3** | 2 | Pre-2000 data, backfill operations |
-
-<br>
-
-**The question**: How do you close 23 issues — schema design to CI/CD — fast?
-
-<!--
-Speaker notes:
+  to make it real."
 - "These aren't trivial issues. Schema migration. Security fixes. A full
   Python-to-TypeScript parser rewrite. CI/CD pipelines. Data quality detectors."
-- "Let me tell you how my workflow evolved."
+- "How do you close 23 issues — schema design to CI/CD — in a weekend?
+  Let me tell you how my workflow evolved."
 -->
 
 ---
@@ -277,93 +244,12 @@ Speaker notes:
 
 ---
 
-# Phase 4: Multiple Projects × Multiple Teams
-
-```
-┌────────────┐  ┌────────────┐  ┌────────────┐
-│ Window 1   │  │ Window 2   │  │ Window 3   │
-│            │  │            │  │            │
-│ Agent Team │  │ Agent Team │  │ Agent Team │
-│ Project A  │  │ Project B  │  │ Project C  │
-└────────────┘  └────────────┘  └────────────┘
-```
-
-If one window can manage an agent team...
-**run multiple windows.**
-
-Your throughput is limited by your ability to **design task graphs**.
-
-<!--
-Speaker notes:
-- "Phase 4 is where it gets wild. Each window is its own command center.
-  You're managing multiple projects simultaneously."
-- "The skill that matters is no longer typing speed. It's decomposition —
-  breaking a project into independent tasks with clear dependencies."
--->
-
----
-
-# The Exponential Curve
-
-```
-  Leverage
-    │
-    │                                        ╱ 🔮 ???
-    │                                      ╱
-    │                                ·····╱  labs are here
-    │                              ╱
-    │                      ● 2026: Parallel agent teams
-    │                    ╱
-    │              ● 2025: Agent teams
-    │            ╱
-    │        ● 2024: AI chat (Claude)
-    │      ╱
-    │  ● 2023: AI autocomplete (Copilot)
-    │╱
-    ● 2020: "Dumb guy data engineering"
-    └──────────────────────────────────── Time
-```
-
-<!--
-Speaker notes:
-- "In 2020 I wrote about 'dumb guy data engineering' — the idea that
-  DuckDB and dbt let anyone build real pipelines. You don't need Spark.
-  You don't need a CS degree. Just SQL and good tools."
-- "Each point on this curve reduces the bottleneck. First: infrastructure
-  complexity. Then: typing speed. Then: thinking speed. Now: orchestration."
-- "And here's the thing — labs are 12 months ahead of what's public.
-  We're lighting up the path. What you see today is the floor."
--->
-
----
-
-# We're Lighting Up the Path
-
-> "Dumb guy data engineering" meant you didn't need distributed systems
-> expertise to build pipelines.
->
-> Agentic engineering means you don't need to type the code either.
->
-> What you **do** need is **taste**, **judgment**, and the ability
-> to **decompose problems**.
-
-The bottleneck keeps shifting up the stack.
-
-<!--
-Speaker notes:
-- Pause here. Let this land.
-- "The constant across every era: knowing what to build matters more
-  than knowing how to build it. AI accelerates the how. You supply the what."
--->
-
----
-
 # Now Let's Look at What the Agents Built
 
 <!--
 Speaker notes:
 - Transition slide — shift from workflow story to technical deep dive
-- "So what did 3 agents working in waves actually produce?
+- "So what did 5 waves of agents actually produce?
   Let me show you the pipeline."
 -->
 
@@ -456,148 +342,110 @@ Speaker notes:
 
 ---
 
-# The Adaptive Rate Limiter
+# The Pipeline Engine
 
+<div class="columns">
+<div>
+
+### Adaptive Rate Limiter
 ```typescript
-// Rolling window of 15 recent outcomes
+// Rolling window of 15 outcomes
 const WINDOW_SIZE = 15;
-const outcomes: boolean[] = []; // true=success, false=throttle
-
-// Probe every 8 successes → adjust speed
-const PROBE_INTERVAL = 8;
 
 // Speedup/slowdown multipliers
-const AGGRESSIVE_SPEEDUP  = 0.85;  // -15% on clean window
-const GENTLE_SPEEDUP      = 0.95;  // -5% on low errors
-const MODERATE_SLOWDOWN   = 1.5;   // +50% on isolated error
-const AGGRESSIVE_SLOWDOWN = 2.0;   // +100% on sustained errors
+const AGGRESSIVE_SPEEDUP  = 0.85;
+const AGGRESSIVE_SLOWDOWN = 2.0;
 ```
 
-Range: **200ms – 10,000ms**. Finds the fastest safe speed automatically.
+Range: **200ms – 10s**
+Finds the fastest safe speed automatically.
 
 > Like cruise control for APIs.
 
-<!--
-Speaker notes:
-- "The rate limiter watches the last 15 API responses. Every 8 successes,
-  it probes: can we go faster?"
-- "Clean window, no errors — speed up 15%. A couple of errors — speed up
-  gently. High error rate — slam the brakes."
-- "This was designed in a conversation with Claude. I said 'how do we not
-  get rate limited?' and this is what came out."
--->
+</div>
+<div>
 
----
-
-# Bounded Concurrency
-
+### Bounded Concurrency
 ```typescript
 const MAX_IN_FLIGHT = 8;
 
-while (queue.length > 0 || inFlight.size > 0) {
-  if (queue.length > 0 && inFlight.size < MAX_IN_FLIGHT) {
-    // Wait the adaptive delay before dispatch
-    await new Promise(r => setTimeout(r, getCurrentDelay()));
-
+while (queue.length > 0) {
+  if (inFlight.size < MAX_IN_FLIGHT) {
+    await sleep(getCurrentDelay());
     dispatch(queue.shift()!);
-    continue; // Try to dispatch more
+    continue;
   }
-
-  // At capacity — wait for one to finish
-  if (inFlight.size > 0) {
-    await Promise.race(inFlight);
-  }
+  await Promise.race(inFlight);
 }
 ```
 
-**Serialized dispatch, parallel execution.**
-The limiter controls the faucet, not the pipes.
+Serialized dispatch, parallel execution.
+The limiter controls the **faucet**, not the pipes.
+
+</div>
+</div>
 
 <!--
 Speaker notes:
-- "The dispatch loop is the core of the pipeline. Queue of games,
-  8 in-flight at a time. Rate limiter gates how fast we dispatch."
-- "Failed games go back to the queue for retry. Up to 3 retries per game,
-  and each retry gets 5 HTTP retries with backoff. 18 total attempts
-  before we give up."
+- LEFT: "The rate limiter watches the last 15 API responses. Every 8 successes,
+  it probes: can we go faster? Clean window — speed up 15%. High errors — slam
+  the brakes. Cruise control for APIs."
+- RIGHT: "Queue of games, 8 in-flight at a time. Rate limiter gates dispatch.
+  Failed games go back to the queue. Up to 18 total attempts before we give up."
 - "This pattern — bounded fan-out with adaptive throttling — is reusable
   for any rate-limited API."
 -->
 
 ---
 
-# Raw Data Lake
+# Raw Data + Quality
 
-**Problem**: PBPStats returns **90+ fields** per player per period.
-`box_scores` captures 19. Re-fetching a season takes **~90 minutes**.
+<div class="columns">
+<div>
 
-**Solution**: Store the **full JSON** response.
+### Raw Data Lake
+PBPStats returns **90+ fields** per player per period.
+`box_scores` captures 19. Re-fetching = **~90 min/season**.
 
 ```
-raw_game_data_pbpstats     →  box_scores (derived mart)
-(complete API response)        (19 columns, fast queries)
+raw_game_data_pbpstats  →  box_scores
+(full API response)        (19 columns)
 ```
 
 ```bash
-npm run hydrate -- --season 2024  # Re-derive without API calls
+npm run hydrate -- --season 2024
+# Re-derive without API calls
 ```
 
-> Store everything. Derive later. Your future self will thank you.
+> Store everything. Derive later.
 
-<!--
-Speaker notes:
-- "This is a classic data lake pattern. The raw table is your source of truth.
-  box_scores is a materialized view you can regenerate anytime."
-- "When we want a new analytic — shot quality, usage rate, whatever —
-  we don't need to re-fetch 26 seasons. We just write a new parser."
--->
+</div>
+<div>
 
----
+### Data Quality Detectors
 
-# Data Quality
-
-Four automated detectors run on every new batch:
-
-| Detector | What it catches |
-|----------|----------------|
-| **wrong-team** | Player on two teams in same game |
+| Detector | Catches |
+|----------|---------|
+| **wrong-team** | Player on two teams |
 | **impossible-stats** | Stats violating NBA rules |
-| **score-mismatch** | Final scores ≠ schedule |
-| **duplicates** | Same player twice in same period |
+| **score-mismatch** | Scores ≠ schedule |
+| **duplicates** | Same player twice |
 
 - Quarantine table for anomalies
-- Incremental auditing (only checks new data)
-- Auto-creates GitHub issues for pending anomalies
+- Incremental auditing
+- Auto-creates GitHub issues
+
+</div>
+</div>
 
 <!--
 Speaker notes:
-- "The agents didn't just build the pipeline — they built the guardrails too."
-- "Found a real bug in v1: minutes were inflated by ~1:00 for some players.
+- LEFT: "Classic data lake pattern. The raw table is your source of truth.
+  box_scores is a materialized view you can regenerate anytime.
+  Want a new analytic? Don't re-fetch 26 seasons. Write a new parser."
+- RIGHT: "The agents didn't just build the pipeline — they built the guardrails too.
+  Found a real bug in v1: minutes were inflated by ~1:00 for some players.
   The v2 parser matches the raw JSON exactly. Better than the original."
--->
-
----
-
-# The Meta-Parallel
-
-We used **parallel agents** to build a **parallel pipeline**.
-
-| Development | Pipeline |
-|-------------|----------|
-| Agent worker pool | Season worker pool |
-| Wave dispatch (dependency-aware) | Game dispatch (rate-aware) |
-| Worktree isolation | Batch isolation |
-| Validate after each wave | Quality check after each ingest |
-| Team lead coordinates | CLI orchestrator coordinates |
-
-**The development model mirrors the runtime model.**
-
-<!--
-Speaker notes:
-- "This is the part that blew my mind. The structure of how we built it
-  is the same structure as what we built."
-- "Parallel workers, bounded concurrency, dependency-aware scheduling,
-  validation checkpoints. Same patterns, different domains."
 -->
 
 ---
@@ -663,7 +511,66 @@ Speaker notes:
 
 ---
 
-# What's Next: Harness Engineering
+# The Meta-Parallel
+
+We used **parallel agents** to build a **parallel pipeline**.
+
+| Development | Pipeline |
+|-------------|----------|
+| Agent worker pool | Season worker pool |
+| Wave dispatch (dependency-aware) | Game dispatch (rate-aware) |
+| Worktree isolation | Batch isolation |
+| Validate after each wave | Quality check after each ingest |
+| Team lead coordinates | CLI orchestrator coordinates |
+
+**The development model mirrors the runtime model.**
+
+<!--
+Speaker notes:
+- "This is the part that blew my mind. The structure of how we built it
+  is the same structure as what we built."
+- "Parallel workers, bounded concurrency, dependency-aware scheduling,
+  validation checkpoints. Same patterns, different domains."
+- PAUSE. Let this land before moving to the big picture.
+-->
+
+---
+
+# The Exponential Curve
+
+```
+  Leverage
+    │
+    │                                        ╱ 🔮 ???
+    │                                      ╱
+    │                                ·····╱  labs are here
+    │                              ╱
+    │                      ● 2026: Parallel agent teams
+    │                    ╱
+    │              ● 2025: Agent teams
+    │            ╱
+    │        ● 2024: AI chat (Claude)
+    │      ╱
+    │  ● 2023: AI autocomplete (Copilot)
+    │╱
+    ● 2020: "Dumb guy data engineering"
+    └──────────────────────────────────── Time
+```
+
+<!--
+Speaker notes:
+- "In 2020 I wrote about 'dumb guy data engineering' — the idea that
+  DuckDB and dbt let anyone build real pipelines. You don't need Spark.
+  You don't need a CS degree. Just SQL and good tools."
+- "Each point on this curve reduces the bottleneck. First: infrastructure
+  complexity. Then: typing speed. Then: thinking speed. Now: orchestration."
+- "And here's the thing — labs are already ahead of what's public.
+  Let me show you what they're doing."
+-->
+
+---
+
+# Harness Engineering
 
 OpenAI built an **internal product** with Codex agents (Feb 2026):
 
@@ -691,9 +598,7 @@ Speaker notes:
 
 ---
 
-# What's Next: The Bottleneck Keeps Shifting
-
-The exponential curve isn't slowing down.
+# The Bottleneck Keeps Shifting
 
 - ~~Infrastructure complexity~~ → DuckDB / dbt
 - ~~Typing speed~~ → autocomplete
@@ -702,13 +607,18 @@ The exponential curve isn't slowing down.
 - ~~Writing code~~ → harness engineering
 - **Knowing what to build** → that's still you
 
+> "Dumb guy data engineering" meant you didn't need distributed systems
+> expertise to build pipelines. Agentic engineering means you don't need
+> to type the code either. What you **do** need is **taste**, **judgment**,
+> and the ability to **decompose problems**.
+
 <!--
 Speaker notes:
 - "Every era makes the bottleneck less about technical skill and more
   about judgment. About taste. About asking the right questions."
-- "Harness engineering is the latest shift — you're not even orchestrating
-  the agents anymore, you're designing the environment they operate in."
-- "But the constant: knowing what to build still matters most."
+- "The constant across every era: knowing what to build matters more
+  than knowing how to build it. AI accelerates the how. You supply the what."
+- Pause. Let this land.
 -->
 
 ---

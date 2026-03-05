@@ -108,7 +108,7 @@ img[alt~=&quot;center&quot;] {
   display: block;
   margin: 0 auto;
 }
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
+;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="19">
 <h1 id="parallel-agentic-data-pipelines">Parallel Agentic Data Pipelines</h1>
 <h2 id="building-with-claude-code">Building with Claude Code</h2>
 <p><strong>Jacob Matson</strong> · MotherDuck</p>
@@ -213,16 +213,26 @@ img[alt~=&quot;center&quot;] {
   display: block;
   margin: 0 auto;
 }
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
+;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="19">
 <h1 id="the-app">The App</h1>
 
 <p><strong>NBA Box Scores</strong> — real data, real pipeline, real users</p>
+<div class="columns">
+<div>
 <ul>
 <li>Game scores, player stats, box scores</li>
-<li>Live game updates with real-time highlighting</li>
-<li>Player search, season filters, trend charts</li>
+<li>Live updates with real-time highlighting</li>
+<li>Player search, trend charts, season filters</li>
+</ul>
+</div>
+<div>
+<ul>
+<li>26 seasons of NBA data (2000–2025)</li>
+<li>Adaptive rate limiting, incremental ingestion</li>
 <li><strong>All queries run in your browser</strong> via MotherDuck WASM</li>
 </ul>
+</div>
+</div>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="3" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
   font-family: 'Inter', 'Helvetica Neue', sans-serif;
@@ -324,28 +334,45 @@ img[alt~=&quot;center&quot;] {
   display: block;
   margin: 0 auto;
 }
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="the-features">The Features</h1>
-<div class="columns">
-<div>
-<p><strong>Data Pipeline</strong></p>
+;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="19">
+<h1 id="i-vibe-coded-this">&quot;I Vibe-Coded This&quot;</h1>
+<p>The app <strong>worked</strong>. But under the hood:</p>
 <ul>
-<li>26 seasons of NBA data (2000–2025)</li>
-<li>Adaptive rate limiting</li>
-<li>Incremental ingestion</li>
-<li>Raw data lake + derived marts</li>
+<li><img class="emoji" draggable="false" alt="🔀" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.2/assets/svg/1f500.svg" data-marp-twemoji=""/> Python + TypeScript hybrid (two languages, two configs)</li>
+<li><img class="emoji" draggable="false" alt="🔄" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.2/assets/svg/1f504.svg" data-marp-twemoji=""/> Full reload every time — no incremental ingestion</li>
+<li><img class="emoji" draggable="false" alt="💉" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.2/assets/svg/1f489.svg" data-marp-twemoji=""/> SQL injection vulnerabilities in WASM queries</li>
+<li><img class="emoji" draggable="false" alt="💀" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.2/assets/svg/1f480.svg" data-marp-twemoji=""/> Dead code, magic numbers, zero tests</li>
+<li><img class="emoji" draggable="false" alt="📝" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.2/assets/svg/1f4dd.svg" data-marp-twemoji=""/> No schema versioning, no data quality checks</li>
 </ul>
-</div>
-<div>
-<p><strong>Frontend</strong></p>
-<ul>
-<li>Live score polling with cell highlighting</li>
-<li>Player performance trend charts</li>
-<li>Season/team/player filtering</li>
-<li>Dark mode, responsive, paginated</li>
-</ul>
-</div>
-</div>
+<blockquote>
+<p>A prototype pretending to be production. And <strong>23 GitHub issues</strong> staring at me.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Issues</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>P0</strong></td>
+<td>7</td>
+<td>Schema design, SQL injection, dead code</td>
+</tr>
+<tr>
+<td><strong>P1</strong></td>
+<td>8</td>
+<td>Parser rewrite, test suite, DB layer</td>
+</tr>
+<tr>
+<td><strong>P2–P3</strong></td>
+<td>8</td>
+<td>Charts, CI/CD, live mode, backfill</td>
+</tr>
+</tbody>
+</table>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="4" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
   font-family: 'Inter', 'Helvetica Neue', sans-serif;
@@ -447,19 +474,18 @@ img[alt~=&quot;center&quot;] {
   display: block;
   margin: 0 auto;
 }
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="i-vibe-coded-this">&quot;I Vibe-Coded This&quot;</h1>
-<p>The app <strong>worked</strong>. But under the hood:</p>
-<ul>
-<li><img class="emoji" draggable="false" alt="🔀" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.2/assets/svg/1f500.svg" data-marp-twemoji=""/> Python + TypeScript hybrid (two languages, two configs)</li>
-<li><img class="emoji" draggable="false" alt="🔄" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.2/assets/svg/1f504.svg" data-marp-twemoji=""/> Full reload every time — no incremental ingestion</li>
-<li><img class="emoji" draggable="false" alt="💉" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.2/assets/svg/1f489.svg" data-marp-twemoji=""/> SQL injection vulnerabilities in WASM queries</li>
-<li><img class="emoji" draggable="false" alt="💀" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.2/assets/svg/1f480.svg" data-marp-twemoji=""/> Dead code, magic numbers, zero tests</li>
-<li><img class="emoji" draggable="false" alt="📝" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.2/assets/svg/1f4dd.svg" data-marp-twemoji=""/> No schema versioning, no data quality checks</li>
-</ul>
-<blockquote>
-<p>A prototype pretending to be production.</p>
-</blockquote>
+;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="19">
+<h1 id="phase-1-one-window">Phase 1: One Window</h1>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code>┌─────────────────────────────┐
+│  You ←→ Claude              │
+│                             │
+│  &quot;Fix this bug&quot;             │
+│  &quot;Now this one&quot;             │
+│  &quot;Now refactor that&quot;        │
+└─────────────────────────────┘
+</code></pre>
+<p><strong>Sequential.</strong> You're the planner, executor, and reviewer.</p>
+<p>This is how most people use AI coding tools today.</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="5" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
   font-family: 'Inter', 'Helvetica Neue', sans-serif;
@@ -561,41 +587,19 @@ img[alt~=&quot;center&quot;] {
   display: block;
   margin: 0 auto;
 }
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="23-issues-one-weekend">23 Issues, One Weekend</h1>
-<table>
-<thead>
-<tr>
-<th>Priority</th>
-<th>Issues</th>
-<th>Examples</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>P0</strong></td>
-<td>7</td>
-<td>Schema design, SQL injection, dead code, pipeline infra</td>
-</tr>
-<tr>
-<td><strong>P1</strong></td>
-<td>8</td>
-<td>Parser rewrite, test suite, DB layer, orchestrator</td>
-</tr>
-<tr>
-<td><strong>P2</strong></td>
-<td>6</td>
-<td>Charts, CI/CD, live mode, responsive design</td>
-</tr>
-<tr>
-<td><strong>P3</strong></td>
-<td>2</td>
-<td>Pre-2000 data, backfill operations</td>
-</tr>
-</tbody>
-</table>
-<br />
-<p><strong>The question</strong>: How do you close 23 issues — schema design to CI/CD — fast?</p>
+;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="19">
+<h1 id="phase-2-three-windows">Phase 2: Three Windows</h1>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code>┌──────────┐  ┌──────────┐  ┌──────────┐
+│ Planner  │  │ Executor │  │ Reviewer │
+│          │→ │          │→ │          │
+│ &quot;Design  │  │ &quot;Write   │  │ &quot;Check   │
+│  the API&quot;│  │  the code&quot;│  │  the PR&quot; │
+└──────────┘  └──────────┘  └──────────┘
+                   ↑
+              YOU (the bottleneck)
+</code></pre>
+<p>More throughput! But <strong>you</strong> become the scheduler.</p>
+<p>Copy-pasting context. Waiting on one window to unblock another.</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="6" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
   font-family: 'Inter', 'Helvetica Neue', sans-serif;
@@ -697,18 +701,23 @@ img[alt~=&quot;center&quot;] {
   display: block;
   margin: 0 auto;
 }
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="phase-1-one-window">Phase 1: One Window</h1>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code>┌─────────────────────────────┐
-│  You ←→ Claude              │
-│                             │
-│  &quot;Fix this bug&quot;             │
-│  &quot;Now this one&quot;             │
-│  &quot;Now refactor that&quot;        │
-└─────────────────────────────┘
+;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="19">
+<h1 id="phase-3-agent-teams">Phase 3: Agent Teams</h1>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code>┌─────────────────────────────────────────────┐
+│  You (Team Lead)                            │
+│                                             │
+│  ┌─────────────┐ ┌──────────┐ ┌──────────┐ │
+│  │schema-      │ │security- │ │code-     │ │
+│  │designer     │ │fixer     │ │cleaner   │ │
+│  │             │ │          │ │          │ │
+│  │ #14 schema  │ │ #21 sqli │ │ #22 dead │ │
+│  └─────────────┘ └──────────┘ └──────────┘ │
+│                                             │
+│  Claude manages the agents.                 │
+│  You manage the task graph.                 │
+└─────────────────────────────────────────────┘
 </code></pre>
-<p><strong>Sequential.</strong> You're the planner, executor, and reviewer.</p>
-<p>This is how most people use AI coding tools today.</p>
+<p><strong>Back to one window.</strong> But now it's a command center.</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="7" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
   font-family: 'Inter', 'Helvetica Neue', sans-serif;
@@ -810,19 +819,46 @@ img[alt~=&quot;center&quot;] {
   display: block;
   margin: 0 auto;
 }
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="phase-2-three-windows">Phase 2: Three Windows</h1>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code>┌──────────┐  ┌──────────┐  ┌──────────┐
-│ Planner  │  │ Executor │  │ Reviewer │
-│          │→ │          │→ │          │
-│ &quot;Design  │  │ &quot;Write   │  │ &quot;Check   │
-│  the API&quot;│  │  the code&quot;│  │  the PR&quot; │
-└──────────┘  └──────────┘  └──────────┘
-                   ↑
-              YOU (the bottleneck)
-</code></pre>
-<p>More throughput! But <strong>you</strong> become the scheduler.</p>
-<p>Copy-pasting context. Waiting on one window to unblock another.</p>
+;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="19">
+<h1 id="wave-dispatch">Wave Dispatch</h1>
+<p>The agents don't run randomly — they run in <strong>dependency-aware waves</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Wave</th>
+<th>Agents</th>
+<th>Issues</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1</strong></td>
+<td>schema-designer, security-fixer, code-cleaner</td>
+<td>#14, #21, #22</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>pipeline-builder, parser, test-writer</td>
+<td>#15, #16, #31</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>db-layer, charts, responsive</td>
+<td>#17, #25, #34</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td>orchestrator, live-mode, status-dashboard</td>
+<td>#18, #29, #35</td>
+</tr>
+<tr>
+<td><strong>5</strong></td>
+<td>github-actions, python-removal, data-quality</td>
+<td>#28, #20, #26</td>
+</tr>
+</tbody>
+</table>
+<p>Build + test validation <strong>after every wave</strong>. All green throughout.</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="8" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
   font-family: 'Inter', 'Helvetica Neue', sans-serif;
@@ -924,23 +960,8 @@ img[alt~=&quot;center&quot;] {
   display: block;
   margin: 0 auto;
 }
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="phase-3-agent-teams">Phase 3: Agent Teams</h1>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code>┌─────────────────────────────────────────────┐
-│  You (Team Lead)                            │
-│                                             │
-│  ┌─────────────┐ ┌──────────┐ ┌──────────┐ │
-│  │schema-      │ │security- │ │code-     │ │
-│  │designer     │ │fixer     │ │cleaner   │ │
-│  │             │ │          │ │          │ │
-│  │ #14 schema  │ │ #21 sqli │ │ #22 dead │ │
-│  └─────────────┘ └──────────┘ └──────────┘ │
-│                                             │
-│  Claude manages the agents.                 │
-│  You manage the task graph.                 │
-└─────────────────────────────────────────────┘
-</code></pre>
-<p><strong>Back to one window.</strong> But now it's a command center.</p>
+;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="19">
+<h1 id="now-lets-look-at-what-the-agents-built">Now Let's Look at What the Agents Built</h1>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="9" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
   font-family: 'Inter', 'Helvetica Neue', sans-serif;
@@ -1042,46 +1063,39 @@ img[alt~=&quot;center&quot;] {
   display: block;
   margin: 0 auto;
 }
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="wave-dispatch">Wave Dispatch</h1>
-<p>The agents don't run randomly — they run in <strong>dependency-aware waves</strong>.</p>
-<table>
-<thead>
-<tr>
-<th>Wave</th>
-<th>Agents</th>
-<th>Issues</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>1</strong></td>
-<td>schema-designer, security-fixer, code-cleaner</td>
-<td>#14, #21, #22</td>
-</tr>
-<tr>
-<td><strong>2</strong></td>
-<td>pipeline-builder, parser, test-writer</td>
-<td>#15, #16, #31</td>
-</tr>
-<tr>
-<td><strong>3</strong></td>
-<td>db-layer, charts, responsive</td>
-<td>#17, #25, #34</td>
-</tr>
-<tr>
-<td><strong>4</strong></td>
-<td>orchestrator, live-mode, status-dashboard</td>
-<td>#18, #29, #35</td>
-</tr>
-<tr>
-<td><strong>5</strong></td>
-<td>github-actions, python-removal, data-quality</td>
-<td>#28, #20, #26</td>
-</tr>
-</tbody>
-</table>
-<p>Build + test validation <strong>after every wave</strong>. All green throughout.</p>
+;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="19">
+<h1 id="architecture">Architecture</h1>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code>    PBPStats API (rate-limited)
+           │
+    CLI Orchestrator (index.ts)
+           │
+    Worker Pool (bounded concurrency)
+           │
+    ┌──────┼──────┐
+    │ S1   │ S2   │ S3 ...    ← parallel seasons
+    └──┬───┴──┬───┘
+       │      │
+    Adaptive Rate Limiter
+    (rolling window, auto-tuning)
+       │
+    ┌──┴──────────────────┐
+    │ MAX_IN_FLIGHT = 8   │    ← 8 games concurrently
+    │ per season           │
+    └──┬──────────────────┘
+       │
+    ┌──┴──────┬───────────┐
+    │         │           │
+    Parser    Raw Lake    Ingestion Log
+    │         │
+    box_scores raw_game_data_pbpstats
+    │         │
+    └────┬────┘
+         │
+    MotherDuck (cloud DuckDB)
+         │
+    Next.js + WASM client
+    (browser-side SQL queries)
+</code></pre>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="10" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
   font-family: 'Inter', 'Helvetica Neue', sans-serif;
@@ -1183,18 +1197,35 @@ img[alt~=&quot;center&quot;] {
   display: block;
   margin: 0 auto;
 }
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="phase-4-multiple-projects-%C3%97-multiple-teams">Phase 4: Multiple Projects × Multiple Teams</h1>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code>┌────────────┐  ┌────────────┐  ┌────────────┐
-│ Window 1   │  │ Window 2   │  │ Window 3   │
-│            │  │            │  │            │
-│ Agent Team │  │ Agent Team │  │ Agent Team │
-│ Project A  │  │ Project B  │  │ Project C  │
-└────────────┘  └────────────┘  └────────────┘
-</code></pre>
-<p>If one window can manage an agent team...<br />
-<strong>run multiple windows.</strong></p>
-<p>Your throughput is limited by your ability to <strong>design task graphs</strong>.</p>
+;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="19">
+<h1 id="motherduck-the-glue">MotherDuck: The Glue</h1>
+<div class="columns">
+<div>
+<h3 id="pipeline-server">Pipeline (Server)</h3>
+<p><code>@duckdb/node-api</code></p>
+<ul>
+<li>Batch <code>INSERT OR REPLACE</code></li>
+<li>Idempotent upserts on PKs</li>
+<li>Direct SQL (no ORM)</li>
+<li>v2 schema alongside v1</li>
+<li>Zero-downtime migration</li>
+</ul>
+</div>
+<div>
+<h3 id="frontend-browser">Frontend (Browser)</h3>
+<p>MotherDuck WASM</p>
+<ul>
+<li>SQL runs <strong>client-side</strong></li>
+<li>No backend for reads</li>
+<li>Temp tables per session</li>
+<li>Same database, two access patterns</li>
+</ul>
+</div>
+</div>
+<br />
+<blockquote>
+<p>One cloud DuckDB warehouse. Server writes, browser reads.</p>
+</blockquote>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="11" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
   font-family: 'Inter', 'Helvetica Neue', sans-serif;
@@ -1296,25 +1327,41 @@ img[alt~=&quot;center&quot;] {
   display: block;
   margin: 0 auto;
 }
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="the-exponential-curve">The Exponential Curve</h1>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code>  Leverage
-    │
-    │                                        ╱ <img class="emoji" draggable="false" alt="🔮" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.2/assets/svg/1f52e.svg" data-marp-twemoji=""/> ???
-    │                                      ╱
-    │                                ·····╱  labs are here
-    │                              ╱
-    │                      ● 2026: Parallel agent teams
-    │                    ╱
-    │              ● 2025: Agent teams
-    │            ╱
-    │        ● 2024: AI chat (Claude)
-    │      ╱
-    │  ● 2023: AI autocomplete (Copilot)
-    │╱
-    ● 2020: &quot;Dumb guy data engineering&quot;
-    └──────────────────────────────────── Time
+;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="19">
+<h1 id="the-pipeline-engine">The Pipeline Engine</h1>
+<div class="columns">
+<div>
+<h3 id="adaptive-rate-limiter">Adaptive Rate Limiter</h3>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-typescript"><span class="hljs-comment">// Rolling window of 15 outcomes</span>
+<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">WINDOW_SIZE</span> = <span class="hljs-number">15</span>;
+
+<span class="hljs-comment">// Speedup/slowdown multipliers</span>
+<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">AGGRESSIVE_SPEEDUP</span>  = <span class="hljs-number">0.85</span>;
+<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">AGGRESSIVE_SLOWDOWN</span> = <span class="hljs-number">2.0</span>;
 </code></pre>
+<p>Range: <strong>200ms – 10s</strong><br />
+Finds the fastest safe speed automatically.</p>
+<blockquote>
+<p>Like cruise control for APIs.</p>
+</blockquote>
+</div>
+<div>
+<h3 id="bounded-concurrency">Bounded Concurrency</h3>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-typescript"><span class="hljs-keyword">const</span> <span class="hljs-variable constant_">MAX_IN_FLIGHT</span> = <span class="hljs-number">8</span>;
+
+<span class="hljs-keyword">while</span> (queue.<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span>) {
+  <span class="hljs-keyword">if</span> (inFlight.<span class="hljs-property">size</span> &lt; <span class="hljs-variable constant_">MAX_IN_FLIGHT</span>) {
+    <span class="hljs-keyword">await</span> <span class="hljs-title function_">sleep</span>(<span class="hljs-title function_">getCurrentDelay</span>());
+    <span class="hljs-title function_">dispatch</span>(queue.<span class="hljs-title function_">shift</span>()!);
+    <span class="hljs-keyword">continue</span>;
+  }
+  <span class="hljs-keyword">await</span> <span class="hljs-title class_">Promise</span>.<span class="hljs-title function_">race</span>(inFlight);
+}
+</code></pre>
+<p>Serialized dispatch, parallel execution.<br />
+The limiter controls the <strong>faucet</strong>, not the pipes.</p>
+</div>
+</div>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="12" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
   font-family: 'Inter', 'Helvetica Neue', sans-serif;
@@ -1416,16 +1463,58 @@ img[alt~=&quot;center&quot;] {
   display: block;
   margin: 0 auto;
 }
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="were-lighting-up-the-path">We're Lighting Up the Path</h1>
+;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="19">
+<h1 id="raw-data--quality">Raw Data + Quality</h1>
+<div class="columns">
+<div>
+<h3 id="raw-data-lake">Raw Data Lake</h3>
+<p>PBPStats returns <strong>90+ fields</strong> per player per period.<br />
+<code>box_scores</code> captures 19. Re-fetching = <strong>~90 min/season</strong>.</p>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code>raw_game_data_pbpstats  →  box_scores
+(full API response)        (19 columns)
+</code></pre>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-bash">npm run hydrate -- --season 2024
+<span class="hljs-comment"># Re-derive without API calls</span>
+</code></pre>
 <blockquote>
-<p>&quot;Dumb guy data engineering&quot; meant you didn't need distributed systems<br />
-expertise to build pipelines.</p>
-<p>Agentic engineering means you don't need to type the code either.</p>
-<p>What you <strong>do</strong> need is <strong>taste</strong>, <strong>judgment</strong>, and the ability<br />
-to <strong>decompose problems</strong>.</p>
+<p>Store everything. Derive later.</p>
 </blockquote>
-<p>The bottleneck keeps shifting up the stack.</p>
+</div>
+<div>
+<h3 id="data-quality-detectors">Data Quality Detectors</h3>
+<table>
+<thead>
+<tr>
+<th>Detector</th>
+<th>Catches</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>wrong-team</strong></td>
+<td>Player on two teams</td>
+</tr>
+<tr>
+<td><strong>impossible-stats</strong></td>
+<td>Stats violating NBA rules</td>
+</tr>
+<tr>
+<td><strong>score-mismatch</strong></td>
+<td>Scores ≠ schedule</td>
+</tr>
+<tr>
+<td><strong>duplicates</strong></td>
+<td>Same player twice</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Quarantine table for anomalies</li>
+<li>Incremental auditing</li>
+<li>Auto-creates GitHub issues</li>
+</ul>
+</div>
+</div>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="13" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
   font-family: 'Inter', 'Helvetica Neue', sans-serif;
@@ -1527,8 +1616,34 @@ img[alt~=&quot;center&quot;] {
   display: block;
   margin: 0 auto;
 }
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="now-lets-look-at-what-the-agents-built">Now Let's Look at What the Agents Built</h1>
+;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="19">
+<h1 id="the-numbers">The Numbers</h1>
+<div class="columns">
+<div>
+<h3 id="development">Development</h3>
+<ul>
+<li><strong>55</strong> commits in 3 days</li>
+<li><strong>23</strong> issues → 21 closed (91%)</li>
+<li><strong>93</strong> tests (from 0)</li>
+<li><strong>~11K</strong> lines added</li>
+<li><strong>~900</strong> lines removed</li>
+<li><strong>6</strong> agent identities</li>
+<li><strong>5</strong> waves of execution</li>
+</ul>
+</div>
+<div>
+<h3 id="pipeline">Pipeline</h3>
+<ul>
+<li><strong>26</strong> seasons of data</li>
+<li><strong>12</strong> pipeline modules</li>
+<li><strong>4</strong> data quality detectors</li>
+<li><strong>3</strong> GitHub Actions workflows</li>
+<li><strong>8</strong> max concurrent requests</li>
+<li><strong>200ms–10s</strong> adaptive delay range</li>
+<li>Python: <strong>eliminated</strong></li>
+</ul>
+</div>
+</div>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="14" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
   font-family: 'Inter', 'Helvetica Neue', sans-serif;
@@ -1630,39 +1745,16 @@ img[alt~=&quot;center&quot;] {
   display: block;
   margin: 0 auto;
 }
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="architecture">Architecture</h1>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code>    PBPStats API (rate-limited)
-           │
-    CLI Orchestrator (index.ts)
-           │
-    Worker Pool (bounded concurrency)
-           │
-    ┌──────┼──────┐
-    │ S1   │ S2   │ S3 ...    ← parallel seasons
-    └──┬───┴──┬───┘
-       │      │
-    Adaptive Rate Limiter
-    (rolling window, auto-tuning)
-       │
-    ┌──┴──────────────────┐
-    │ MAX_IN_FLIGHT = 8   │    ← 8 games concurrently
-    │ per season           │
-    └──┬──────────────────┘
-       │
-    ┌──┴──────┬───────────┐
-    │         │           │
-    Parser    Raw Lake    Ingestion Log
-    │         │
-    box_scores raw_game_data_pbpstats
-    │         │
-    └────┬────┘
-         │
-    MotherDuck (cloud DuckDB)
-         │
-    Next.js + WASM client
-    (browser-side SQL queries)
-</code></pre>
+;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="19">
+<h1 id="what-worked">What Worked</h1>
+<p><strong>Dependency-aware wave dispatch</strong><br />
+No agent ever blocked waiting on another. Critical path optimized.</p>
+<p><strong>Shared branch &gt; isolated worktrees</strong><br />
+Worktree isolation caused merge pain. Shared branch + careful coordination won.</p>
+<p><strong>Validate after every wave</strong><br />
+Build + tests = green throughout. Caught issues before they propagated.</p>
+<p><strong>WORKLOG.md as shared memory</strong><br />
+Agents and humans read the same log. Context persists across sessions.</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="15" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
   font-family: 'Inter', 'Helvetica Neue', sans-serif;
@@ -1764,35 +1856,40 @@ img[alt~=&quot;center&quot;] {
   display: block;
   margin: 0 auto;
 }
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="motherduck-the-glue">MotherDuck: The Glue</h1>
-<div class="columns">
-<div>
-<h3 id="pipeline-server">Pipeline (Server)</h3>
-<p><code>@duckdb/node-api</code></p>
-<ul>
-<li>Batch <code>INSERT OR REPLACE</code></li>
-<li>Idempotent upserts on PKs</li>
-<li>Direct SQL (no ORM)</li>
-<li>v2 schema alongside v1</li>
-<li>Zero-downtime migration</li>
-</ul>
-</div>
-<div>
-<h3 id="frontend-browser">Frontend (Browser)</h3>
-<p>MotherDuck WASM</p>
-<ul>
-<li>SQL runs <strong>client-side</strong></li>
-<li>No backend for reads</li>
-<li>Temp tables per session</li>
-<li>Same database, two access patterns</li>
-</ul>
-</div>
-</div>
-<br />
-<blockquote>
-<p>One cloud DuckDB warehouse. Server writes, browser reads.</p>
-</blockquote>
+;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="19">
+<h1 id="the-meta-parallel">The Meta-Parallel</h1>
+<p>We used <strong>parallel agents</strong> to build a <strong>parallel pipeline</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Development</th>
+<th>Pipeline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Agent worker pool</td>
+<td>Season worker pool</td>
+</tr>
+<tr>
+<td>Wave dispatch (dependency-aware)</td>
+<td>Game dispatch (rate-aware)</td>
+</tr>
+<tr>
+<td>Worktree isolation</td>
+<td>Batch isolation</td>
+</tr>
+<tr>
+<td>Validate after each wave</td>
+<td>Quality check after each ingest</td>
+</tr>
+<tr>
+<td>Team lead coordinates</td>
+<td>CLI orchestrator coordinates</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The development model mirrors the runtime model.</strong></p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="16" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
   font-family: 'Inter', 'Helvetica Neue', sans-serif;
@@ -1894,25 +1991,25 @@ img[alt~=&quot;center&quot;] {
   display: block;
   margin: 0 auto;
 }
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="the-adaptive-rate-limiter">The Adaptive Rate Limiter</h1>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-typescript"><span class="hljs-comment">// Rolling window of 15 recent outcomes</span>
-<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">WINDOW_SIZE</span> = <span class="hljs-number">15</span>;
-<span class="hljs-keyword">const</span> <span class="hljs-attr">outcomes</span>: <span class="hljs-built_in">boolean</span>[] = []; <span class="hljs-comment">// true=success, false=throttle</span>
-
-<span class="hljs-comment">// Probe every 8 successes → adjust speed</span>
-<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">PROBE_INTERVAL</span> = <span class="hljs-number">8</span>;
-
-<span class="hljs-comment">// Speedup/slowdown multipliers</span>
-<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">AGGRESSIVE_SPEEDUP</span>  = <span class="hljs-number">0.85</span>;  <span class="hljs-comment">// -15% on clean window</span>
-<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">GENTLE_SPEEDUP</span>      = <span class="hljs-number">0.95</span>;  <span class="hljs-comment">// -5% on low errors</span>
-<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">MODERATE_SLOWDOWN</span>   = <span class="hljs-number">1.5</span>;   <span class="hljs-comment">// +50% on isolated error</span>
-<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">AGGRESSIVE_SLOWDOWN</span> = <span class="hljs-number">2.0</span>;   <span class="hljs-comment">// +100% on sustained errors</span>
+;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="19">
+<h1 id="the-exponential-curve">The Exponential Curve</h1>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code>  Leverage
+    │
+    │                                        ╱ <img class="emoji" draggable="false" alt="🔮" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.2/assets/svg/1f52e.svg" data-marp-twemoji=""/> ???
+    │                                      ╱
+    │                                ·····╱  labs are here
+    │                              ╱
+    │                      ● 2026: Parallel agent teams
+    │                    ╱
+    │              ● 2025: Agent teams
+    │            ╱
+    │        ● 2024: AI chat (Claude)
+    │      ╱
+    │  ● 2023: AI autocomplete (Copilot)
+    │╱
+    ● 2020: &quot;Dumb guy data engineering&quot;
+    └──────────────────────────────────── Time
 </code></pre>
-<p>Range: <strong>200ms – 10,000ms</strong>. Finds the fastest safe speed automatically.</p>
-<blockquote>
-<p>Like cruise control for APIs.</p>
-</blockquote>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="17" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
   font-family: 'Inter', 'Helvetica Neue', sans-serif;
@@ -2014,27 +2111,20 @@ img[alt~=&quot;center&quot;] {
   display: block;
   margin: 0 auto;
 }
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="bounded-concurrency">Bounded Concurrency</h1>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-typescript"><span class="hljs-keyword">const</span> <span class="hljs-variable constant_">MAX_IN_FLIGHT</span> = <span class="hljs-number">8</span>;
-
-<span class="hljs-keyword">while</span> (queue.<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span> || inFlight.<span class="hljs-property">size</span> &gt; <span class="hljs-number">0</span>) {
-  <span class="hljs-keyword">if</span> (queue.<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span> &amp;&amp; inFlight.<span class="hljs-property">size</span> &lt; <span class="hljs-variable constant_">MAX_IN_FLIGHT</span>) {
-    <span class="hljs-comment">// Wait the adaptive delay before dispatch</span>
-    <span class="hljs-keyword">await</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Promise</span>(<span class="hljs-function"><span class="hljs-params">r</span> =&gt;</span> <span class="hljs-built_in">setTimeout</span>(r, <span class="hljs-title function_">getCurrentDelay</span>()));
-
-    <span class="hljs-title function_">dispatch</span>(queue.<span class="hljs-title function_">shift</span>()!);
-    <span class="hljs-keyword">continue</span>; <span class="hljs-comment">// Try to dispatch more</span>
-  }
-
-  <span class="hljs-comment">// At capacity — wait for one to finish</span>
-  <span class="hljs-keyword">if</span> (inFlight.<span class="hljs-property">size</span> &gt; <span class="hljs-number">0</span>) {
-    <span class="hljs-keyword">await</span> <span class="hljs-title class_">Promise</span>.<span class="hljs-title function_">race</span>(inFlight);
-  }
-}
-</code></pre>
-<p><strong>Serialized dispatch, parallel execution.</strong><br />
-The limiter controls the faucet, not the pipes.</p>
+;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="19">
+<h1 id="harness-engineering">Harness Engineering</h1>
+<p>OpenAI built an <strong>internal product</strong> with Codex agents (Feb 2026):</p>
+<ul>
+<li><strong>~1M lines of code</strong> in 5 months</li>
+<li><strong>3 engineers</strong>, zero hand-written code (by design)</li>
+<li><strong>3.5 PRs per engineer per day</strong></li>
+</ul>
+<p>The human role shifted from <strong>writing code</strong> to <strong>designing the harness</strong>:<br />
+repository structure, CI rules, dependency layers, AGENTS.md as a table of contents.</p>
+<blockquote>
+<p>&quot;2025 was agents. 2026 is agent harnesses.&quot;</p>
+</blockquote>
+<p class="small">Source: <a href="https://openai.com/index/harness-engineering/">openai.com/index/harness-engineering</a></p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="18" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
   font-family: 'Inter', 'Helvetica Neue', sans-serif;
@@ -2136,18 +2226,21 @@ img[alt~=&quot;center&quot;] {
   display: block;
   margin: 0 auto;
 }
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="raw-data-lake">Raw Data Lake</h1>
-<p><strong>Problem</strong>: PBPStats returns <strong>90+ fields</strong> per player per period.<br />
-<code>box_scores</code> captures 19. Re-fetching a season takes <strong>~90 minutes</strong>.</p>
-<p><strong>Solution</strong>: Store the <strong>full JSON</strong> response.</p>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code>raw_game_data_pbpstats     →  box_scores (derived mart)
-(complete API response)        (19 columns, fast queries)
-</code></pre>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-bash">npm run hydrate -- --season 2024  <span class="hljs-comment"># Re-derive without API calls</span>
-</code></pre>
+;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="19">
+<h1 id="the-bottleneck-keeps-shifting">The Bottleneck Keeps Shifting</h1>
+<ul>
+<li><s>Infrastructure complexity</s> → DuckDB / dbt</li>
+<li><s>Typing speed</s> → autocomplete</li>
+<li><s>Thinking speed</s> → AI chat</li>
+<li><s>Orchestration</s> → agent teams</li>
+<li><s>Writing code</s> → harness engineering</li>
+<li><strong>Knowing what to build</strong> → that's still you</li>
+</ul>
 <blockquote>
-<p>Store everything. Derive later. Your future self will thank you.</p>
+<p>&quot;Dumb guy data engineering&quot; meant you didn't need distributed systems<br />
+expertise to build pipelines. Agentic engineering means you don't need<br />
+to type the code either. What you <strong>do</strong> need is <strong>taste</strong>, <strong>judgment</strong>,<br />
+and the ability to <strong>decompose problems</strong>.</p>
 </blockquote>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="19" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
@@ -2250,744 +2343,7 @@ img[alt~=&quot;center&quot;] {
   display: block;
   margin: 0 auto;
 }
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="data-quality">Data Quality</h1>
-<p>Four automated detectors run on every new batch:</p>
-<table>
-<thead>
-<tr>
-<th>Detector</th>
-<th>What it catches</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>wrong-team</strong></td>
-<td>Player on two teams in same game</td>
-</tr>
-<tr>
-<td><strong>impossible-stats</strong></td>
-<td>Stats violating NBA rules</td>
-</tr>
-<tr>
-<td><strong>score-mismatch</strong></td>
-<td>Final scores ≠ schedule</td>
-</tr>
-<tr>
-<td><strong>duplicates</strong></td>
-<td>Same player twice in same period</td>
-</tr>
-</tbody>
-</table>
-<ul>
-<li>Quarantine table for anomalies</li>
-<li>Incremental auditing (only checks new data)</li>
-<li>Auto-creates GitHub issues for pending anomalies</li>
-</ul>
-</section>
-</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="20" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
-  font-family: 'Inter', 'Helvetica Neue', sans-serif;
-}
-h1 {
-  color: #e94560;
-}
-h2 {
-  color: #0f3460;
-  color: #64b5f6;
-}
-code {
-  background: #16213e;
-  color: #e94560;
-}
-pre {
-  background: #16213e !important;
-  border-radius: 8px;
-}
-a {
-  color: #64b5f6;
-}
-table {
-  font-size: 0.8em;
-}
-th {
-  background: #0f3460;
-}
-blockquote {
-  border-left: 4px solid #e94560;
-  color: #aaa;
-  font-style: italic;
-}
-.columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1em;
-}
-.small {
-  font-size: 0.7em;
-}
-.accent {
-  color: #e94560;
-}
-.dim {
-  color: #888;
-}
-img[alt~=&quot;center&quot;] {
-  display: block;
-  margin: 0 auto;
-}
-" lang="POSIX" data-marpit-pagination="20" style="--paginate:true;--background-color:#1a1a2e;--color:#eee;--theme:default;--style:section {
-  font-family: 'Inter', 'Helvetica Neue', sans-serif;
-}
-h1 {
-  color: #e94560;
-}
-h2 {
-  color: #0f3460;
-  color: #64b5f6;
-}
-code {
-  background: #16213e;
-  color: #e94560;
-}
-pre {
-  background: #16213e !important;
-  border-radius: 8px;
-}
-a {
-  color: #64b5f6;
-}
-table {
-  font-size: 0.8em;
-}
-th {
-  background: #0f3460;
-}
-blockquote {
-  border-left: 4px solid #e94560;
-  color: #aaa;
-  font-style: italic;
-}
-.columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1em;
-}
-.small {
-  font-size: 0.7em;
-}
-.accent {
-  color: #e94560;
-}
-.dim {
-  color: #888;
-}
-img[alt~=&quot;center&quot;] {
-  display: block;
-  margin: 0 auto;
-}
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="the-meta-parallel">The Meta-Parallel</h1>
-<p>We used <strong>parallel agents</strong> to build a <strong>parallel pipeline</strong>.</p>
-<table>
-<thead>
-<tr>
-<th>Development</th>
-<th>Pipeline</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Agent worker pool</td>
-<td>Season worker pool</td>
-</tr>
-<tr>
-<td>Wave dispatch (dependency-aware)</td>
-<td>Game dispatch (rate-aware)</td>
-</tr>
-<tr>
-<td>Worktree isolation</td>
-<td>Batch isolation</td>
-</tr>
-<tr>
-<td>Validate after each wave</td>
-<td>Quality check after each ingest</td>
-</tr>
-<tr>
-<td>Team lead coordinates</td>
-<td>CLI orchestrator coordinates</td>
-</tr>
-</tbody>
-</table>
-<p><strong>The development model mirrors the runtime model.</strong></p>
-</section>
-</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="21" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
-  font-family: 'Inter', 'Helvetica Neue', sans-serif;
-}
-h1 {
-  color: #e94560;
-}
-h2 {
-  color: #0f3460;
-  color: #64b5f6;
-}
-code {
-  background: #16213e;
-  color: #e94560;
-}
-pre {
-  background: #16213e !important;
-  border-radius: 8px;
-}
-a {
-  color: #64b5f6;
-}
-table {
-  font-size: 0.8em;
-}
-th {
-  background: #0f3460;
-}
-blockquote {
-  border-left: 4px solid #e94560;
-  color: #aaa;
-  font-style: italic;
-}
-.columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1em;
-}
-.small {
-  font-size: 0.7em;
-}
-.accent {
-  color: #e94560;
-}
-.dim {
-  color: #888;
-}
-img[alt~=&quot;center&quot;] {
-  display: block;
-  margin: 0 auto;
-}
-" lang="POSIX" data-marpit-pagination="21" style="--paginate:true;--background-color:#1a1a2e;--color:#eee;--theme:default;--style:section {
-  font-family: 'Inter', 'Helvetica Neue', sans-serif;
-}
-h1 {
-  color: #e94560;
-}
-h2 {
-  color: #0f3460;
-  color: #64b5f6;
-}
-code {
-  background: #16213e;
-  color: #e94560;
-}
-pre {
-  background: #16213e !important;
-  border-radius: 8px;
-}
-a {
-  color: #64b5f6;
-}
-table {
-  font-size: 0.8em;
-}
-th {
-  background: #0f3460;
-}
-blockquote {
-  border-left: 4px solid #e94560;
-  color: #aaa;
-  font-style: italic;
-}
-.columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1em;
-}
-.small {
-  font-size: 0.7em;
-}
-.accent {
-  color: #e94560;
-}
-.dim {
-  color: #888;
-}
-img[alt~=&quot;center&quot;] {
-  display: block;
-  margin: 0 auto;
-}
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="the-numbers">The Numbers</h1>
-<div class="columns">
-<div>
-<h3 id="development">Development</h3>
-<ul>
-<li><strong>55</strong> commits in 3 days</li>
-<li><strong>23</strong> issues → 21 closed (91%)</li>
-<li><strong>93</strong> tests (from 0)</li>
-<li><strong>~11K</strong> lines added</li>
-<li><strong>~900</strong> lines removed</li>
-<li><strong>6</strong> agent identities</li>
-<li><strong>5</strong> waves of execution</li>
-</ul>
-</div>
-<div>
-<h3 id="pipeline">Pipeline</h3>
-<ul>
-<li><strong>26</strong> seasons of data</li>
-<li><strong>12</strong> pipeline modules</li>
-<li><strong>4</strong> data quality detectors</li>
-<li><strong>3</strong> GitHub Actions workflows</li>
-<li><strong>8</strong> max concurrent requests</li>
-<li><strong>200ms–10s</strong> adaptive delay range</li>
-<li>Python: <strong>eliminated</strong></li>
-</ul>
-</div>
-</div>
-</section>
-</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="22" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
-  font-family: 'Inter', 'Helvetica Neue', sans-serif;
-}
-h1 {
-  color: #e94560;
-}
-h2 {
-  color: #0f3460;
-  color: #64b5f6;
-}
-code {
-  background: #16213e;
-  color: #e94560;
-}
-pre {
-  background: #16213e !important;
-  border-radius: 8px;
-}
-a {
-  color: #64b5f6;
-}
-table {
-  font-size: 0.8em;
-}
-th {
-  background: #0f3460;
-}
-blockquote {
-  border-left: 4px solid #e94560;
-  color: #aaa;
-  font-style: italic;
-}
-.columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1em;
-}
-.small {
-  font-size: 0.7em;
-}
-.accent {
-  color: #e94560;
-}
-.dim {
-  color: #888;
-}
-img[alt~=&quot;center&quot;] {
-  display: block;
-  margin: 0 auto;
-}
-" lang="POSIX" data-marpit-pagination="22" style="--paginate:true;--background-color:#1a1a2e;--color:#eee;--theme:default;--style:section {
-  font-family: 'Inter', 'Helvetica Neue', sans-serif;
-}
-h1 {
-  color: #e94560;
-}
-h2 {
-  color: #0f3460;
-  color: #64b5f6;
-}
-code {
-  background: #16213e;
-  color: #e94560;
-}
-pre {
-  background: #16213e !important;
-  border-radius: 8px;
-}
-a {
-  color: #64b5f6;
-}
-table {
-  font-size: 0.8em;
-}
-th {
-  background: #0f3460;
-}
-blockquote {
-  border-left: 4px solid #e94560;
-  color: #aaa;
-  font-style: italic;
-}
-.columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1em;
-}
-.small {
-  font-size: 0.7em;
-}
-.accent {
-  color: #e94560;
-}
-.dim {
-  color: #888;
-}
-img[alt~=&quot;center&quot;] {
-  display: block;
-  margin: 0 auto;
-}
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="what-worked">What Worked</h1>
-<p><strong>Dependency-aware wave dispatch</strong><br />
-No agent ever blocked waiting on another. Critical path optimized.</p>
-<p><strong>Shared branch &gt; isolated worktrees</strong><br />
-Worktree isolation caused merge pain. Shared branch + careful coordination won.</p>
-<p><strong>Validate after every wave</strong><br />
-Build + tests = green throughout. Caught issues before they propagated.</p>
-<p><strong>WORKLOG.md as shared memory</strong><br />
-Agents and humans read the same log. Context persists across sessions.</p>
-</section>
-</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="23" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
-  font-family: 'Inter', 'Helvetica Neue', sans-serif;
-}
-h1 {
-  color: #e94560;
-}
-h2 {
-  color: #0f3460;
-  color: #64b5f6;
-}
-code {
-  background: #16213e;
-  color: #e94560;
-}
-pre {
-  background: #16213e !important;
-  border-radius: 8px;
-}
-a {
-  color: #64b5f6;
-}
-table {
-  font-size: 0.8em;
-}
-th {
-  background: #0f3460;
-}
-blockquote {
-  border-left: 4px solid #e94560;
-  color: #aaa;
-  font-style: italic;
-}
-.columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1em;
-}
-.small {
-  font-size: 0.7em;
-}
-.accent {
-  color: #e94560;
-}
-.dim {
-  color: #888;
-}
-img[alt~=&quot;center&quot;] {
-  display: block;
-  margin: 0 auto;
-}
-" lang="POSIX" data-marpit-pagination="23" style="--paginate:true;--background-color:#1a1a2e;--color:#eee;--theme:default;--style:section {
-  font-family: 'Inter', 'Helvetica Neue', sans-serif;
-}
-h1 {
-  color: #e94560;
-}
-h2 {
-  color: #0f3460;
-  color: #64b5f6;
-}
-code {
-  background: #16213e;
-  color: #e94560;
-}
-pre {
-  background: #16213e !important;
-  border-radius: 8px;
-}
-a {
-  color: #64b5f6;
-}
-table {
-  font-size: 0.8em;
-}
-th {
-  background: #0f3460;
-}
-blockquote {
-  border-left: 4px solid #e94560;
-  color: #aaa;
-  font-style: italic;
-}
-.columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1em;
-}
-.small {
-  font-size: 0.7em;
-}
-.accent {
-  color: #e94560;
-}
-.dim {
-  color: #888;
-}
-img[alt~=&quot;center&quot;] {
-  display: block;
-  margin: 0 auto;
-}
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="whats-next-harness-engineering">What's Next: Harness Engineering</h1>
-<p>OpenAI built an <strong>internal product</strong> with Codex agents (Feb 2026):</p>
-<ul>
-<li><strong>~1M lines of code</strong> in 5 months</li>
-<li><strong>3 engineers</strong>, zero hand-written code (by design)</li>
-<li><strong>3.5 PRs per engineer per day</strong></li>
-</ul>
-<p>The human role shifted from <strong>writing code</strong> to <strong>designing the harness</strong>:<br />
-repository structure, CI rules, dependency layers, AGENTS.md as a table of contents.</p>
-<blockquote>
-<p>&quot;2025 was agents. 2026 is agent harnesses.&quot;</p>
-</blockquote>
-<p class="small">Source: <a href="https://openai.com/index/harness-engineering/">openai.com/index/harness-engineering</a></p>
-</section>
-</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="24" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
-  font-family: 'Inter', 'Helvetica Neue', sans-serif;
-}
-h1 {
-  color: #e94560;
-}
-h2 {
-  color: #0f3460;
-  color: #64b5f6;
-}
-code {
-  background: #16213e;
-  color: #e94560;
-}
-pre {
-  background: #16213e !important;
-  border-radius: 8px;
-}
-a {
-  color: #64b5f6;
-}
-table {
-  font-size: 0.8em;
-}
-th {
-  background: #0f3460;
-}
-blockquote {
-  border-left: 4px solid #e94560;
-  color: #aaa;
-  font-style: italic;
-}
-.columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1em;
-}
-.small {
-  font-size: 0.7em;
-}
-.accent {
-  color: #e94560;
-}
-.dim {
-  color: #888;
-}
-img[alt~=&quot;center&quot;] {
-  display: block;
-  margin: 0 auto;
-}
-" lang="POSIX" data-marpit-pagination="24" style="--paginate:true;--background-color:#1a1a2e;--color:#eee;--theme:default;--style:section {
-  font-family: 'Inter', 'Helvetica Neue', sans-serif;
-}
-h1 {
-  color: #e94560;
-}
-h2 {
-  color: #0f3460;
-  color: #64b5f6;
-}
-code {
-  background: #16213e;
-  color: #e94560;
-}
-pre {
-  background: #16213e !important;
-  border-radius: 8px;
-}
-a {
-  color: #64b5f6;
-}
-table {
-  font-size: 0.8em;
-}
-th {
-  background: #0f3460;
-}
-blockquote {
-  border-left: 4px solid #e94560;
-  color: #aaa;
-  font-style: italic;
-}
-.columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1em;
-}
-.small {
-  font-size: 0.7em;
-}
-.accent {
-  color: #e94560;
-}
-.dim {
-  color: #888;
-}
-img[alt~=&quot;center&quot;] {
-  display: block;
-  margin: 0 auto;
-}
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
-<h1 id="whats-next-the-bottleneck-keeps-shifting">What's Next: The Bottleneck Keeps Shifting</h1>
-<p>The exponential curve isn't slowing down.</p>
-<ul>
-<li><s>Infrastructure complexity</s> → DuckDB / dbt</li>
-<li><s>Typing speed</s> → autocomplete</li>
-<li><s>Thinking speed</s> → AI chat</li>
-<li><s>Orchestration</s> → agent teams</li>
-<li><s>Writing code</s> → harness engineering</li>
-<li><strong>Knowing what to build</strong> → that's still you</li>
-</ul>
-</section>
-</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="25" data-paginate="true" data-background-color="#1a1a2e" data-color="#eee" data-theme="default" data-style="section {
-  font-family: 'Inter', 'Helvetica Neue', sans-serif;
-}
-h1 {
-  color: #e94560;
-}
-h2 {
-  color: #0f3460;
-  color: #64b5f6;
-}
-code {
-  background: #16213e;
-  color: #e94560;
-}
-pre {
-  background: #16213e !important;
-  border-radius: 8px;
-}
-a {
-  color: #64b5f6;
-}
-table {
-  font-size: 0.8em;
-}
-th {
-  background: #0f3460;
-}
-blockquote {
-  border-left: 4px solid #e94560;
-  color: #aaa;
-  font-style: italic;
-}
-.columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1em;
-}
-.small {
-  font-size: 0.7em;
-}
-.accent {
-  color: #e94560;
-}
-.dim {
-  color: #888;
-}
-img[alt~=&quot;center&quot;] {
-  display: block;
-  margin: 0 auto;
-}
-" lang="POSIX" data-marpit-pagination="25" style="--paginate:true;--background-color:#1a1a2e;--color:#eee;--theme:default;--style:section {
-  font-family: 'Inter', 'Helvetica Neue', sans-serif;
-}
-h1 {
-  color: #e94560;
-}
-h2 {
-  color: #0f3460;
-  color: #64b5f6;
-}
-code {
-  background: #16213e;
-  color: #e94560;
-}
-pre {
-  background: #16213e !important;
-  border-radius: 8px;
-}
-a {
-  color: #64b5f6;
-}
-table {
-  font-size: 0.8em;
-}
-th {
-  background: #0f3460;
-}
-blockquote {
-  border-left: 4px solid #e94560;
-  color: #aaa;
-  font-style: italic;
-}
-.columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1em;
-}
-.small {
-  font-size: 0.7em;
-}
-.accent {
-  color: #e94560;
-}
-.dim {
-  color: #888;
-}
-img[alt~=&quot;center&quot;] {
-  display: block;
-  margin: 0 auto;
-}
-;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="25">
+;color:#eee;background-color:#1a1a2e;background-image:none;" data-marpit-pagination-total="19">
 <h1 id="try-it">Try It</h1>
 <p>Give Claude Code <strong>23 issues</strong> and a <strong>weekend</strong>.</p>
 <br />
@@ -3006,97 +2362,83 @@ img[alt~=&quot;center&quot;] {
 - SHOW THE APP — either live demo or animated GIF
 - Click through: home grid → box score panel → live mode toggle
 - Player search autocomplete → performance trend chart
-- &quot;This is what we're building toward. Let me show you how we got here.&quot;
-- ~2 min</p></div><div class="bespoke-marp-note" data-index="2" tabindex="0"><p>TODO: Replace with GIF montage of interactive features</p><p>Speaker notes:
-- Quick tour of features — don't dwell, just establish scope
-- &quot;Full stack. All TypeScript. And I built it in a weekend with AI.&quot;</p></div><div class="bespoke-marp-note" data-index="3" tabindex="0"><p>Speaker notes:
+- &quot;Full stack. All TypeScript. And I built it in a weekend with AI.&quot;
+- ~2 min</p></div><div class="bespoke-marp-note" data-index="2" tabindex="0"><p>Speaker notes:
 - &quot;Vibe coding is great for getting something up. But eventually you need
-  to make it real. And I had 23 GitHub issues staring at me.&quot;</p></div><div class="bespoke-marp-note" data-index="4" tabindex="0"><p>Speaker notes:
+  to make it real.&quot;
 - &quot;These aren't trivial issues. Schema migration. Security fixes. A full
   Python-to-TypeScript parser rewrite. CI/CD pipelines. Data quality detectors.&quot;
-- &quot;Let me tell you how my workflow evolved.&quot;</p></div><div class="bespoke-marp-note" data-index="5" tabindex="0"><p>Speaker notes:
+- &quot;How do you close 23 issues — schema design to CI/CD — in a weekend?
+  Let me tell you how my workflow evolved.&quot;</p></div><div class="bespoke-marp-note" data-index="3" tabindex="0"><p>Speaker notes:
 - &quot;Phase 1 is conversational. You chat with Claude, fix things one at a time.
-  It's great — maybe 3-5x faster than typing it yourself. But it's linear.&quot;</p></div><div class="bespoke-marp-note" data-index="6" tabindex="0"><p>Speaker notes:
+  It's great — maybe 3-5x faster than typing it yourself. But it's linear.&quot;</p></div><div class="bespoke-marp-note" data-index="4" tabindex="0"><p>Speaker notes:
 - &quot;Phase 2 was my first attempt at parallelism. Three terminal windows.
   I'm manually shuttling context between them.&quot;
 - &quot;It's faster, but I realized I was the bottleneck. I was the
-  single-threaded orchestrator in a multi-threaded system.&quot;</p></div><div class="bespoke-marp-note" data-index="7" tabindex="0"><p>Speaker notes:
+  single-threaded orchestrator in a multi-threaded system.&quot;</p></div><div class="bespoke-marp-note" data-index="5" tabindex="0"><p>Speaker notes:
 - &quot;Phase 3 was the breakthrough. Claude Code can launch sub-agents on
   isolated git worktrees. Each agent gets a task, works independently,
   and reports back.&quot;
-- &quot;I stopped being the executor. I became the team lead.&quot;</p></div><div class="bespoke-marp-note" data-index="8" tabindex="0"><p>Speaker notes:
+- &quot;I stopped being the executor. I became the team lead.&quot;</p></div><div class="bespoke-marp-note" data-index="6" tabindex="0"><p>Speaker notes:
 - &quot;Wave 1 has no dependencies — schema, security, cleanup can all run in parallel.
   Wave 2 depends on wave 1 outputs. Wave 3 depends on wave 2. And so on.&quot;
 - &quot;Sound familiar? This is exactly how a data pipeline DAG works.&quot;
 - &quot;Validate after every wave. If something breaks, you catch it before
-  downstream agents build on a broken foundation.&quot;</p></div><div class="bespoke-marp-note" data-index="9" tabindex="0"><p>Speaker notes:
-- &quot;Phase 4 is where it gets wild. Each window is its own command center.
-  You're managing multiple projects simultaneously.&quot;
-- &quot;The skill that matters is no longer typing speed. It's decomposition —
-  breaking a project into independent tasks with clear dependencies.&quot;</p></div><div class="bespoke-marp-note" data-index="10" tabindex="0"><p>Speaker notes:
+  downstream agents build on a broken foundation.&quot;</p></div><div class="bespoke-marp-note" data-index="7" tabindex="0"><p>Speaker notes:
+- Transition slide — shift from workflow story to technical deep dive
+- &quot;So what did 5 waves of agents actually produce?
+  Let me show you the pipeline.&quot;</p></div><div class="bespoke-marp-note" data-index="8" tabindex="0"><p>Speaker notes:
+- Walk through top to bottom
+- &quot;All TypeScript. No Python. No CSV intermediary. JSON straight to MotherDuck.&quot;
+- &quot;Two layers of parallelism: seasons in parallel via worker pool,
+  games in parallel via adaptive dispatch queue.&quot;</p></div><div class="bespoke-marp-note" data-index="9" tabindex="0"><p>Speaker notes:
+- &quot;MotherDuck is doing double duty. On the pipeline side, it's a cloud
+  data warehouse receiving batch inserts. On the frontend, the WASM client
+  lets the browser query directly — no API server needed for reads.&quot;
+- &quot;We deployed v2 alongside v1, tested it, and swapped. Zero downtime.&quot;</p></div><div class="bespoke-marp-note" data-index="10" tabindex="0"><p>Speaker notes:
+- LEFT: &quot;The rate limiter watches the last 15 API responses. Every 8 successes,
+  it probes: can we go faster? Clean window — speed up 15%. High errors — slam
+  the brakes. Cruise control for APIs.&quot;
+- RIGHT: &quot;Queue of games, 8 in-flight at a time. Rate limiter gates dispatch.
+  Failed games go back to the queue. Up to 18 total attempts before we give up.&quot;
+- &quot;This pattern — bounded fan-out with adaptive throttling — is reusable
+  for any rate-limited API.&quot;</p></div><div class="bespoke-marp-note" data-index="11" tabindex="0"><p>Speaker notes:
+- LEFT: &quot;Classic data lake pattern. The raw table is your source of truth.
+  box_scores is a materialized view you can regenerate anytime.
+  Want a new analytic? Don't re-fetch 26 seasons. Write a new parser.&quot;
+- RIGHT: &quot;The agents didn't just build the pipeline — they built the guardrails too.
+  Found a real bug in v1: minutes were inflated by ~1:00 for some players.
+  The v2 parser matches the raw JSON exactly. Better than the original.&quot;</p></div><div class="bespoke-marp-note" data-index="12" tabindex="0"><p>Speaker notes:
+- Let the numbers speak. Don't oversell — just state facts.
+- &quot;93 tests from zero. Python fully eliminated. v2 more accurate than v1.&quot;</p></div><div class="bespoke-marp-note" data-index="13" tabindex="0"><p>Speaker notes:
+- &quot;The biggest lesson: design the task graph carefully. If you get the
+  dependency ordering right, the agents stay busy and nothing blocks.&quot;
+- &quot;We tried full worktree isolation first. It was theoretically clean
+  but practically painful — merge conflicts wiped out the time savings.&quot;</p></div><div class="bespoke-marp-note" data-index="14" tabindex="0"><p>Speaker notes:
+- &quot;This is the part that blew my mind. The structure of how we built it
+  is the same structure as what we built.&quot;
+- &quot;Parallel workers, bounded concurrency, dependency-aware scheduling,
+  validation checkpoints. Same patterns, different domains.&quot;
+- PAUSE. Let this land before moving to the big picture.</p></div><div class="bespoke-marp-note" data-index="15" tabindex="0"><p>Speaker notes:
 - &quot;In 2020 I wrote about 'dumb guy data engineering' — the idea that
   DuckDB and dbt let anyone build real pipelines. You don't need Spark.
   You don't need a CS degree. Just SQL and good tools.&quot;
 - &quot;Each point on this curve reduces the bottleneck. First: infrastructure
   complexity. Then: typing speed. Then: thinking speed. Now: orchestration.&quot;
-- &quot;And here's the thing — labs are 12 months ahead of what's public.
-  We're lighting up the path. What you see today is the floor.&quot;</p></div><div class="bespoke-marp-note" data-index="11" tabindex="0"><p>Speaker notes:
-- Pause here. Let this land.
-- &quot;The constant across every era: knowing what to build matters more
-  than knowing how to build it. AI accelerates the how. You supply the what.&quot;</p></div><div class="bespoke-marp-note" data-index="12" tabindex="0"><p>Speaker notes:
-- Transition slide — shift from workflow story to technical deep dive
-- &quot;So what did 3 agents working in waves actually produce?
-  Let me show you the pipeline.&quot;</p></div><div class="bespoke-marp-note" data-index="13" tabindex="0"><p>Speaker notes:
-- Walk through top to bottom
-- &quot;All TypeScript. No Python. No CSV intermediary. JSON straight to MotherDuck.&quot;
-- &quot;Two layers of parallelism: seasons in parallel via worker pool,
-  games in parallel via adaptive dispatch queue.&quot;</p></div><div class="bespoke-marp-note" data-index="14" tabindex="0"><p>Speaker notes:
-- &quot;MotherDuck is doing double duty. On the pipeline side, it's a cloud
-  data warehouse receiving batch inserts. On the frontend, the WASM client
-  lets the browser query directly — no API server needed for reads.&quot;
-- &quot;We deployed v2 alongside v1, tested it, and swapped. Zero downtime.&quot;</p></div><div class="bespoke-marp-note" data-index="15" tabindex="0"><p>Speaker notes:
-- &quot;The rate limiter watches the last 15 API responses. Every 8 successes,
-  it probes: can we go faster?&quot;
-- &quot;Clean window, no errors — speed up 15%. A couple of errors — speed up
-  gently. High error rate — slam the brakes.&quot;
-- &quot;This was designed in a conversation with Claude. I said 'how do we not
-  get rate limited?' and this is what came out.&quot;</p></div><div class="bespoke-marp-note" data-index="16" tabindex="0"><p>Speaker notes:
-- &quot;The dispatch loop is the core of the pipeline. Queue of games,
-  8 in-flight at a time. Rate limiter gates how fast we dispatch.&quot;
-- &quot;Failed games go back to the queue for retry. Up to 3 retries per game,
-  and each retry gets 5 HTTP retries with backoff. 18 total attempts
-  before we give up.&quot;
-- &quot;This pattern — bounded fan-out with adaptive throttling — is reusable
-  for any rate-limited API.&quot;</p></div><div class="bespoke-marp-note" data-index="17" tabindex="0"><p>Speaker notes:
-- &quot;This is a classic data lake pattern. The raw table is your source of truth.
-  box_scores is a materialized view you can regenerate anytime.&quot;
-- &quot;When we want a new analytic — shot quality, usage rate, whatever —
-  we don't need to re-fetch 26 seasons. We just write a new parser.&quot;</p></div><div class="bespoke-marp-note" data-index="18" tabindex="0"><p>Speaker notes:
-- &quot;The agents didn't just build the pipeline — they built the guardrails too.&quot;
-- &quot;Found a real bug in v1: minutes were inflated by ~1:00 for some players.
-  The v2 parser matches the raw JSON exactly. Better than the original.&quot;</p></div><div class="bespoke-marp-note" data-index="19" tabindex="0"><p>Speaker notes:
-- &quot;This is the part that blew my mind. The structure of how we built it
-  is the same structure as what we built.&quot;
-- &quot;Parallel workers, bounded concurrency, dependency-aware scheduling,
-  validation checkpoints. Same patterns, different domains.&quot;</p></div><div class="bespoke-marp-note" data-index="20" tabindex="0"><p>Speaker notes:
-- Let the numbers speak. Don't oversell — just state facts.
-- &quot;93 tests from zero. Python fully eliminated. v2 more accurate than v1.&quot;</p></div><div class="bespoke-marp-note" data-index="21" tabindex="0"><p>Speaker notes:
-- &quot;The biggest lesson: design the task graph carefully. If you get the
-  dependency ordering right, the agents stay busy and nothing blocks.&quot;
-- &quot;We tried full worktree isolation first. It was theoretically clean
-  but practically painful — merge conflicts wiped out the time savings.&quot;</p></div><div class="bespoke-marp-note" data-index="22" tabindex="0"><p>Speaker notes:
+- &quot;And here's the thing — labs are already ahead of what's public.
+  Let me show you what they're doing.&quot;</p></div><div class="bespoke-marp-note" data-index="16" tabindex="0"><p>Speaker notes:
 - &quot;This is what labs are doing RIGHT NOW. OpenAI published this in February 2026.
   Three engineers, a million lines, zero hand-written code.&quot;
 - &quot;The term is 'harness engineering' — your job isn't to write the code,
   it's to design the environment the agents work in. CI config, repo structure,
   dependency rules, architectural tests.&quot;
 - &quot;Sound familiar? That's exactly what we did with wave dispatch and WORKLOG.md.
-  We designed the harness — the agents did the work.&quot;</p></div><div class="bespoke-marp-note" data-index="23" tabindex="0"><p>Speaker notes:
+  We designed the harness — the agents did the work.&quot;</p></div><div class="bespoke-marp-note" data-index="17" tabindex="0"><p>Speaker notes:
 - &quot;Every era makes the bottleneck less about technical skill and more
   about judgment. About taste. About asking the right questions.&quot;
-- &quot;Harness engineering is the latest shift — you're not even orchestrating
-  the agents anymore, you're designing the environment they operate in.&quot;
-- &quot;But the constant: knowing what to build still matters most.&quot;</p></div><div class="bespoke-marp-note" data-index="24" tabindex="0"><p>Speaker notes:
+- &quot;The constant across every era: knowing what to build matters more
+  than knowing how to build it. AI accelerates the how. You supply the what.&quot;
+- Pause. Let this land.</p></div><div class="bespoke-marp-note" data-index="18" tabindex="0"><p>Speaker notes:
 - &quot;The repo is public. The WORKLOG.md documents every decision.
   Try it yourself — pick a project with a bunch of issues and
   see how your workflow evolves.&quot;
