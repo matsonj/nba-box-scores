@@ -52,6 +52,9 @@ data/*
 # logs
 logs/*
 
+# temp files
+.tmp/
+
 # Python
 __pycache__/
 *.py[cod]
