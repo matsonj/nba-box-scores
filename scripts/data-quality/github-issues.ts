@@ -30,45 +30,35 @@ function escSql(val: string): string {
   return val.replace(/'/g, "''");
 }
 
-function buildIssueTitle(record: PendingRecord): string {
-  if (record.detection_type === 'wrong_team') {
-    return `Data Quality: ${record.player_name} wrong team ${record.actual_team} in game ${record.game_id}`;
-  }
-  return `Data Quality: ${record.player_name} ${record.detection_type}`;
+function buildGroupedIssueTitle(detectionType: string, count: number): string {
+  return `Data Quality: ${count} ${detectionType} anomalies detected`;
 }
 
-function buildIssueBody(record: PendingRecord): string {
-  const gameDateLine = record.game_date
-    ? `**Game Date**: ${record.game_date}`
-    : '**Game Date**: unknown';
-
-  const expectedLine = record.expected_team
-    ? `**Expected Team**: ${record.expected_team}`
-    : '**Expected Team**: N/A';
-
-  const resolutionSection = [
-    '### Resolution',
-    `No auto-resolution rule for detection type \`${record.detection_type}\`. Requires manual review.`,
-  ].join('\n');
-
+function buildGroupedIssueBody(detectionType: string, records: PendingRecord[]): string {
   const lines = [
     '## Data Quality Alert',
     '',
-    `**Player**: ${record.player_name} (entity_id: ${record.entity_id})`,
-    `**Detection Type**: ${record.detection_type}`,
-    `**Game ID**: ${record.game_id}`,
-    gameDateLine,
-    expectedLine,
-    `**Actual Team**: ${record.actual_team}`,
+    `**Detection Type**: \`${detectionType}\``,
+    `**Records**: ${records.length}`,
+    '',
+    '### Affected Games',
+    '',
+    '| Game ID | Game Date | Player | Entity ID | Expected Team | Actual Team | Details |',
+    '|---------|-----------|--------|-----------|---------------|-------------|---------|',
   ];
 
-  if (record.details) {
-    lines.push(`**Details**: ${record.details}`);
+  for (const r of records) {
+    const gameDate = r.game_date ?? 'unknown';
+    const expected = r.expected_team ?? 'N/A';
+    const details = r.details ?? '';
+    lines.push(`| ${r.game_id} | ${gameDate} | ${r.player_name} | ${r.entity_id} | ${expected} | ${r.actual_team} | ${details} |`);
   }
 
-  lines.push('', resolutionSection, '', '### Manual Action');
-  lines.push("- Close as 'approved' if this is a legitimate trade/transfer");
-  lines.push("- Close as 'rejected' if this is a data error");
+  lines.push('', '### Resolution');
+  lines.push(`Requires manual review for each record.`);
+  lines.push('', '### Manual Action');
+  lines.push("- Close as 'approved' if these are legitimate trades/transfers");
+  lines.push("- Close as 'rejected' if these are data errors");
 
   return lines.join('\n');
 }
@@ -152,26 +142,40 @@ export async function createIssuesForPending(db: MotherDuckConnection): Promise<
     return { created: 0, failed: 0 };
   }
 
-  console.log(`Found ${pending.length} pending record(s) without GitHub issues.\n`);
+  // Group records by detection_type — one issue per type
+  const grouped = new Map<string, PendingRecord[]>();
+  for (const record of pending) {
+    const list = grouped.get(record.detection_type);
+    if (list) {
+      list.push(record);
+    } else {
+      grouped.set(record.detection_type, [record]);
+    }
+  }
+
+  console.log(`Found ${pending.length} pending record(s) across ${grouped.size} detection type(s).\n`);
 
   let created = 0;
   let failed = 0;
 
-  for (const record of pending) {
-    const title = buildIssueTitle(record);
-    const body = buildIssueBody(record);
+  for (const [detectionType, records] of grouped) {
+    const title = buildGroupedIssueTitle(detectionType, records.length);
+    const body = buildGroupedIssueBody(detectionType, records);
 
     process.stdout.write(`Creating issue: ${title}...`);
     const issueNumber = createGitHubIssue(title, body);
 
     if (issueNumber !== null) {
-      await db.execute(`
-        UPDATE main.data_quality_quarantine
-        SET github_issue_number = ${issueNumber}
-        WHERE game_id = '${escSql(record.game_id)}'
-          AND entity_id = '${escSql(record.entity_id)}'
-          AND detection_type = '${escSql(record.detection_type)}'
-      `);
+      // Update all records in this group with the shared issue number
+      for (const record of records) {
+        await db.execute(`
+          UPDATE main.data_quality_quarantine
+          SET github_issue_number = ${issueNumber}
+          WHERE game_id = '${escSql(record.game_id)}'
+            AND entity_id = '${escSql(record.entity_id)}'
+            AND detection_type = '${escSql(record.detection_type)}'
+        `);
+      }
       console.log(` #${issueNumber}`);
       created++;
     } else {
@@ -180,7 +184,7 @@ export async function createIssuesForPending(db: MotherDuckConnection): Promise<
     }
   }
 
-  console.log(`\nDone: ${created} issue(s) created, ${failed} failed.`);
+  console.log(`\nDone: ${created} issue(s) created (covering ${pending.length} records), ${failed} failed.`);
   return { created, failed };
 }
 
