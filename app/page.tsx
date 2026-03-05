@@ -9,11 +9,11 @@ import GameCard from '@/components/GameCard';
 import SeasonFilter from '@/components/SeasonFilter';
 import { getTeamName } from '@/lib/teams';
 import { parseGameDate } from '@/lib/dateUtils';
-import { useSchedule, useBoxScores, usePlayerSearch } from '@/hooks/useGameData';
+import { useSchedule, useBoxScores, usePlayerIndex } from '@/hooks/useGameData';
 import { useDataLoader } from '@/lib/dataLoader';
 import { isPlayoffGame, getSeasonYearFromDate } from '@/lib/seasonUtils';
 import type { SeasonType } from '@/lib/seasonUtils';
-import type { GameDataFilters } from '@/hooks/useGameData';
+import type { GameDataFilters, PlayerIndexEntry } from '@/hooks/useGameData';
 import { useLiveData } from '@/lib/LiveDataContext';
 import type { LiveScoreGame } from '@/app/types/live';
 import type { Team } from '@/app/types/schema';
@@ -72,11 +72,11 @@ function HomeContent() {
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [selectedLiveGameId, setSelectedLiveGameId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
-  const [playerGameIds, setPlayerGameIds] = useState<Set<string> | null>(null);
+  const [playerIndex, setPlayerIndex] = useState<PlayerIndexEntry[]>([]);
   const dataLoader = useDataLoader();
   const { fetchSchedule } = useSchedule();
   const { fetchBoxScores } = useBoxScores();
-  const { searchPlayerGameIds } = usePlayerSearch();
+  const { fetchPlayerIndex } = usePlayerIndex();
 
   const {
     isLive,
@@ -173,6 +173,42 @@ function HomeContent() {
     seasonType: seasonType,
   }), [season, seasonType]);
 
+  // Client-side player search: filter the in-memory index
+  const playerGameIds = useMemo(() => {
+    if (!player) return null;
+    const term = player.toLowerCase();
+    const matchingGameIds = new Set<string>();
+    for (const entry of playerIndex) {
+      if (entry.player_name.toLowerCase().includes(term)) {
+        for (const gid of entry.game_ids) {
+          matchingGameIds.add(gid);
+        }
+      }
+    }
+    return matchingGameIds;
+  }, [player, playerIndex]);
+
+  // Autocomplete suggestions for the search dropdown
+  const playerSuggestions = useMemo(() => {
+    if (!player || player.length < 2) return [];
+    const term = player.toLowerCase();
+    const seen = new Set<string>();
+    const results: Array<{ entity_id: string; player_name: string; team_abbreviation: string }> = [];
+    for (const entry of playerIndex) {
+      if (seen.has(entry.entity_id)) continue;
+      if (entry.player_name.toLowerCase().includes(term)) {
+        seen.add(entry.entity_id);
+        results.push({
+          entity_id: entry.entity_id,
+          player_name: entry.player_name,
+          team_abbreviation: entry.team_abbreviation,
+        });
+      }
+      if (results.length >= 8) break;
+    }
+    return results;
+  }, [player, playerIndex]);
+
   const filteredGamesByDate = useMemo(() => {
     if (!gamesByDate || Object.keys(gamesByDate).length === 0) return [];
 
@@ -184,7 +220,7 @@ function HomeContent() {
             if (team && game.home_team_abbreviation !== team && game.away_team_abbreviation !== team) {
               return false;
             }
-            if (playerGameIds && !playerGameIds.has(game.game_id)) {
+            if (playerGameIds && !playerGameIds.has(String(game.game_id))) {
               return false;
             }
             return true;
@@ -200,17 +236,7 @@ function HomeContent() {
     setCurrentPage(0);
   }, [team, season, seasonType, player]);
 
-  // Debounced player search
-  useEffect(() => {
-    if (!player) {
-      setPlayerGameIds(null);
-      return;
-    }
-    const timer = setTimeout(() => {
-      searchPlayerGameIds(player).then(setPlayerGameIds).catch(() => setPlayerGameIds(null));
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [player, searchPlayerGameIds]);
+  // Player index is now loaded with game data — search is client-side via useMemo above
 
   const totalPages = Math.max(1, Math.ceil(filteredGamesByDate.length / DATES_PER_PAGE));
   const paginatedDates = filteredGamesByDate.slice(
@@ -247,10 +273,12 @@ function HomeContent() {
         setError('');
 
         addLoadingMessage('Fetching game data...');
-        const [scheduleData, boxScoresData] = await Promise.all([
+        const [scheduleData, boxScoresData, playerIndexData] = await Promise.all([
           fetchSchedule(currentFilters),
-          fetchBoxScores(currentFilters)
+          fetchBoxScores(currentFilters),
+          fetchPlayerIndex(currentFilters),
         ]);
+        setPlayerIndex(playerIndexData);
         updateLoadingMessage(1);
 
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -299,10 +327,12 @@ function HomeContent() {
       } else {
         // Subsequent filter changes: simpler reload without loading messages
         setLoading(true);
-        const [scheduleData, boxScoresData] = await Promise.all([
+        const [scheduleData, boxScoresData, playerIndexData] = await Promise.all([
           fetchSchedule(currentFilters),
-          fetchBoxScores(currentFilters)
+          fetchBoxScores(currentFilters),
+          fetchPlayerIndex(currentFilters),
         ]);
+        setPlayerIndex(playerIndexData);
 
         const gamesWithBoxScores = scheduleData.map((game) => {
           const hasBoxScore = !!boxScoresData[game.game_id];
@@ -347,7 +377,7 @@ function HomeContent() {
     } finally {
       setLoading(false);
     }
-  }, [dataLoader, fetchSchedule, fetchBoxScores]);
+  }, [dataLoader, fetchSchedule, fetchBoxScores, fetchPlayerIndex]);
 
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
@@ -381,7 +411,7 @@ function HomeContent() {
     <>
       <DynamicTableLoader />
       <div className="container mx-auto px-4 py-8 font-mono">
-        <SeasonFilter />
+        <SeasonFilter playerSuggestions={playerSuggestions} />
 
         {/* Live Games Section */}
         {isLive && activeLiveGames.length > 0 && (

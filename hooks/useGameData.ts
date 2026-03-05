@@ -127,23 +127,69 @@ export function useBoxScores() {
   return { fetchBoxScores };
 }
 
-export function usePlayerSearch() {
+export interface PlayerIndexEntry {
+  entity_id: string;
+  player_name: string;
+  team_abbreviation: string;
+  game_ids: string[];
+}
+
+/** Builds a player search index from flat (player, game_id) rows, grouped client-side. */
+function buildPlayerIndex(rows: Array<{ entity_id: string; player_name: string; team_abbreviation: string; game_id: string }>): PlayerIndexEntry[] {
+  const map = new Map<string, PlayerIndexEntry>();
+  for (const r of rows) {
+    const key = `${r.entity_id}|${r.team_abbreviation}`;
+    let entry = map.get(key);
+    if (!entry) {
+      entry = {
+        entity_id: String(r.entity_id),
+        player_name: String(r.player_name),
+        team_abbreviation: String(r.team_abbreviation),
+        game_ids: [],
+      };
+      map.set(key, entry);
+    }
+    entry.game_ids.push(String(r.game_id));
+  }
+  return Array.from(map.values());
+}
+
+export function usePlayerIndex() {
   const { evaluateQuery } = useMotherDuckClientState();
 
-  const searchPlayerGameIds = useCallback(async (playerName: string): Promise<Set<string>> => {
-    if (!playerName.trim()) return new Set();
+  const fetchPlayerIndex = useCallback(async (filters?: GameDataFilters): Promise<PlayerIndexEntry[]> => {
+    try {
+      let query: string;
+      if (filters?.seasonYear || (filters?.seasonType && filters.seasonType !== 'all')) {
+        const whereClause = buildSeasonWhereClause(filters, 's');
+        query = `
+          SELECT DISTINCT bs.entity_id, bs.player_name, bs.team_abbreviation, bs.game_id
+          FROM ${SOURCE_TABLES.BOX_SCORES} bs
+          JOIN ${SOURCE_TABLES.SCHEDULE} s ON bs.game_id = s.game_id
+          WHERE bs.period = 'FullGame'${whereClause}
+        `;
+      } else {
+        query = `
+          SELECT DISTINCT entity_id, player_name, team_abbreviation, game_id
+          FROM ${SOURCE_TABLES.BOX_SCORES}
+          WHERE period = 'FullGame'
+        `;
+      }
 
-    const escaped = escapeSqlString(playerName.trim());
-    const result = await evaluateQuery(`
-      SELECT DISTINCT game_id
-      FROM ${SOURCE_TABLES.BOX_SCORES}
-      WHERE LOWER(player_name) LIKE LOWER('%${escaped}%')
-        AND period = 'FullGame'
-    `);
+      const result = await evaluateQuery(query);
+      const rows = result.data.toRows() as unknown as {
+        entity_id: string;
+        player_name: string;
+        team_abbreviation: string;
+        game_id: string;
+      }[];
 
-    const rows = result.data.toRows() as unknown as { game_id: string }[];
-    return new Set(rows.map(r => r.game_id));
+      return buildPlayerIndex(rows);
+    } catch (error) {
+      console.error('Error fetching player index:', error);
+      throw error;
+    }
   }, [evaluateQuery]);
 
-  return { searchPlayerGameIds };
+  return { fetchPlayerIndex };
 }

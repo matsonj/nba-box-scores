@@ -1,0 +1,7 @@
+tables:
+  raw_game_data_pbpstats:
+    annotation: "DO NOT USE. Raw ingestion staging table containing unprocessed JSON from PBPStats API. Use box_scores, schedule, or other curated tables instead."
+  data_quality_quarantine:
+    annotation: "Data quality checks. Contains flagged records that failed validation rules during ingestion. Not generally used for NBA data questions."
+  ingestion_log:
+    annotation: "Pipeline operational metadata. Tracks which games have been ingested and their status. Not generally used for NBA data questions."
