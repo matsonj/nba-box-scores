@@ -663,25 +663,52 @@ Speaker notes:
 
 ---
 
-# What's Next
+# What's Next: Harness Engineering
+
+OpenAI built an **internal product** with Codex agents (Feb 2026):
+
+- **~1M lines of code** in 5 months
+- **3 engineers**, zero hand-written code (by design)
+- **3.5 PRs per engineer per day**
+
+The human role shifted from **writing code** to **designing the harness**:
+repository structure, CI rules, dependency layers, AGENTS.md as a table of contents.
+
+> "2025 was agents. 2026 is agent harnesses."
+
+<p class="small">Source: <a href="https://openai.com/index/harness-engineering/">openai.com/index/harness-engineering</a></p>
+
+<!--
+Speaker notes:
+- "This is what labs are doing RIGHT NOW. OpenAI published this in February 2026.
+  Three engineers, a million lines, zero hand-written code."
+- "The term is 'harness engineering' — your job isn't to write the code,
+  it's to design the environment the agents work in. CI config, repo structure,
+  dependency rules, architectural tests."
+- "Sound familiar? That's exactly what we did with wave dispatch and WORKLOG.md.
+  We designed the harness — the agents did the work."
+-->
+
+---
+
+# What's Next: The Bottleneck Keeps Shifting
 
 The exponential curve isn't slowing down.
 
-**Labs are 12 months ahead** of what's publicly available.
-
-The bottleneck keeps shifting:
 - ~~Infrastructure complexity~~ → DuckDB / dbt
 - ~~Typing speed~~ → autocomplete
 - ~~Thinking speed~~ → AI chat
 - ~~Orchestration~~ → agent teams
+- ~~Writing code~~ → harness engineering
 - **Knowing what to build** → that's still you
 
 <!--
 Speaker notes:
 - "Every era makes the bottleneck less about technical skill and more
   about judgment. About taste. About asking the right questions."
-- "The tools will keep getting better. Your job is to stay ahead of
-  the curve by focusing on the 'what' and the 'why', not the 'how'."
+- "Harness engineering is the latest shift — you're not even orchestrating
+  the agents anymore, you're designing the environment they operate in."
+- "But the constant: knowing what to build still matters most."
 -->
 
 ---
