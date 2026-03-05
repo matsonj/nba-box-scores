@@ -492,21 +492,57 @@ Speaker notes:
 **Dependency-aware wave dispatch**
 No agent ever blocked waiting on another. Critical path optimized.
 
-**Shared branch > isolated worktrees**
-Worktree isolation caused merge pain. Shared branch + careful coordination won.
+**Worktrees — but design tasks for parallel completion**
+Worktrees work great for independent issues. For related issues, you need
+a merge agent to handle conflicts post-review. Design the work, not just the code.
 
 **Validate after every wave**
 Build + tests = green throughout. Caught issues before they propagated.
 
-**WORKLOG.md as shared memory**
-Agents and humans read the same log. Context persists across sessions.
+**Chat with your team lead agent**
+Need a status update? Just ask. Want to inject context to downstream agents?
+Tell the planner. Keeps your focus high — you never have to wait in silence.
 
 <!--
 Speaker notes:
 - "The biggest lesson: design the task graph carefully. If you get the
   dependency ordering right, the agents stay busy and nothing blocks."
-- "We tried full worktree isolation first. It was theoretically clean
-  but practically painful — merge conflicts wiped out the time savings."
+- "Worktrees are great — but you need to design issues to be independently
+  completable. If two agents touch the same files, you need a merge agent
+  to reconcile after review. Plan for that."
+- "And keep your focus high. If you're waiting too long, you lose attention.
+  Chat with your planner agent. Ask for updates. Inject new context.
+  You're the team lead, not a spectator."
+-->
+
+---
+
+# What I Learned the Hard Way
+
+**Don't copy someone else's workflow.**
+
+I tried importing other people's agent configs, prompt templates, skill files.
+It felt like wearing someone else's glasses — their taste, not mine.
+
+You can learn **patterns** from others:
+- Wave dispatch, worktree isolation, WORKLOG.md
+
+But you have to **synthesize your own way of working**.
+
+> The workflow that sticks is the one you build yourself.
+
+<!--
+Speaker notes:
+- "This is the most important slide in the talk."
+- "I spent hours trying to adopt workflows I'd seen on Twitter.
+  Custom CLAUDE.md files, elaborate skill configs, someone else's
+  agent orchestration scripts. And it kept fighting me."
+- "The breakthrough wasn't finding the right template. It was
+  throwing them away and building my own. You can learn patterns —
+  wave dispatch, worktrees, shared logs — but the system that works
+  is the one shaped by your taste and your problems."
+- "Same lesson as 'dumb guy data engineering': you don't need someone
+  else's Spark cluster. You need to understand your own data."
 -->
 
 ---
@@ -607,40 +643,44 @@ Speaker notes:
 - ~~Writing code~~ → harness engineering
 - **Knowing what to build** → that's still you
 
-> "Dumb guy data engineering" meant you didn't need distributed systems
-> expertise to build pipelines. Agentic engineering means you don't need
-> to type the code either. What you **do** need is **taste**, **judgment**,
-> and the ability to **decompose problems**.
+Every shift makes **the iteration loop faster**.
+
+Faster iteration = more experiments = better solutions = **solving problems faster**.
 
 <!--
 Speaker notes:
-- "Every era makes the bottleneck less about technical skill and more
-  about judgment. About taste. About asking the right questions."
-- "The constant across every era: knowing what to build matters more
-  than knowing how to build it. AI accelerates the how. You supply the what."
-- Pause. Let this land.
+- "Every era makes the iteration loop shorter. In 2020, DuckDB let me
+  skip the Spark cluster. In 2024, Claude let me skip the typing.
+  In 2026, agent teams let me skip the sequencing."
+- "The point isn't the agents. The point is that each loop gets faster,
+  so you can try more ideas, catch more bugs, ship more solutions."
+- "The person who iterates fastest wins. That's always been true.
+  These tools just compress the loop."
 -->
 
 ---
 
-# Try It
+# Compress the Loop
 
-Give Claude Code **23 issues** and a **weekend**.
+In 2020, I told you that you didn't need Spark.
+
+In 2026, I'm telling you that you don't need to type the code.
+
+**The person who iterates fastest wins.** These tools just compress the loop.
+
+Find the patterns. Then build **your own way of working**.
 
 <br>
 
-**GitHub**: github.com/matsonj/nba-box-scores
-**MotherDuck**: motherduck.com
-**Twitter/X**: @matsonj
-
-<br>
-
-### Questions?
+**GitHub**: github.com/matsonj/nba-box-scores  ·  **MotherDuck**: motherduck.com  ·  **@matsonj**
 
 <!--
 Speaker notes:
-- "The repo is public. The WORKLOG.md documents every decision.
-  Try it yourself — pick a project with a bunch of issues and
-  see how your workflow evolves."
+- Deliver this slowly. This is the callback to "dumb guy data engineering."
+- "Don't copy my workflow. Don't copy OpenAI's workflow. Learn the patterns,
+  then build the system that fits how YOU think."
+- "The point was never 23 issues or a weekend. The point is faster loops.
+  More experiments per day. Better solutions per week."
+- "The repo is public. Use it as a starting point — then make it yours."
 - Open for Q&A
 -->
