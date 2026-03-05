@@ -36,7 +36,7 @@ if [ -z "${MOTHERDUCK_TOKEN:-}" ]; then
   exit 1
 fi
 
-command -v tsx >/dev/null 2>&1 || { echo "Error: tsx not found. Run 'npm install' first."; exit 1; }
+[ -x ./node_modules/.bin/tsx ] || { echo "Error: tsx not found. Run 'npm install' first."; exit 1; }
 
 log "=== NBA Historical Backfill Started ==="
 log "Log file: $LOGFILE"
