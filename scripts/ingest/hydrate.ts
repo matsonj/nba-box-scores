@@ -75,7 +75,7 @@ async function main(): Promise<void> {
     const countRows = await db.query<{ cnt: number }>(
       `SELECT COUNT(*) AS cnt FROM main.raw_game_data_pbpstats r WHERE ${gameFilter}`,
     );
-    const gameCount = countRows[0]?.cnt ?? 0;
+    const gameCount = Number(countRows[0]?.cnt ?? 0);
 
     if (gameCount === 0) {
       logger.info('No games found to hydrate');
@@ -101,7 +101,7 @@ async function main(): Promise<void> {
       `SELECT COUNT(*) AS cnt FROM main.box_scores
        WHERE game_id IN (SELECT game_id FROM main.raw_game_data_pbpstats r WHERE ${gameFilter})`,
     );
-    const rowCount = rowCountResult[0]?.cnt ?? 0;
+    const rowCount = Number(rowCountResult[0]?.cnt ?? 0);
 
     logger.info('SQL hydration complete', {
       games: gameCount,
