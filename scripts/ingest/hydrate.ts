@@ -1,8 +1,10 @@
 #!/usr/bin/env tsx
 // Re-derive box_scores from raw JSON stored in raw_game_data_pbpstats.
 //
-// Uses DELETE + INSERT (not INSERT OR REPLACE) because row counts can
-// change if parser logic evolves — clean slate per game avoids stale rows.
+// Uses server-side SQL (DELETE + INSERT ... SELECT) instead of pulling JSON
+// to the client, parsing in TypeScript, and pushing rows back. This is
+// dramatically faster because all JSON extraction, aggregation, and starter
+// assignment happen inside MotherDuck/DuckDB.
 //
 // Usage:
 //   npm run hydrate -- --season 2024
@@ -11,20 +13,12 @@
 
 import { MotherDuckConnection } from './db/connection';
 import { Loader } from './db/loader';
-import { parseBoxScore } from './parse/box-score-parser';
+import { buildDeleteSQL, buildInsertSQL, buildResetAuditSQL } from './db/hydration-sql';
 import { logger } from './util/logger';
-
-const BATCH_SIZE = 50;
 
 /** Escape a SQL string value (single quotes) */
 function esc(val: string): string {
   return `'${val.replace(/'/g, "''")}'`;
-}
-
-interface RawRow {
-  game_id: string;
-  game_json: string;
-  box_score_json: string;
 }
 
 function parseArgs(): { mode: 'season'; season: number } | { mode: 'game'; gameId: string } | { mode: 'all' } {
@@ -46,15 +40,6 @@ function parseArgs(): { mode: 'season'; season: number } | { mode: 'game'; gameI
   process.exit(1);
 }
 
-/** Split an array into chunks of the given size */
-function chunk<T>(arr: T[], size: number): T[][] {
-  const chunks: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) {
-    chunks.push(arr.slice(i, i + size));
-  }
-  return chunks;
-}
-
 async function main(): Promise<void> {
   const token = process.env.MOTHERDUCK_TOKEN;
   if (!token) {
@@ -71,108 +56,65 @@ async function main(): Promise<void> {
   try {
     await loader.ensureSchema();
 
-    // 1. Get the list of game IDs to hydrate
-    let gameIds: string[];
+    // Build the game filter clause based on CLI args
+    let gameFilter: string;
+    let description: string;
 
     if (config.mode === 'season') {
-      const rows = await db.query<{ game_id: string }>(
-        `SELECT game_id FROM main.raw_game_data_pbpstats
-         WHERE season_year = ${config.season}
-         ORDER BY game_id`,
-      );
-      gameIds = rows.map((r) => r.game_id);
-      logger.info('Hydrating season', { season: config.season, games: gameIds.length });
+      gameFilter = `r.season_year = ${config.season}`;
+      description = `season ${config.season}`;
     } else if (config.mode === 'game') {
-      gameIds = [config.gameId];
-      logger.info('Hydrating single game', { gameId: config.gameId });
+      gameFilter = `r.game_id = ${esc(config.gameId)}`;
+      description = `game ${config.gameId}`;
     } else {
-      const rows = await db.query<{ game_id: string }>(
-        `SELECT game_id FROM main.raw_game_data_pbpstats ORDER BY game_id`,
-      );
-      gameIds = rows.map((r) => r.game_id);
-      logger.info('Hydrating all games', { games: gameIds.length });
+      gameFilter = 'TRUE';
+      description = 'all games';
     }
 
-    if (gameIds.length === 0) {
+    // Count games to hydrate
+    const countRows = await db.query<{ cnt: number }>(
+      `SELECT COUNT(*) AS cnt FROM main.raw_game_data_pbpstats r WHERE ${gameFilter}`,
+    );
+    const gameCount = countRows[0]?.cnt ?? 0;
+
+    if (gameCount === 0) {
       logger.info('No games found to hydrate');
       return;
     }
 
-    // 2. Process in batches
-    let processed = 0;
-    let errors = 0;
-    const batches = chunk(gameIds, BATCH_SIZE);
+    logger.info(`Hydrating ${description}`, { games: gameCount });
 
-    for (const batch of batches) {
-      const inClause = batch.map((id) => esc(id)).join(',');
+    // 1. DELETE existing box_scores for targeted games (clean slate)
+    const deleteSQL = buildDeleteSQL(gameFilter);
+    logger.info('Deleting existing box_scores for targeted games');
+    await db.execute(deleteSQL);
 
-      // Fetch raw JSON for this batch
-      const rawRows = await db.query<RawRow>(
-        `SELECT game_id, game_json, box_score_json
-         FROM main.raw_game_data_pbpstats
-         WHERE game_id IN (${inClause})`,
-      );
+    // 2. INSERT ... SELECT: derive box_scores from raw JSON entirely in SQL
+    const insertSQL = buildInsertSQL(gameFilter);
+    logger.info('Running SQL hydration (INSERT ... SELECT from raw JSON)');
+    const startTime = Date.now();
+    await db.execute(insertSQL);
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
-      // DELETE existing box_scores for these games (clean slate)
-      await db.execute(
-        `DELETE FROM main.box_scores WHERE game_id IN (${inClause})`,
-      );
+    // 3. Count how many rows were inserted
+    const rowCountResult = await db.query<{ cnt: number }>(
+      `SELECT COUNT(*) AS cnt FROM main.box_scores
+       WHERE game_id IN (SELECT game_id FROM main.raw_game_data_pbpstats r WHERE ${gameFilter})`,
+    );
+    const rowCount = rowCountResult[0]?.cnt ?? 0;
 
-      // Re-parse all games in this batch, then INSERT in one call
-      const allRows: Awaited<ReturnType<typeof parseBoxScore>> = [];
-      for (const raw of rawRows) {
-        try {
-          // DuckDB returns JSON columns as strings — parse them
-          const gameJson = typeof raw.game_json === 'string'
-            ? JSON.parse(raw.game_json)
-            : raw.game_json;
-          const boxScoreJson = typeof raw.box_score_json === 'string'
-            ? JSON.parse(raw.box_score_json)
-            : raw.box_score_json;
+    logger.info('SQL hydration complete', {
+      games: gameCount,
+      rows_inserted: rowCount,
+      elapsed_seconds: elapsed,
+    });
 
-          const gameData = {
-            game: gameJson,
-            boxScore: { stats: boxScoreJson },
-          };
+    // 4. Reset audited_at so data quality checks re-run on hydrated games
+    const resetSQL = buildResetAuditSQL(gameFilter);
+    await db.execute(resetSQL);
+    logger.info('Reset audited_at for hydrated games');
 
-          allRows.push(...parseBoxScore(gameData));
-          processed++;
-        } catch (err) {
-          errors++;
-          logger.error('Failed to hydrate game', {
-            gameId: raw.game_id,
-            error: (err as Error).message,
-          });
-        }
-      }
-
-      // Batch insert all rows for this chunk (loadBoxScoreRows handles internal batching at 500)
-      if (allRows.length > 0) {
-        await loader.loadBoxScoreRows(allRows);
-      }
-
-      logger.progress(`Hydrated ${processed}/${gameIds.length} games (${errors} errors)`);
-    }
-
-    // Clear the progress line
-    if (process.stdout.isTTY) {
-      process.stdout.write('\n');
-    }
-
-    // 3. Reset audited_at so data quality checks re-run on hydrated games
-    if (gameIds.length > 0) {
-      // Process in batches to avoid SQL length limits
-      for (const batch of batches) {
-        const inClause = batch.map((id) => esc(id)).join(',');
-        await db.execute(
-          `UPDATE main.ingestion_log SET audited_at = NULL
-           WHERE game_id IN (${inClause})`,
-        );
-      }
-      logger.info('Reset audited_at for hydrated games');
-    }
-
-    logger.info('Hydration complete', { processed, errors, total: gameIds.length });
+    logger.info('Hydration complete', { games: gameCount, rows: rowCount });
   } finally {
     db.close();
   }
