@@ -1,11 +1,8 @@
 import type { SportConfig } from './types';
+import { NHL_TEAM_ABBREVIATIONS, nhlTeamNames } from '@/lib/nhl/teams';
 
 const NHL_REGULAR_PERIODS = 3;
 const NHL_MAX_PERIODS = 5; // 3 regular + OT + SO
-
-const NHL_TEAM_ABBREVIATIONS = [] as const;
-
-const nhlTeamNames: Record<string, string> = {};
 
 /**
  * Determines the NHL season year from a date.
@@ -27,7 +24,7 @@ function formatNhlSeasonLabel(year: number): string {
 function getNhlAvailableSeasons(): number[] {
   const now = new Date();
   const currentSeason = getNhlSeasonYear(now);
-  const startYear = 2024; // placeholder start year
+  const startYear = 2015;
   const seasons: number[] = [];
   for (let year = currentSeason; year >= startYear; year--) {
     seasons.push(year);
@@ -35,9 +32,8 @@ function getNhlAvailableSeasons(): number[] {
   return seasons;
 }
 
-function isNhlPlayoffGame(_gameId: string): boolean {
-  // Placeholder: NHL playoff detection will be implemented with real data
-  return false;
+function isNhlPlayoffGame(gameId: string): boolean {
+  return gameId.substring(4, 6) === '03';
 }
 
 function getNhlPeriodLabel(period: number | string): string {
