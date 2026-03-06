@@ -27,6 +27,14 @@ function gameTypeToSeasonType(gameType: number): string {
   }
 }
 
+/** Convert a UTC ISO string to an Eastern Time date string (YYYY-MM-DD) */
+function utcToEasternDate(utcStr: string): string {
+  const d = new Date(utcStr);
+  // Format in America/New_York to get the correct local date
+  const parts = d.toLocaleDateString('en-CA', { timeZone: 'America/New_York' }); // en-CA gives YYYY-MM-DD
+  return parts;
+}
+
 /** Get the season start date (roughly early October) */
 function seasonStartDate(year: number): string {
   return `${year}-10-01`;
@@ -175,7 +183,7 @@ export async function processNHLSeason(
   // 4. Load schedule rows for games we're about to process
   const scheduleRows: NHLScheduleRow[] = gamesToProcess.map((g) => ({
     game_id: String(g.id),
-    game_date: g.startTimeUTC ?? g.gameDate,
+    game_date: g.startTimeUTC ? utcToEasternDate(g.startTimeUTC) : g.gameDate,
     home_team_id: g.homeTeam.id,
     away_team_id: g.awayTeam.id,
     home_team_abbreviation: g.homeTeam.abbrev,
