@@ -32,6 +32,7 @@ interface SkaterRow {
 }
 
 interface GoalieRow {
+  entity_id: string;
   player_name: string;
   team_abbreviation: string;
   toi: string;
@@ -57,7 +58,7 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
   const [goalies, setGoalies] = useState<GoalieRow[]>([]);
   const [schedule, setSchedule] = useState<ScheduleRow | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState<{ entityId: string; name: string } | null>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState<{ entityId: string; name: string; type: 'skater' | 'goalie' } | null>(null);
   const { evaluateQuery } = useMotherDuckClientState();
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -89,7 +90,7 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
 
         const [skaterResult, goalieResult, scheduleResult] = await Promise.all([
           evaluateQuery(
-            `SELECT * FROM nhl_box_scores.main.skater_stats WHERE game_id = '${safeGameId}' AND period = 'FullGame' ORDER BY team_abbreviation, CASE WHEN position = 'F' THEN 0 ELSE 1 END, toi DESC`
+            `SELECT * FROM nhl_box_scores.main.skater_stats WHERE game_id = '${safeGameId}' AND period = 'FullGame' ORDER BY team_abbreviation, toi DESC`
           ),
           evaluateQuery(
             `SELECT * FROM nhl_box_scores.main.goalie_stats WHERE game_id = '${safeGameId}' AND period = 'FullGame' ORDER BY team_abbreviation, starter DESC`
@@ -122,6 +123,7 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
         })) as SkaterRow[];
 
         const goalieRows = [...goalieResult.data.toRows()].map((row) => ({
+          entity_id: String(row.entity_id),
           player_name: String(row.player_name),
           team_abbreviation: String(row.team_abbreviation),
           toi: String(row.toi),
@@ -175,12 +177,6 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
 
   if (!gameId) return null;
 
-  const formatFaceoffPct = (wins: number, losses: number): string => {
-    const total = wins + losses;
-    if (total === 0) return '-';
-    return ((wins / total) * 100).toFixed(1);
-  };
-
   const formatSavePct = (pct: number): string => {
     if (pct === 0) return '-';
     return pct.toFixed(3).replace(/^0/, '');
@@ -188,56 +184,65 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
 
   const renderTeamSkaters = (teamAbbr: string, players: SkaterRow[]) => (
     <div className="mb-4">
-      <h3 className="text-sm font-bold mb-1 text-gray-700 dark:text-gray-300">
+      <h3 className="font-bold text-lg mb-1 dark:text-white">
         {getNHLTeamName(teamAbbr)} - Skaters
       </h3>
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs font-mono">
+      <div className="w-full">
+        <table className="min-w-full table-fixed tabular-nums">
+          <colgroup>
+            <col className="w-[24%]" />
+            <col className="w-[5%]" />
+            <col className="w-[8%]" />
+            <col className="w-[5%]" />
+            <col className="w-[5%]" />
+            <col className="w-[6%]" />
+            <col className="w-[6%]" />
+            <col className="w-[6%]" />
+            <col className="w-[6%]" />
+            <col className="w-[6%]" />
+            <col className="w-[6%]" />
+            <col className="w-[6%]" />
+            <col className="w-[6%]" />
+          </colgroup>
           <thead>
-            <tr className="border-b border-gray-300 dark:border-gray-600">
-              <th className="text-left py-1 px-1 sticky left-0 bg-white dark:bg-gray-900 min-w-[120px]">Player</th>
-              <th className="text-center py-1 px-1 min-w-[32px]">POS</th>
-              <th className="text-right py-1 px-1 min-w-[40px]">TOI</th>
-              <th className="text-right py-1 px-1 min-w-[24px]">G</th>
-              <th className="text-right py-1 px-1 min-w-[24px]">A</th>
-              <th className="text-right py-1 px-1 min-w-[28px]">PTS</th>
-              <th className="text-right py-1 px-1 min-w-[28px]">+/-</th>
-              <th className="text-right py-1 px-1 min-w-[28px]">PIM</th>
-              <th className="text-right py-1 px-1 min-w-[28px]">SOG</th>
-              <th className="text-right py-1 px-1 min-w-[28px]">HIT</th>
-              <th className="text-right py-1 px-1 min-w-[28px]">BLK</th>
-              <th className="text-right py-1 px-1 min-w-[24px]">GV</th>
-              <th className="text-right py-1 px-1 min-w-[24px]">TK</th>
-              <th className="text-right py-1 px-1 min-w-[36px]">FO%</th>
+            <tr className="bg-gray-100 dark:bg-gray-700">
+              <th className="md:px-2 md:py-0.5 p-0.5 text-left md:text-base text-xs dark:text-gray-200 bg-transparent">Player</th>
+              <th className="md:px-2 md:py-0.5 p-0.5 text-center md:text-base text-xs dark:text-gray-200 bg-transparent">POS</th>
+              <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">TOI</th>
+              <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">G</th>
+              <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">A</th>
+              <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">PTS</th>
+              <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">+/-</th>
+              <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">PIM</th>
+              <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">SOG</th>
+              <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">HIT</th>
+              <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">BLK</th>
+              <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">GV</th>
+              <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">TK</th>
             </tr>
           </thead>
           <tbody>
             {players.map((p, i) => (
               <tr
                 key={`${p.player_name}-${i}`}
-                className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800"
+                className={i % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}
               >
-                <td className="text-left py-1 px-1 sticky left-0 bg-white dark:bg-gray-900 truncate max-w-[140px]">
-                  <button
-                    className="text-blue-600 dark:text-blue-400 hover:underline text-left"
-                    onClick={() => setSelectedPlayer({ entityId: p.entity_id, name: p.player_name })}
-                  >
-                    {p.player_name}
-                  </button>
-                </td>
-                <td className="text-center py-1 px-1">{p.position}</td>
-                <td className="text-right py-1 px-1">{p.toi}</td>
-                <td className="text-right py-1 px-1">{p.goals}</td>
-                <td className="text-right py-1 px-1">{p.assists}</td>
-                <td className="text-right py-1 px-1">{p.points}</td>
-                <td className="text-right py-1 px-1">{p.plus_minus > 0 ? `+${p.plus_minus}` : p.plus_minus}</td>
-                <td className="text-right py-1 px-1">{p.pim}</td>
-                <td className="text-right py-1 px-1">{p.sog}</td>
-                <td className="text-right py-1 px-1">{p.hits}</td>
-                <td className="text-right py-1 px-1">{p.blocked_shots}</td>
-                <td className="text-right py-1 px-1">{p.giveaways}</td>
-                <td className="text-right py-1 px-1">{p.takeaways}</td>
-                <td className="text-right py-1 px-1">{formatFaceoffPct(p.faceoff_wins, p.faceoff_losses)}</td>
+                <td
+                  className="md:px-2 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                  onClick={() => setSelectedPlayer({ entityId: p.entity_id, name: p.player_name, type: 'skater' })}
+                >{p.player_name}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-center md:text-base text-xs dark:text-gray-200">{p.position}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.toi}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.goals}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.assists}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.points}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.plus_minus > 0 ? `+${p.plus_minus}` : p.plus_minus}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.pim}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.sog}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.hits}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.blocked_shots}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.giveaways}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.takeaways}</td>
               </tr>
             ))}
           </tbody>
@@ -248,35 +253,47 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
 
   const renderTeamGoalies = (teamAbbr: string, players: GoalieRow[]) => (
     <div className="mb-6">
-      <h3 className="text-sm font-bold mb-1 text-gray-700 dark:text-gray-300">
+      <h3 className="font-bold text-lg mb-1 dark:text-white">
         {getNHLTeamName(teamAbbr)} - Goalies
       </h3>
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs font-mono">
+      <div className="w-full">
+        <table className="min-w-full table-fixed tabular-nums">
+          <colgroup>
+            <col className="w-[28%]" />
+            <col className="w-[12%]" />
+            <col className="w-[10%]" />
+            <col className="w-[10%]" />
+            <col className="w-[10%]" />
+            <col className="w-[15%]" />
+            <col className="w-[10%]" />
+          </colgroup>
           <thead>
-            <tr className="border-b border-gray-300 dark:border-gray-600">
-              <th className="text-left py-1 px-1 sticky left-0 bg-white dark:bg-gray-900 min-w-[120px]">Player</th>
-              <th className="text-right py-1 px-1 min-w-[40px]">TOI</th>
-              <th className="text-right py-1 px-1 min-w-[28px]">SA</th>
-              <th className="text-right py-1 px-1 min-w-[28px]">GA</th>
-              <th className="text-right py-1 px-1 min-w-[28px]">SV</th>
-              <th className="text-right py-1 px-1 min-w-[40px]">SV%</th>
-              <th className="text-center py-1 px-1 min-w-[32px]">DEC</th>
+            <tr className="bg-gray-100 dark:bg-gray-700">
+              <th className="md:px-2 md:py-0.5 p-0.5 text-left md:text-base text-xs dark:text-gray-200 bg-transparent">Player</th>
+              <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">TOI</th>
+              <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">SA</th>
+              <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">GA</th>
+              <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">SV</th>
+              <th className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200 bg-transparent">SV%</th>
+              <th className="md:px-2 md:py-0.5 p-0.5 text-center md:text-base text-xs dark:text-gray-200 bg-transparent">DEC</th>
             </tr>
           </thead>
           <tbody>
             {players.map((g, i) => (
               <tr
                 key={`${g.player_name}-${i}`}
-                className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800"
+                className={i % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}
               >
-                <td className="text-left py-1 px-1 sticky left-0 bg-white dark:bg-gray-900 truncate max-w-[140px]">{g.player_name}</td>
-                <td className="text-right py-1 px-1">{g.toi}</td>
-                <td className="text-right py-1 px-1">{g.shots_against}</td>
-                <td className="text-right py-1 px-1">{g.goals_against}</td>
-                <td className="text-right py-1 px-1">{g.saves}</td>
-                <td className="text-right py-1 px-1">{formatSavePct(g.save_pct)}</td>
-                <td className="text-center py-1 px-1">{g.decision || '-'}</td>
+                <td
+                  className="md:px-2 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                  onClick={() => setSelectedPlayer({ entityId: g.entity_id, name: g.player_name, type: 'goalie' })}
+                >{g.player_name}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{g.toi}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{g.shots_against}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{g.goals_against}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{g.saves}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{formatSavePct(g.save_pct)}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-center md:text-base text-xs dark:text-gray-200">{g.decision || '-'}</td>
               </tr>
             ))}
           </tbody>
@@ -362,11 +379,14 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
             ) : null}
           </div>
           {selectedPlayer && (
-            <NHLPlayerGameLogPanel
-              entityId={selectedPlayer.entityId}
-              playerName={selectedPlayer.name}
-              onClose={() => setSelectedPlayer(null)}
-            />
+            <div className="fixed inset-0 z-[60] bg-black bg-opacity-50">
+              <NHLPlayerGameLogPanel
+                entityId={selectedPlayer.entityId}
+                playerName={selectedPlayer.name}
+                playerType={selectedPlayer.type}
+                onClose={() => setSelectedPlayer(null)}
+              />
+            </div>
           )}
         </div>
       </div>
