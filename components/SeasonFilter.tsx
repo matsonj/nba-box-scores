@@ -25,9 +25,21 @@ interface SeasonFilterProps {
   basePath?: string;
   onFilterChange?: (filters: { season?: number; type?: SeasonType; team?: string }) => void;
   playerSuggestions?: PlayerSuggestion[];
+  teamAbbreviations?: readonly string[];
+  seasons?: number[];
+  formatSeason?: (year: number) => string;
+  defaultSeason?: number;
 }
 
-export default function SeasonFilter({ basePath = '/', onFilterChange, playerSuggestions = [] }: SeasonFilterProps) {
+export default function SeasonFilter({
+  basePath = '/',
+  onFilterChange,
+  playerSuggestions = [],
+  teamAbbreviations = TEAM_ABBREVIATIONS,
+  seasons = availableSeasons,
+  formatSeason = formatSeasonLabel,
+  defaultSeason,
+}: SeasonFilterProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -35,7 +47,7 @@ export default function SeasonFilter({ basePath = '/', onFilterChange, playerSug
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const currentSeason = getSeasonYearFromDate(new Date());
+  const currentSeason = defaultSeason ?? getSeasonYearFromDate(new Date());
   const season = searchParams?.get('season') ? Number(searchParams.get('season')) : currentSeason;
   const seasonType = (searchParams?.get('type') as SeasonType) || 'all';
   const team = searchParams?.get('team') || '';
@@ -95,8 +107,8 @@ export default function SeasonFilter({ basePath = '/', onFilterChange, playerSug
             className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm w-32"
           >
             <option value="">All Seasons</option>
-            {availableSeasons.map((year) => (
-              <option key={year} value={year}>{formatSeasonLabel(year)}</option>
+            {seasons.map((year) => (
+              <option key={year} value={year}>{formatSeason(year)}</option>
             ))}
           </select>
           <select
@@ -114,7 +126,7 @@ export default function SeasonFilter({ basePath = '/', onFilterChange, playerSug
             className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm w-32"
           >
             <option value="">All Teams</option>
-            {TEAM_ABBREVIATIONS.map((abbr) => (
+            {teamAbbreviations.map((abbr) => (
               <option key={abbr} value={abbr}>{abbr}</option>
             ))}
           </select>

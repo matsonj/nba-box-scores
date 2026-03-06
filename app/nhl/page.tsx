@@ -7,9 +7,11 @@ import { useSearchParams } from 'next/navigation';
 import { ScheduleWithBoxScore } from '../types/extended';
 import GameCard from '@/components/GameCard';
 import SeasonFilter from '@/components/SeasonFilter';
-import { getNHLTeamName } from '@/lib/nhl/teams';
+import { getNHLTeamName, NHL_TEAM_ABBREVIATIONS } from '@/lib/nhl/teams';
 import { parseGameDate } from '@/lib/dateUtils';
 import { nhlConfig } from '@/lib/sports/nhl';
+
+const nhlSeasons = nhlConfig.getAvailableSeasons();
 import { useNHLSchedule, useNHLBoxScores, useNHLPlayerIndex } from '@/hooks/useNHLGameData';
 import { useDataLoader } from '@/lib/dataLoader';
 import type { GameDataFilters, PlayerIndexEntry } from '@/hooks/useGameData';
@@ -295,7 +297,14 @@ function NHLContent() {
 
   return (
     <div className="container mx-auto px-4 py-8 font-mono">
-      <SeasonFilter playerSuggestions={playerSuggestions} />
+      <SeasonFilter
+        basePath="/nhl"
+        playerSuggestions={playerSuggestions}
+        teamAbbreviations={NHL_TEAM_ABBREVIATIONS}
+        seasons={nhlSeasons}
+        formatSeason={nhlConfig.formatSeasonLabel}
+        defaultSeason={2024}
+      />
       <NHLBoxScorePanel gameId={selectedGameId} onClose={() => setSelectedGameId(null)} />
 
       {loading ? (

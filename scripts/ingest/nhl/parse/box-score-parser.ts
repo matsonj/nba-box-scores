@@ -88,7 +88,7 @@ function parseSkater(
     points: num(skater.points),
     plus_minus: num(skater.plusMinus),
     pim: num(skater.pim),
-    shots: num(skater.shots),
+    shots: num(skater.sog),
     hits: num(skater.hits),
     blocked_shots: num(skater.blockedShots),
     takeaways: num(skater.takeaways),

@@ -7,9 +7,11 @@ interface PeriodScore {
 }
 
 export function getPeriodsToShow(periodScores?: PeriodScore[]): number[] {
-  const maxPeriod = periodScores
-    ? Math.max(...periodScores.map(ps => parseInt(ps.period)))
-    : REGULAR_PERIODS;
+  if (!periodScores || periodScores.length === 0) {
+    return [];
+  }
+
+  const maxPeriod = Math.max(...periodScores.map(ps => parseInt(ps.period)));
 
   const count = Math.min(Math.max(maxPeriod, REGULAR_PERIODS), MAX_PERIODS);
   return Array.from({ length: count }, (_, i) => i + 1);

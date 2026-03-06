@@ -26,7 +26,7 @@ export interface NHLSkaterStats {
   points: number;
   plusMinus: number;
   pim: number;
-  shots: number;
+  sog: number; // shots on goal (NHL API field name)
   hits: number;
   blockedShots: number;
   powerPlayGoals: number;
