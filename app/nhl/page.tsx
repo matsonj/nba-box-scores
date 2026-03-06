@@ -51,9 +51,8 @@ function NHLContent() {
   const { fetchBoxScores } = useNHLBoxScores();
   const { fetchPlayerIndex } = useNHLPlayerIndex();
 
-  // Derive filters from URL params — default to current NHL season
-  const currentSeason = nhlConfig.getSeasonYear(new Date());
-  const season = searchParams?.get('season') ? Number(searchParams.get('season')) : currentSeason;
+  // Derive filters from URL params — default to 2024 (latest season with data)
+  const season = searchParams?.get('season') ? Number(searchParams.get('season')) : 2024;
   const seasonType = searchParams?.get('type') || undefined;
   const team = searchParams?.get('team') || '';
   const player = searchParams?.get('player') || '';

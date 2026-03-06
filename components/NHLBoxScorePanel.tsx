@@ -308,6 +308,11 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
               <div className="flex items-center justify-center h-[calc(100vh-120px)]">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-300 dark:border-gray-600 border-t-blue-600 dark:border-t-blue-400" />
               </div>
+            ) : schedule && skaters.length === 0 && goalies.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-[calc(100vh-120px)] text-gray-500 dark:text-gray-400">
+                <p className="text-lg">No box score data available for this game yet.</p>
+                <p className="text-sm mt-2">Try an earlier game — data is being backfilled.</p>
+              </div>
             ) : schedule ? (
               <>
                 <div className="mb-3">
