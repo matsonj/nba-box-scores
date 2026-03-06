@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react';
+import NHLBoxScorePanel from '@/components/NHLBoxScorePanel';
 import { format, parseISO } from 'date-fns';
 import { useSearchParams } from 'next/navigation';
 import { ScheduleWithBoxScore } from '../types/extended';
@@ -42,6 +43,7 @@ function NHLContent() {
   const [loadingMessages, setLoadingMessages] = useState<Array<{ message: string; completed: boolean }>>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [playerIndex, setPlayerIndex] = useState<PlayerIndexEntry[]>([]);
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const dataLoader = useDataLoader();
   const { fetchSchedule } = useNHLSchedule();
   const { fetchBoxScores } = useNHLBoxScores();
@@ -294,6 +296,7 @@ function NHLContent() {
   return (
     <div className="container mx-auto px-4 py-8 font-mono">
       <SeasonFilter playerSuggestions={playerSuggestions} />
+      <NHLBoxScorePanel gameId={selectedGameId} onClose={() => setSelectedGameId(null)} />
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
@@ -315,7 +318,7 @@ function NHLContent() {
                     <div key={game.game_id}>
                       <GameCard
                         game={game}
-                        onGameSelect={() => {/* NHL box scores coming soon */}}
+                        onGameSelect={setSelectedGameId}
                       />
                     </div>
                   ))}
