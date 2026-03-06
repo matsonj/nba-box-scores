@@ -45,7 +45,9 @@ export interface NHLGoalieStats {
   name: LocalizedString;
   sweaterNumber: number;
   toi: string; // "MM:SS" format
-  saveShotsAgainst?: string; // "saves-shotsAgainst" format
+  saves?: number;
+  shotsAgainst?: number;
+  saveShotsAgainst?: string; // "saves/shotsAgainst" format (fallback)
   savePctg?: number;
   goalsAgainst?: number;
   evenStrengthGoalsAgainst?: number;

@@ -43,12 +43,19 @@ function parseFaceoffs(skater: NHLSkaterStats): { wins: number; losses: number }
 }
 
 /**
- * Parse goalie saves/shots from the saveShotsAgainst field.
- * Format: "saves-shotsAgainst" (e.g., "28-31") or may be undefined.
+ * Parse goalie saves/shots. The NHL API provides these as:
+ * - Separate numeric fields: goalie.saves and goalie.shotsAgainst
+ * - Combined string: goalie.saveShotsAgainst = "19/22" (saves/shotsAgainst)
+ * We prefer the numeric fields and fall back to parsing the string.
  */
 function parseSaveShotsAgainst(goalie: NHLGoalieStats): { saves: number; shotsAgainst: number } {
+  // Prefer explicit numeric fields
+  if (goalie.saves != null && goalie.shotsAgainst != null) {
+    return { saves: num(goalie.saves), shotsAgainst: num(goalie.shotsAgainst) };
+  }
+  // Fallback: parse "saves/shotsAgainst" string (slash-separated)
   if (goalie.saveShotsAgainst) {
-    const parts = goalie.saveShotsAgainst.split('-');
+    const parts = goalie.saveShotsAgainst.split('/');
     if (parts.length === 2) {
       return {
         saves: parseInt(parts[0], 10) || 0,
