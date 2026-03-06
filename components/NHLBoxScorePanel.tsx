@@ -108,7 +108,7 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
           points: Number(row.points),
           plus_minus: Number(row.plus_minus),
           pim: Number(row.pim),
-          sog: Number(row.sog),
+          sog: Number(row.shots),
           hits: Number(row.hits),
           blocked_shots: Number(row.blocked_shots),
           giveaways: Number(row.giveaways),

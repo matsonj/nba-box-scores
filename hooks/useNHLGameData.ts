@@ -12,7 +12,8 @@ import { GameDataFilters, PlayerIndexEntry } from './useGameData';
 // Module-level flag to ensure we only ATTACH once per session
 let nhlDatabaseAttached = false;
 
-async function ensureNHLDatabase(evaluateQuery: (sql: string) => Promise<unknown>): Promise<void> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function ensureNHLDatabase(evaluateQuery: (sql: string) => Promise<any>): Promise<void> {
   if (nhlDatabaseAttached) return;
   await evaluateQuery(`ATTACH IF NOT EXISTS 'md:nhl_box_scores'`);
   nhlDatabaseAttached = true;
