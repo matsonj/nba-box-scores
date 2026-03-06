@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { getNHLTeamName } from '@/lib/nhl/teams';
 import { sanitizeNumericId } from '@/lib/queryUtils';
+import NHLPlayerGameLogPanel from './NHLPlayerGameLogPanel';
 
 interface NHLBoxScorePanelProps {
   gameId: string | null;
@@ -11,6 +12,7 @@ interface NHLBoxScorePanelProps {
 }
 
 interface SkaterRow {
+  entity_id: string;
   player_name: string;
   team_abbreviation: string;
   position: string;
@@ -55,6 +57,7 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
   const [goalies, setGoalies] = useState<GoalieRow[]>([]);
   const [schedule, setSchedule] = useState<ScheduleRow | null>(null);
   const [loading, setLoading] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState<{ entityId: string; name: string } | null>(null);
   const { evaluateQuery } = useMotherDuckClientState();
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -99,6 +102,7 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
         if (cancelled) return;
 
         const skaterRows = [...skaterResult.data.toRows()].map((row) => ({
+          entity_id: String(row.entity_id),
           player_name: String(row.player_name),
           team_abbreviation: String(row.team_abbreviation),
           position: String(row.position),
@@ -213,7 +217,14 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
                 key={`${p.player_name}-${i}`}
                 className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800"
               >
-                <td className="text-left py-1 px-1 sticky left-0 bg-white dark:bg-gray-900 truncate max-w-[140px]">{p.player_name}</td>
+                <td className="text-left py-1 px-1 sticky left-0 bg-white dark:bg-gray-900 truncate max-w-[140px]">
+                  <button
+                    className="text-blue-600 dark:text-blue-400 hover:underline text-left"
+                    onClick={() => setSelectedPlayer({ entityId: p.entity_id, name: p.player_name })}
+                  >
+                    {p.player_name}
+                  </button>
+                </td>
                 <td className="text-center py-1 px-1">{p.position}</td>
                 <td className="text-right py-1 px-1">{p.toi}</td>
                 <td className="text-right py-1 px-1">{p.goals}</td>
@@ -350,6 +361,13 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
               </>
             ) : null}
           </div>
+          {selectedPlayer && (
+            <NHLPlayerGameLogPanel
+              entityId={selectedPlayer.entityId}
+              playerName={selectedPlayer.name}
+              onClose={() => setSelectedPlayer(null)}
+            />
+          )}
         </div>
       </div>
     </div>
