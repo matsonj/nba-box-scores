@@ -146,7 +146,7 @@ export async function processNHLSeason(
   if (config.force) {
     skipIds = new Set<string>();
   } else {
-    skipIds = await loader.getIngestedGameIds(seasonYear, seasonType);
+    skipIds = await loader.getIngestedGameIds(seasonYear, typeLabel);
   }
 
   // 3. Filter to games that need processing
