@@ -1,18 +1,21 @@
 'use client';
 
 import { useRef, useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, usePathname } from 'next/navigation';
 import DynamicStatsTable from '@/components/DynamicStatsTable';
 import { useDataLoader } from '@/lib/dataLoader';
 import { InformationCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { getSeasonYearFromDate } from '@/lib/seasonUtils';
 import type { SeasonType } from '@/lib/seasonUtils';
+import { getSportFromPathname } from '@/lib/sportUtils';
 
 function DynamicTablePopoverContent() {
   const [isOpen, setIsOpen] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const sport = getSportFromPathname(pathname ?? '/');
 
   // Create a stable dataLoader instance
   const dataLoader = useDataLoader();
@@ -93,11 +96,17 @@ function DynamicTablePopoverContent() {
               </div>
             </div>
             <div className="p-4 font-mono">
-              <DynamicStatsTable
-                key="dynamic-stats-table"
-                dataLoader={dataLoader}
-                filters={{ season, seasonType, team, player }}
-              />
+              {sport === 'nhl' ? (
+                <div className="flex items-center justify-center py-12 text-gray-500 dark:text-gray-400">
+                  Not yet implemented for NHL
+                </div>
+              ) : (
+                <DynamicStatsTable
+                  key="dynamic-stats-table"
+                  dataLoader={dataLoader}
+                  filters={{ season, seasonType, team, player }}
+                />
+              )}
             </div>
           </div>
         </div>
