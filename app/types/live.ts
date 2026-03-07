@@ -15,6 +15,7 @@ export interface LiveScoreGame {
     period: string;
     points: number;
   }[];
+  lastPlay?: string;
 }
 
 export interface LiveScoresResponse {
@@ -58,5 +59,56 @@ export interface LiveBoxScoreResponse {
   homeTeam: LiveBoxScoreTeam;
   awayTeam: LiveBoxScoreTeam;
 }
+
+// NHL live box score types (from /api/nhl-live-boxscore)
+
+export interface NHLLiveSkaterStats {
+  personId: string;
+  playerName: string;
+  position: 'F' | 'D';
+  toi: string;
+  goals: number;
+  assists: number;
+  points: number;
+  plusMinus: number;
+  pim: number;
+  shots: number;
+  hits: number;
+  blockedShots: number;
+  faceoffWins: number;
+  faceoffLosses: number;
+}
+
+export interface NHLLiveGoalieStats {
+  personId: string;
+  playerName: string;
+  position: 'G';
+  toi: string;
+  saves: number;
+  shotsAgainst: number;
+  goalsAgainst: number;
+  savePctg: number;
+  decision: string;
+  starter: boolean;
+}
+
+export interface NHLLiveBoxScoreTeam {
+  teamId: string;
+  teamAbbrev: string;
+  score: number;
+  skaters: NHLLiveSkaterStats[];
+  goalies: NHLLiveGoalieStats[];
+}
+
+export interface NHLLiveBoxScoreResponse {
+  gameId: string;
+  gameStatus: string;
+  lastPlay: string;
+  homeTeam: NHLLiveBoxScoreTeam;
+  awayTeam: NHLLiveBoxScoreTeam;
+}
+
+/** Union of all sport-specific live box score shapes */
+export type AnyLiveBoxScoreResponse = LiveBoxScoreResponse | NHLLiveBoxScoreResponse;
 
 export type CellState = 'active' | 'fading';

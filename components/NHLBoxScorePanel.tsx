@@ -4,11 +4,25 @@ import { useEffect, useState, useRef } from 'react';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { getNHLTeamName } from '@/lib/nhl/teams';
 import { sanitizeNumericId } from '@/lib/queryUtils';
+import { NHL_TEMP_TABLES } from '@/constants/tables';
 import NHLPlayerGameLogPanel from './NHLPlayerGameLogPanel';
+
+interface NHLLiveBoxScoreData {
+  skaters: SkaterRow[];
+  goalies: GoalieRow[];
+  schedule: ScheduleRow;
+  gameStatus: string;
+  lastPlay?: string;
+}
+
+type CellState = 'active' | 'fading';
 
 interface NHLBoxScorePanelProps {
   gameId: string | null;
   onClose: () => void;
+  liveData?: NHLLiveBoxScoreData | null;
+  highlightedCells?: Map<string, CellState>;
+  boldedCells?: Map<string, CellState>;
 }
 
 interface SkaterRow {
@@ -53,7 +67,7 @@ interface ScheduleRow {
   away_team_score: number;
 }
 
-export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelProps) {
+export default function NHLBoxScorePanel({ gameId, onClose, liveData, highlightedCells, boldedCells }: NHLBoxScorePanelProps) {
   const [skaters, setSkaters] = useState<SkaterRow[]>([]);
   const [goalies, setGoalies] = useState<GoalieRow[]>([]);
   const [schedule, setSchedule] = useState<ScheduleRow | null>(null);
@@ -61,6 +75,12 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
   const [selectedPlayer, setSelectedPlayer] = useState<{ entityId: string; name: string; type: 'skater' | 'goalie' } | null>(null);
   const { evaluateQuery } = useMotherDuckClientState();
   const panelRef = useRef<HTMLDivElement>(null);
+
+  const isLiveView = !!liveData;
+  const displaySkaters = isLiveView ? liveData.skaters : skaters;
+  const displayGoalies = (isLiveView ? liveData.goalies : goalies)
+    .filter((g) => g.toi !== '0:00' && g.toi !== '00:00' && g.toi !== '');
+  const displaySchedule = isLiveView ? liveData.schedule : schedule;
 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -74,7 +94,7 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
   }, [gameId]);
 
   useEffect(() => {
-    if (!gameId) return;
+    if (!gameId || isLiveView) return;
 
     let cancelled = false;
     setLoading(true);
@@ -86,17 +106,15 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
       try {
         const safeGameId = sanitizeNumericId(gameId);
 
-        await evaluateQuery(`ATTACH IF NOT EXISTS 'md:nhl_box_scores'`);
-
         const [skaterResult, goalieResult, scheduleResult] = await Promise.all([
           evaluateQuery(
-            `SELECT * FROM nhl_box_scores.main.skater_stats WHERE game_id = '${safeGameId}' AND period = 'FullGame' ORDER BY team_abbreviation, toi DESC`
+            `SELECT * FROM ${NHL_TEMP_TABLES.SKATER_STATS} WHERE game_id = '${safeGameId}' AND period = 'FullGame' ORDER BY team_abbreviation, toi DESC`
           ),
           evaluateQuery(
-            `SELECT * FROM nhl_box_scores.main.goalie_stats WHERE game_id = '${safeGameId}' AND period = 'FullGame' ORDER BY team_abbreviation, starter DESC`
+            `SELECT * FROM ${NHL_TEMP_TABLES.GOALIE_STATS} WHERE game_id = '${safeGameId}' AND period = 'FullGame' ORDER BY team_abbreviation, starter DESC`
           ),
           evaluateQuery(
-            `SELECT * FROM nhl_box_scores.main.schedule WHERE game_id = '${safeGameId}'`
+            `SELECT * FROM ${NHL_TEMP_TABLES.SCHEDULE} WHERE game_id = '${safeGameId}'`
           ),
         ]);
 
@@ -166,7 +184,7 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
     return () => {
       cancelled = true;
     };
-  }, [gameId, evaluateQuery]);
+  }, [gameId, evaluateQuery, isLiveView]);
 
   const handleClose = () => {
     setSkaters([]);
@@ -176,6 +194,23 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
   };
 
   if (!gameId) return null;
+
+  // Highlight helper: looks up personId:apiField in the highlight/bold maps
+  const getCellClasses = (personId: string, apiField: string): string => {
+    if (!highlightedCells && !boldedCells) return '';
+    const key = `${personId}:${apiField}`;
+    const classes: string[] = [];
+
+    const hState = highlightedCells?.get(key);
+    if (hState === 'active') classes.push('live-highlight-active');
+    else if (hState === 'fading') classes.push('live-highlight-fading');
+
+    const bState = boldedCells?.get(key);
+    if (bState === 'active') classes.push('live-bold-active');
+    else if (bState === 'fading') classes.push('live-bold-fading');
+
+    return classes.join(' ');
+  };
 
   const formatSavePct = (pct: number): string => {
     if (pct === 0) return '-';
@@ -232,15 +267,15 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
                   onClick={() => setSelectedPlayer({ entityId: p.entity_id, name: p.player_name, type: 'skater' })}
                 >{p.player_name}</td>
                 <td className="md:px-2 md:py-0.5 p-0.5 text-center md:text-base text-xs dark:text-gray-200">{p.position}</td>
-                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.toi}</td>
-                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.goals}</td>
-                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.assists}</td>
-                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.points}</td>
-                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.plus_minus > 0 ? `+${p.plus_minus}` : p.plus_minus}</td>
-                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.pim}</td>
-                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.sog}</td>
-                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.hits}</td>
-                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.blocked_shots}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200"><span className={getCellClasses(p.entity_id, 'toi')}>{p.toi}</span></td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200"><span className={getCellClasses(p.entity_id, 'goals')}>{p.goals}</span></td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200"><span className={getCellClasses(p.entity_id, 'assists')}>{p.assists}</span></td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200"><span className={getCellClasses(p.entity_id, 'points')}>{p.points}</span></td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200"><span className={getCellClasses(p.entity_id, 'plusMinus')}>{p.plus_minus > 0 ? `+${p.plus_minus}` : p.plus_minus}</span></td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200"><span className={getCellClasses(p.entity_id, 'pim')}>{p.pim}</span></td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200"><span className={getCellClasses(p.entity_id, 'shots')}>{p.sog}</span></td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200"><span className={getCellClasses(p.entity_id, 'hits')}>{p.hits}</span></td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200"><span className={getCellClasses(p.entity_id, 'blockedShots')}>{p.blocked_shots}</span></td>
                 <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.giveaways}</td>
                 <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{p.takeaways}</td>
               </tr>
@@ -288,11 +323,11 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
                   className="md:px-2 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
                   onClick={() => setSelectedPlayer({ entityId: g.entity_id, name: g.player_name, type: 'goalie' })}
                 >{g.player_name}</td>
-                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{g.toi}</td>
-                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{g.shots_against}</td>
-                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{g.goals_against}</td>
-                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{g.saves}</td>
-                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200">{formatSavePct(g.save_pct)}</td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200"><span className={getCellClasses(g.entity_id, 'toi')}>{g.toi}</span></td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200"><span className={getCellClasses(g.entity_id, 'shotsAgainst')}>{g.shots_against}</span></td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200"><span className={getCellClasses(g.entity_id, 'goalsAgainst')}>{g.goals_against}</span></td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200"><span className={getCellClasses(g.entity_id, 'saves')}>{g.saves}</span></td>
+                <td className="md:px-2 md:py-0.5 p-0.5 text-right md:text-base text-xs dark:text-gray-200"><span className={getCellClasses(g.entity_id, 'savePctg')}>{formatSavePct(g.save_pct)}</span></td>
                 <td className="md:px-2 md:py-0.5 p-0.5 text-center md:text-base text-xs dark:text-gray-200">{g.decision || '-'}</td>
               </tr>
             ))}
@@ -303,9 +338,9 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
   );
 
   // Group players by team
-  const teams = schedule
-    ? [schedule.away_team_abbreviation, schedule.home_team_abbreviation]
-    : [...new Set(skaters.map((s) => s.team_abbreviation))];
+  const teams = displaySchedule
+    ? [displaySchedule.away_team_abbreviation, displaySchedule.home_team_abbreviation]
+    : [...new Set(displaySkaters.map((s) => s.team_abbreviation))];
 
   return (
     <div
@@ -319,7 +354,16 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
         tabIndex={-1}
       >
         <div className="relative h-full">
-          <div className="absolute top-2 right-2 z-50">
+          <div className="absolute top-2 right-2 z-50 flex items-center gap-1.5">
+            {isLiveView && (
+              <div className="flex items-center gap-1.5 mr-1">
+                <span className="relative inline-flex items-center justify-center w-4 h-4 flex-shrink-0 text-green-600 dark:text-green-400">
+                  <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+                  <span className="absolute inline-block w-3.5 h-3.5 rounded-full bg-green-500 opacity-30 animate-ping" />
+                </span>
+                <span className="text-xs text-green-600 dark:text-green-400 font-medium">LIVE</span>
+              </div>
+            )}
             <button
               onClick={handleClose}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
@@ -332,41 +376,54 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
           </div>
 
           <div className="p-3 md:text-base text-xs">
-            {loading ? (
+            {loading && !isLiveView ? (
               <div className="flex items-center justify-center h-[calc(100vh-120px)]">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-300 dark:border-gray-600 border-t-blue-600 dark:border-t-blue-400" />
               </div>
-            ) : schedule && skaters.length === 0 && goalies.length === 0 ? (
+            ) : displaySchedule && displaySkaters.length === 0 && displayGoalies.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-[calc(100vh-120px)] text-gray-500 dark:text-gray-400">
                 <p className="text-lg">No box score data available for this game yet.</p>
                 <p className="text-sm mt-2">Try an earlier game — data is being backfilled.</p>
               </div>
-            ) : schedule ? (
+            ) : displaySchedule ? (
               <>
                 <div className="mb-3">
                   <h2 className="md:text-2xl text-lg text-center dark:text-white">
-                    {schedule.away_team_score > schedule.home_team_score ? (
+                    {displaySchedule.away_team_score > displaySchedule.home_team_score ? (
                       <>
-                        <span className="font-bold">* {schedule.away_team_abbreviation} {schedule.away_team_score}</span>
+                        <span className="font-bold">* {displaySchedule.away_team_abbreviation} {displaySchedule.away_team_score}</span>
                         {' - '}
-                        <span>{schedule.home_team_abbreviation} {schedule.home_team_score}</span>
+                        <span>{displaySchedule.home_team_abbreviation} {displaySchedule.home_team_score}</span>
                       </>
                     ) : (
                       <>
-                        <span>{schedule.away_team_abbreviation} {schedule.away_team_score}</span>
+                        <span>{displaySchedule.away_team_abbreviation} {displaySchedule.away_team_score}</span>
                         {' - '}
-                        <span className="font-bold">{schedule.home_team_abbreviation} {schedule.home_team_score} *</span>
+                        <span className="font-bold">{displaySchedule.home_team_abbreviation} {displaySchedule.home_team_score} *</span>
                       </>
                     )}
                   </h2>
-                  <p className="text-gray-600 dark:text-gray-400 text-center mt-1 md:text-base text-sm">
-                    {new Date(schedule.game_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                  </p>
+                  {isLiveView && liveData ? (
+                    <>
+                      <p className="text-gray-500 dark:text-gray-400 text-center mt-1 text-base">
+                        {liveData.gameStatus}
+                      </p>
+                      {liveData.lastPlay && (
+                        <p className="text-gray-500 dark:text-gray-400 text-center mt-1 text-sm italic truncate max-w-md mx-auto">
+                          {liveData.lastPlay}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-gray-600 dark:text-gray-400 text-center mt-1 md:text-base text-sm">
+                      {new Date(displaySchedule.game_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </p>
+                  )}
                 </div>
                 <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 120px)', padding: 0, paddingRight: '2px' }}>
                   {teams.map((teamAbbr) => {
-                    const teamSkaters = skaters.filter((s) => s.team_abbreviation === teamAbbr);
-                    const teamGoalies = goalies.filter((g) => g.team_abbreviation === teamAbbr);
+                    const teamSkaters = displaySkaters.filter((s) => s.team_abbreviation === teamAbbr);
+                    const teamGoalies = displayGoalies.filter((g) => g.team_abbreviation === teamAbbr);
                     return (
                       <div key={teamAbbr}>
                         {renderTeamSkaters(teamAbbr, teamSkaters)}
@@ -385,6 +442,7 @@ export default function NHLBoxScorePanel({ gameId, onClose }: NHLBoxScorePanelPr
                 playerName={selectedPlayer.name}
                 playerType={selectedPlayer.type}
                 onClose={() => setSelectedPlayer(null)}
+                isLive={isLiveView}
               />
             </div>
           )}

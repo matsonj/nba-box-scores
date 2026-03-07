@@ -1,14 +1,24 @@
 import { ScheduleWithBoxScore } from '@/app/types/extended';
 import { getPeriodsToShow, getPeriodLabel, getPeriodPoints } from '@/lib/periodUtils';
 
+interface LiveStatus {
+  period: string;
+  clock: string;
+  status: string;
+}
+
 interface GameCardProps {
   game: ScheduleWithBoxScore;
   loading?: boolean;
   onGameSelect?: (gameId: string) => void;
+  regularPeriods?: number;
+  maxPeriods?: number;
+  liveStatus?: LiveStatus;
 }
 
-export default function GameCard({ game, loading: isLoading, onGameSelect }: GameCardProps) {
-  const periodsToShow = getPeriodsToShow(game.periodScores);
+export default function GameCard({ game, loading: isLoading, onGameSelect, regularPeriods, maxPeriods, liveStatus }: GameCardProps) {
+  const isLive = !!liveStatus;
+  const periodsToShow = getPeriodsToShow(game.periodScores, regularPeriods, maxPeriods, isLive);
 
   return (
     <div
@@ -32,7 +42,7 @@ export default function GameCard({ game, loading: isLoading, onGameSelect }: Gam
               <th className="text-left">Team</th>
               {periodsToShow.map(period => (
                 <th key={period} className="text-center w-8">
-                  {getPeriodLabel(period)}
+                  {getPeriodLabel(period, regularPeriods)}
                 </th>
               ))}
               <th className="text-center w-8">T</th>
@@ -60,6 +70,13 @@ export default function GameCard({ game, loading: isLoading, onGameSelect }: Gam
           </tbody>
         </table>
       </div>
+
+      {/* Live game status */}
+      {liveStatus && (
+        <p className="text-center font-bold text-sm mt-2 text-gray-900 dark:text-gray-100">
+          {liveStatus.status}
+        </p>
+      )}
 
     </div>
   );

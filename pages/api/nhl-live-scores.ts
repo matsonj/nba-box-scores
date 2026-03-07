@@ -18,10 +18,14 @@ function mapGameStatus(game: Record<string, unknown>): string {
     case 'PRE':
       return String(game.startTimeUTC || 'Scheduled');
     case 'LIVE':
-    case 'CRIT':
-      return period > 3
-        ? `OT ${timeRemaining}`
-        : `P${period} ${timeRemaining}`;
+    case 'CRIT': {
+      const periodLabel = period > 3
+        ? (period === 4 ? 'OT' : `OT${period - 3}`)
+        : period > 0
+          ? `P${period}`
+          : 'Pre-game';
+      return timeRemaining ? `${periodLabel} ${timeRemaining}` : periodLabel;
+    }
     case 'FINAL':
     case 'OFF':
       return period > 3 ? 'Final/OT' : 'Final';
@@ -67,6 +71,31 @@ function buildPeriodScores(
   return scores;
 }
 
+function getLastGoalDescription(game: Record<string, unknown>): string {
+  const goals = game.goals as Record<string, unknown>[] | undefined;
+  if (!goals || goals.length === 0) return '';
+
+  const lastGoal = goals[goals.length - 1];
+  const scorer = lastGoal.name as Record<string, unknown> | undefined;
+  const scorerName = String(scorer?.default || '');
+  const teamAbbrev = (lastGoal.teamAbbrev as Record<string, unknown>)?.default || lastGoal.teamAbbrev;
+  const timeInPeriod = String(lastGoal.timeInPeriod || '');
+  const period = Number(lastGoal.period || 0);
+  const strength = String(lastGoal.strength || '');
+  const goalsToDate = lastGoal.goalsToDate != null ? ` (${lastGoal.goalsToDate})` : '';
+
+  const periodLabel = period > 3 ? 'OT' : `P${period}`;
+  const strengthLabel = strength === 'pp' ? ' (PP)' : strength === 'sh' ? ' (SH)' : '';
+
+  const assists = lastGoal.assists as Record<string, unknown>[] | undefined;
+  let assistStr = '';
+  if (assists && assists.length > 0) {
+    assistStr = ' from ' + assists.map(a => String((a.name as Record<string, unknown>)?.default || '')).join(', ');
+  }
+
+  return `GOAL: ${String(teamAbbrev)} — ${scorerName}${goalsToDate}${assistStr}${strengthLabel} (${periodLabel} ${timeInPeriod})`;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   res.setHeader('Access-Control-Allow-Origin', process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
@@ -110,6 +139,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         period: String(game.period ?? 0),
         clock: String((game.clock as Record<string, unknown>)?.timeRemaining ?? ''),
         periodScores: buildPeriodScores(game),
+        lastPlay: getLastGoalDescription(game) || undefined,
       };
     });
 

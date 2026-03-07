@@ -4,19 +4,66 @@ import { useCallback } from 'react';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { Schedule, TeamStats } from '@/types/schema';
 import { getNHLTeamName } from '@/lib/nhl/teams';
-import { NHL_SOURCE_TABLES } from '@/constants/tables';
+import { NHL_SOURCE_TABLES, NHL_TEMP_TABLES } from '@/constants/tables';
 import { utcToLocalDate } from '@/lib/dateUtils';
 import type { SeasonType } from '@/lib/seasonUtils';
 import { GameDataFilters, PlayerIndexEntry } from './useGameData';
 
-// Module-level flag to ensure we only ATTACH once per session
-let nhlDatabaseAttached = false;
-
+// Track cache state per evaluateQuery instance — automatically invalidates
+// when the MotherDuck connection drops and a new evaluateQuery is created.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function ensureNHLDatabase(evaluateQuery: (sql: string) => Promise<any>): Promise<void> {
-  if (nhlDatabaseAttached) return;
+type EvalFn = (sql: string) => Promise<any>;
+const cacheState = new WeakMap<EvalFn, { attached: boolean; seasonKey: string | null }>();
+
+function getCache(evaluateQuery: EvalFn) {
+  let state = cacheState.get(evaluateQuery);
+  if (!state) {
+    state = { attached: false, seasonKey: null };
+    cacheState.set(evaluateQuery, state);
+  }
+  return state;
+}
+
+async function ensureNHLDatabase(evaluateQuery: EvalFn): Promise<void> {
+  const cache = getCache(evaluateQuery);
+  if (cache.attached) return;
   await evaluateQuery(`ATTACH IF NOT EXISTS 'md:nhl_box_scores'`);
-  nhlDatabaseAttached = true;
+  cache.attached = true;
+}
+
+async function ensureNHLTempTables(evaluateQuery: EvalFn, filters?: GameDataFilters): Promise<void> {
+  await ensureNHLDatabase(evaluateQuery);
+
+  const cache = getCache(evaluateQuery);
+  const seasonKey = `${filters?.seasonYear ?? 'all'}-${filters?.seasonType ?? 'all'}`;
+  if (cache.seasonKey === seasonKey) return;
+
+  const whereClause = buildNHLSeasonWhereClause(filters);
+  const joinWhereClause = buildNHLSeasonWhereClause(filters, 's');
+
+  const queries = [
+    `CREATE OR REPLACE TEMP TABLE ${NHL_TEMP_TABLES.SCHEDULE} AS
+     SELECT * FROM ${NHL_SOURCE_TABLES.SCHEDULE}
+     WHERE 1=1${whereClause}`,
+
+    `CREATE OR REPLACE TEMP TABLE ${NHL_TEMP_TABLES.TEAM_STATS} AS
+     SELECT t.* FROM ${NHL_SOURCE_TABLES.TEAM_STATS} t
+     JOIN ${NHL_SOURCE_TABLES.SCHEDULE} s ON t.game_id = s.game_id
+     WHERE 1=1${joinWhereClause}`,
+
+    `CREATE OR REPLACE TEMP TABLE ${NHL_TEMP_TABLES.SKATER_STATS} AS
+     SELECT ss.* FROM ${NHL_SOURCE_TABLES.SKATER_STATS} ss
+     JOIN ${NHL_SOURCE_TABLES.SCHEDULE} s ON ss.game_id = s.game_id
+     WHERE 1=1${joinWhereClause}`,
+
+    `CREATE OR REPLACE TEMP TABLE ${NHL_TEMP_TABLES.GOALIE_STATS} AS
+     SELECT g.* FROM ${NHL_SOURCE_TABLES.GOALIE_STATS} g
+     JOIN ${NHL_SOURCE_TABLES.SCHEDULE} s ON g.game_id = s.game_id
+     WHERE 1=1${joinWhereClause}`,
+  ];
+
+  await Promise.all(queries.map(query => evaluateQuery(query)));
+  cache.seasonKey = seasonKey;
 }
 
 function buildNHLSeasonWhereClause(filters?: GameDataFilters, alias?: string): string {
@@ -63,11 +110,9 @@ export function useNHLSchedule() {
 
   const fetchSchedule = useCallback(async (filters?: GameDataFilters) => {
     try {
-      await ensureNHLDatabase(evaluateQuery);
-      const whereClause = buildNHLSeasonWhereClause(filters);
+      await ensureNHLTempTables(evaluateQuery, filters);
       const result = await evaluateQuery(`
-        SELECT * FROM ${NHL_SOURCE_TABLES.SCHEDULE}
-        WHERE 1=1${whereClause}
+        SELECT * FROM ${NHL_TEMP_TABLES.SCHEDULE}
       `);
 
       const rows = result.data.toRows() as unknown as Schedule[];
@@ -104,29 +149,14 @@ export function useNHLBoxScores() {
 
   const fetchBoxScores = useCallback(async (filters?: GameDataFilters) => {
     try {
-      await ensureNHLDatabase(evaluateQuery);
+      await ensureNHLTempTables(evaluateQuery, filters);
 
-      // When filters are active, join with schedule to limit results
-      let query: string;
-      if (filters?.seasonYear || (filters?.seasonType && filters.seasonType !== 'all')) {
-        const whereClause = buildNHLSeasonWhereClause(filters, 's');
-        query = `
-          SELECT ts.game_id, ts.team_abbreviation, ts.period, ts.points
-          FROM ${NHL_SOURCE_TABLES.TEAM_STATS} ts
-          JOIN ${NHL_SOURCE_TABLES.SCHEDULE} s ON ts.game_id = s.game_id
-          WHERE ts.period != 'FullGame'${whereClause}
-          ORDER BY ts.game_id, ts.team_abbreviation, CAST(ts.period AS INTEGER)
-        `;
-      } else {
-        query = `
-          SELECT game_id, team_abbreviation, period, points
-          FROM ${NHL_SOURCE_TABLES.TEAM_STATS}
-          WHERE period != 'FullGame'
-          ORDER BY game_id, team_abbreviation, CAST(period AS INTEGER)
-        `;
-      }
-
-      const result = await evaluateQuery(query);
+      const result = await evaluateQuery(`
+        SELECT game_id, team_abbreviation, period, points
+        FROM ${NHL_TEMP_TABLES.TEAM_STATS}
+        WHERE period != 'FullGame'
+        ORDER BY game_id, team_abbreviation, CAST(period AS INTEGER)
+      `);
       const periodScores = result.data.toRows() as unknown as TeamStats[];
 
       const gameScores = new Map<string, Array<{ teamId: string; period: string; points: number }>>();
@@ -160,26 +190,13 @@ export function useNHLPlayerIndex() {
 
   const fetchPlayerIndex = useCallback(async (filters?: GameDataFilters): Promise<PlayerIndexEntry[]> => {
     try {
-      await ensureNHLDatabase(evaluateQuery);
+      await ensureNHLTempTables(evaluateQuery, filters);
 
-      let query: string;
-      if (filters?.seasonYear || (filters?.seasonType && filters.seasonType !== 'all')) {
-        const whereClause = buildNHLSeasonWhereClause(filters, 's');
-        query = `
-          SELECT DISTINCT ss.entity_id, ss.player_name, ss.team_abbreviation, ss.game_id
-          FROM ${NHL_SOURCE_TABLES.SKATER_STATS} ss
-          JOIN ${NHL_SOURCE_TABLES.SCHEDULE} s ON ss.game_id = s.game_id
-          WHERE ss.period = 'FullGame'${whereClause}
-        `;
-      } else {
-        query = `
-          SELECT DISTINCT entity_id, player_name, team_abbreviation, game_id
-          FROM ${NHL_SOURCE_TABLES.SKATER_STATS}
-          WHERE period = 'FullGame'
-        `;
-      }
-
-      const result = await evaluateQuery(query);
+      const result = await evaluateQuery(`
+        SELECT DISTINCT entity_id, player_name, team_abbreviation, game_id
+        FROM ${NHL_TEMP_TABLES.SKATER_STATS}
+        WHERE period = 'FullGame'
+      `);
       const rows = result.data.toRows() as unknown as {
         entity_id: string;
         player_name: string;

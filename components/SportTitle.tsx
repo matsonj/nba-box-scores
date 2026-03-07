@@ -4,11 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { getSportConfig } from '@/lib/sports';
 import type { Sport } from '@/lib/sports';
-
-function getSportFromPathname(pathname: string): Sport {
-  if (pathname.startsWith('/nhl')) return 'nhl';
-  return 'nba';
-}
+import { getSportFromPathname } from '@/lib/sportUtils';
 
 function getOtherRoute(sport: Sport): string {
   return sport === 'nba' ? '/nhl' : '/';

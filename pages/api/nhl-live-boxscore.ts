@@ -121,10 +121,14 @@ function mapGameStatus(game: Record<string, unknown>): string {
     case 'PRE':
       return 'Scheduled';
     case 'LIVE':
-    case 'CRIT':
-      return period > 3
-        ? `OT ${timeRemaining}`
-        : `P${period} ${timeRemaining}`;
+    case 'CRIT': {
+      const periodLabel = period > 3
+        ? (period === 4 ? 'OT' : `OT${period - 3}`)
+        : period > 0
+          ? `P${period}`
+          : 'Pre-game';
+      return timeRemaining ? `${periodLabel} ${timeRemaining}` : periodLabel;
+    }
     case 'FINAL':
     case 'OFF':
       return period > 3 ? 'Final/OT' : 'Final';
@@ -200,13 +204,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const homeTeamData = (data.homeTeam || {}) as Record<string, unknown>;
     const awayTeamData = (data.awayTeam || {}) as Record<string, unknown>;
 
-    // Extract last play from summary if available
-    let lastPlay = '';
-    const summary = data.summary as Record<string, unknown> | undefined;
-    if (summary?.lastPlay) {
-      const lp = summary.lastPlay as Record<string, unknown>;
-      lastPlay = String(lp.description || lp.descriptionKey || '');
-    }
+    // Note: the boxscore endpoint's `summary` is always empty.
+    // Last play info comes from the scoreboard goals[] via LiveScoreGame.lastPlay instead.
+    const lastPlay = '';
 
     const result: NHLBoxScoreResponse = {
       gameId,

@@ -29,8 +29,8 @@ describe('getPeriodsToShow', () => {
     expect(getPeriodsToShow(scores)).toEqual([1, 2, 3, 4, 5, 6]);
   });
 
-  it('returns 4 periods when no scores are provided', () => {
-    expect(getPeriodsToShow(undefined)).toEqual([1, 2, 3, 4]);
+  it('returns empty array when no scores are provided', () => {
+    expect(getPeriodsToShow(undefined)).toEqual([]);
   });
 
   it('caps at MAX_PERIODS (8)', () => {

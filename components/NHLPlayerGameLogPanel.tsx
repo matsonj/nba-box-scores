@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
-import { NHL_SOURCE_TABLES } from '@/constants/tables';
+import { NHL_TEMP_TABLES } from '@/constants/tables';
 import { utcToLocalDate } from '@/lib/dateUtils';
 import { sanitizeNumericId } from '@/lib/queryUtils';
 import { format } from 'date-fns';
@@ -14,6 +14,7 @@ interface NHLPlayerGameLogPanelProps {
   playerName: string;
   playerType: 'skater' | 'goalie';
   onClose: () => void;
+  isLive?: boolean;
 }
 
 interface SkaterGameLogEntry {
@@ -77,7 +78,7 @@ const cellClassRight = `${cellClass} text-right`;
 const headerClass = `${cellClass} bg-transparent`;
 const headerClassRight = `${cellClassRight} bg-transparent`;
 
-export default function NHLPlayerGameLogPanel({ entityId, playerName, playerType, onClose }: NHLPlayerGameLogPanelProps) {
+export default function NHLPlayerGameLogPanel({ entityId, playerName, playerType, onClose, isLive }: NHLPlayerGameLogPanelProps) {
   const searchParams = useSearchParams();
   const seasonYear = searchParams?.get('season') ? Number(searchParams.get('season')) : nhlConfig.getSeasonYear(new Date());
   const seasonType = searchParams?.get('type') || 'all';
@@ -122,8 +123,8 @@ export default function NHLPlayerGameLogPanel({ entityId, playerName, playerType
               s.home_team_score, s.away_team_score,
               ${RESULT_CASE},
               ${MARGIN_CASE}
-            FROM ${NHL_SOURCE_TABLES.GOALIE_STATS} b
-            JOIN ${NHL_SOURCE_TABLES.SCHEDULE} s ON b.game_id = s.game_id
+            FROM ${NHL_TEMP_TABLES.GOALIE_STATS} b
+            JOIN ${NHL_TEMP_TABLES.SCHEDULE} s ON b.game_id = s.game_id
             WHERE b.entity_id = '${safeEntityId}' AND b.period = 'FullGame'
             ${seasonFilter}
             ORDER BY s.game_date DESC
@@ -152,8 +153,8 @@ export default function NHLPlayerGameLogPanel({ entityId, playerName, playerType
               s.home_team_score, s.away_team_score,
               ${RESULT_CASE},
               ${MARGIN_CASE}
-            FROM ${NHL_SOURCE_TABLES.SKATER_STATS} b
-            JOIN ${NHL_SOURCE_TABLES.SCHEDULE} s ON b.game_id = s.game_id
+            FROM ${NHL_TEMP_TABLES.SKATER_STATS} b
+            JOIN ${NHL_TEMP_TABLES.SCHEDULE} s ON b.game_id = s.game_id
             WHERE b.entity_id = '${safeEntityId}' AND b.period = 'FullGame'
             ${seasonFilter}
             ORDER BY s.game_date DESC
@@ -303,6 +304,12 @@ export default function NHLPlayerGameLogPanel({ entityId, playerName, playerType
             </svg>
           </button>
         </div>
+
+        {isLive && (
+          <p className="text-sm text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 rounded px-3 py-1.5 mb-3">
+            Current game in progress — stats below do not include today&#39;s game.
+          </p>
+        )}
 
         <div className="w-full">
           {playerType === 'goalie' ? renderGoalieTable() : renderSkaterTable()}
