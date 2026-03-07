@@ -23,8 +23,9 @@
     "hydrate": "tsx scripts/ingest/hydrate.ts",
     "metadata:refresh": "cd ~/code/metadata_generator && uv run metadata-generator --database nba_box_scores_v2 comments main -x --refresh",
     "ingest:nhl": "tsx scripts/ingest/nhl/index.ts",
-    "ingest:nhl:current": "tsx scripts/ingest/nhl/index.ts --season 2024",
-    "ingest:nhl:backfill": "tsx scripts/ingest/nhl/index.ts --all --delay 500"
+    "ingest:nhl:current": "tsx scripts/ingest/nhl/index.ts --season 2025",
+    "ingest:nhl:backfill": "tsx scripts/ingest/nhl/index.ts --all --delay 500",
+    "ingest:nhl:playoffs": "tsx scripts/ingest/nhl/index.ts --all --season-type 03"
   },
   "dependencies": {
     "@duckdb/node-api": "^1.4.4-r.2",

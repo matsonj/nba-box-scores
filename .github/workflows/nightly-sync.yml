@@ -2,8 +2,8 @@ name: Nightly Full Sync
 
 on:
   schedule:
-    # 6 AM UTC = 1 AM ET, after West Coast games end
-    - cron: '0 6 * * *'
+    # 12 PM UTC = 7 AM ET, after West Coast games end
+    - cron: '0 12 * * *'
   workflow_dispatch:
 
 jobs:
@@ -28,7 +28,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run current season ingestion
+      - name: Run NBA current season ingestion
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: npm run ingest:current
+
+      - name: Run NHL current season ingestion
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: npm run ingest:nhl:current
