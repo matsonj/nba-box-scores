@@ -7,6 +7,7 @@ import { NHL_SOURCE_TABLES } from '@/constants/tables';
 import { utcToLocalDate } from '@/lib/dateUtils';
 import { sanitizeNumericId } from '@/lib/queryUtils';
 import { format } from 'date-fns';
+import { nhlConfig } from '@/lib/sports/nhl';
 
 interface NHLPlayerGameLogPanelProps {
   entityId: string;
@@ -78,7 +79,7 @@ const headerClassRight = `${cellClassRight} bg-transparent`;
 
 export default function NHLPlayerGameLogPanel({ entityId, playerName, playerType, onClose }: NHLPlayerGameLogPanelProps) {
   const searchParams = useSearchParams();
-  const seasonYear = searchParams?.get('season') ? Number(searchParams.get('season')) : 2024;
+  const seasonYear = searchParams?.get('season') ? Number(searchParams.get('season')) : nhlConfig.getSeasonYear(new Date());
   const seasonType = searchParams?.get('type') || 'all';
 
   const [skaterGames, setSkaterGames] = useState<SkaterGameLogEntry[]>([]);

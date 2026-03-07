@@ -51,8 +51,8 @@ function NHLContent() {
   const { fetchBoxScores } = useNHLBoxScores();
   const { fetchPlayerIndex } = useNHLPlayerIndex();
 
-  // Derive filters from URL params — default to 2024 (latest season with data)
-  const season = searchParams?.get('season') ? Number(searchParams.get('season')) : 2024;
+  // Derive filters from URL params — default to current NHL season
+  const season = searchParams?.get('season') ? Number(searchParams.get('season')) : nhlConfig.getSeasonYear(new Date());
   const seasonType = searchParams?.get('type') || undefined;
   const team = searchParams?.get('team') || '';
   const player = searchParams?.get('player') || '';
@@ -302,7 +302,7 @@ function NHLContent() {
         teamAbbreviations={NHL_TEAM_ABBREVIATIONS}
         seasons={nhlSeasons}
         formatSeason={nhlConfig.formatSeasonLabel}
-        defaultSeason={2024}
+        defaultSeason={nhlConfig.getSeasonYear(new Date())}
       />
       <NHLBoxScorePanel gameId={selectedGameId} onClose={() => setSelectedGameId(null)} />
 
