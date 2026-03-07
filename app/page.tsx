@@ -15,7 +15,8 @@ import { isPlayoffGame, getSeasonYearFromDate } from '@/lib/seasonUtils';
 import type { SeasonType } from '@/lib/seasonUtils';
 import type { GameDataFilters, PlayerIndexEntry } from '@/hooks/useGameData';
 import { useLiveData } from '@/lib/LiveDataContext';
-import type { LiveScoreGame } from '@/app/types/live';
+import type { LiveScoreGame, LiveBoxScoreResponse } from '@/app/types/live';
+import { liveGameToSchedule } from '@/lib/sportUtils';
 import type { Team } from '@/app/types/schema';
 import dynamic from 'next/dynamic';
 
@@ -44,24 +45,6 @@ function groupByDate(games: ScheduleWithBoxScore[]) {
 }
 
 const DATES_PER_PAGE = 7;
-
-function liveGameToSchedule(game: LiveScoreGame): ScheduleWithBoxScore {
-  return {
-    game_id: game.game_id,
-    game_date: new Date(game.game_date),
-    home_team_id: game.home_team_id,
-    away_team_id: game.away_team_id,
-    home_team_abbreviation: game.home_team_abbreviation,
-    away_team_abbreviation: game.away_team_abbreviation,
-    home_team_score: game.home_team_score,
-    away_team_score: game.away_team_score,
-    game_status: game.status,
-    created_at: new Date(),
-    boxScoreLoaded: true,
-    isPlayoff: false,
-    periodScores: game.periodScores,
-  };
-}
 
 function HomeContent() {
   const searchParams = useSearchParams();
@@ -114,7 +97,10 @@ function HomeContent() {
   const liveBoxScoreData = useMemo(() => {
     if (!selectedLiveGameId || !liveBoxScore) return null;
 
-    const mapPlayers = (players: typeof liveBoxScore.homeTeam.players) =>
+    // NBA page always receives NBA-shaped box scores
+    const nbaBoxScore = liveBoxScore as LiveBoxScoreResponse;
+
+    const mapPlayers = (players: typeof nbaBoxScore.homeTeam.players) =>
       players.map((p) => ({
         playerId: p.personId,
         playerName: p.playerName,
@@ -138,26 +124,26 @@ function HomeContent() {
       }));
 
     const homeTeam: Team = {
-      teamId: liveBoxScore.homeTeam.teamId,
-      teamName: getTeamName(liveBoxScore.homeTeam.teamTricode),
-      teamAbbreviation: liveBoxScore.homeTeam.teamTricode,
-      score: liveBoxScore.homeTeam.score,
-      players: mapPlayers(liveBoxScore.homeTeam.players),
+      teamId: nbaBoxScore.homeTeam.teamId,
+      teamName: getTeamName(nbaBoxScore.homeTeam.teamTricode),
+      teamAbbreviation: nbaBoxScore.homeTeam.teamTricode,
+      score: nbaBoxScore.homeTeam.score,
+      players: mapPlayers(nbaBoxScore.homeTeam.players),
     };
 
     const awayTeam: Team = {
-      teamId: liveBoxScore.awayTeam.teamId,
-      teamName: getTeamName(liveBoxScore.awayTeam.teamTricode),
-      teamAbbreviation: liveBoxScore.awayTeam.teamTricode,
-      score: liveBoxScore.awayTeam.score,
-      players: mapPlayers(liveBoxScore.awayTeam.players),
+      teamId: nbaBoxScore.awayTeam.teamId,
+      teamName: getTeamName(nbaBoxScore.awayTeam.teamTricode),
+      teamAbbreviation: nbaBoxScore.awayTeam.teamTricode,
+      score: nbaBoxScore.awayTeam.score,
+      players: mapPlayers(nbaBoxScore.awayTeam.players),
     };
 
     return {
       homeTeam,
       awayTeam,
-      gameStatus: liveBoxScore.gameStatus,
-      lastPlay: liveBoxScore.lastPlay,
+      gameStatus: nbaBoxScore.gameStatus,
+      lastPlay: nbaBoxScore.lastPlay,
     };
   }, [selectedLiveGameId, liveBoxScore]);
 
@@ -426,6 +412,7 @@ function HomeContent() {
                   <GameCard
                     game={liveGameToSchedule(game)}
                     onGameSelect={handleLiveGameSelect}
+                    liveStatus={{ period: game.period, clock: game.clock, status: game.status }}
                   />
                 </div>
               ))}

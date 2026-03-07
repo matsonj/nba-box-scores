@@ -9,11 +9,15 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
+import { usePathname } from 'next/navigation';
 import type {
   LiveScoreGame,
-  LiveBoxScoreResponse,
+  AnyLiveBoxScoreResponse,
   CellState,
 } from '@/app/types/live';
+import { getSportConfig } from '@/lib/sports';
+import { getSportFromPathname } from '@/lib/sportUtils';
+import type { Sport } from '@/lib/sports';
 
 interface LiveDataContextValue {
   isLive: boolean;
@@ -21,7 +25,7 @@ interface LiveDataContextValue {
   liveGames: LiveScoreGame[];
   activeGameCount: number;
   lastUpdated: Date | null;
-  liveBoxScore: LiveBoxScoreResponse | null;
+  liveBoxScore: AnyLiveBoxScoreResponse | null;
   subscribedGameId: string | null;
   setSubscribedGameId: (id: string | null) => void;
   highlightedCells: Map<string, CellState>;
@@ -39,26 +43,85 @@ const HIGHLIGHT_FADE_MS = 20000;
 const BOLD_ACTIVE_MS = 38000;
 const BOLD_FADE_MS = 40000;
 
-// Stat fields to diff for change detection
-const DIFF_FIELDS = [
+// Stat fields to diff for change detection (per sport)
+const NBA_DIFF_FIELDS = [
   'points', 'rebounds', 'assists', 'steals', 'blocks', 'turnovers',
   'fieldGoalsMade', 'fieldGoalsAttempted', 'threePointersMade',
   'threePointersAttempted', 'freeThrowsMade', 'freeThrowsAttempted',
   'plusMinus', 'minutes',
 ] as const;
 
+const NHL_SKATER_DIFF_FIELDS = [
+  'goals', 'assists', 'points', 'plusMinus', 'pim',
+  'shots', 'hits', 'blockedShots', 'toi',
+  'faceoffWins', 'faceoffLosses',
+] as const;
+
+const NHL_GOALIE_DIFF_FIELDS = [
+  'saves', 'shotsAgainst', 'goalsAgainst', 'savePctg', 'toi',
+] as const;
+
+/**
+ * Extracts a flat list of { personId, ...stats } entries from a raw box score response.
+ * NBA uses homeTeam.players / awayTeam.players.
+ * NHL uses homeTeam.skaters + homeTeam.goalies / awayTeam.skaters + awayTeam.goalies.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractPlayers(response: any, sport: Sport): Record<string, unknown>[] {
+  if (sport === 'nhl') {
+    const home = response.homeTeam || {};
+    const away = response.awayTeam || {};
+    return [
+      ...(home.skaters || []),
+      ...(home.goalies || []),
+      ...(away.skaters || []),
+      ...(away.goalies || []),
+    ];
+  }
+  // NBA
+  return [
+    ...(response.homeTeam?.players || []),
+    ...(response.awayTeam?.players || []),
+  ];
+}
+
+function getDiffFieldsForPlayer(sport: Sport, player: Record<string, unknown>): readonly string[] {
+  if (sport === 'nhl') {
+    return player.position === 'G' ? NHL_GOALIE_DIFF_FIELDS : NHL_SKATER_DIFF_FIELDS;
+  }
+  return NBA_DIFF_FIELDS;
+}
+
 export function LiveDataProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const sport = getSportFromPathname(pathname ?? '/');
+  const sportConfig = getSportConfig(sport);
   const [isLive, setIsLive] = useState(false);
   const [liveGames, setLiveGames] = useState<LiveScoreGame[]>([]);
   const [activeGameCount, setActiveGameCount] = useState(0);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [liveBoxScore, setLiveBoxScore] = useState<LiveBoxScoreResponse | null>(null);
+  const [liveBoxScore, setLiveBoxScore] = useState<AnyLiveBoxScoreResponse | null>(null);
   const [subscribedGameId, setSubscribedGameId] = useState<string | null>(null);
   const [highlightedCells, setHighlightedCells] = useState<Map<string, CellState>>(new Map());
   const [boldedCells, setBoldedCells] = useState<Map<string, CellState>>(new Map());
   const [pollTick, setPollTick] = useState(0);
 
-  const prevBoxScoreRef = useRef<LiveBoxScoreResponse | null>(null);
+  const prevBoxScoreRef = useRef<AnyLiveBoxScoreResponse | null>(null);
+
+  // Clear stale data when sport changes
+  const prevSportRef = useRef(sport);
+  if (prevSportRef.current !== sport) {
+    prevSportRef.current = sport;
+    // Synchronously reset to avoid showing stale cross-sport data
+    setLiveGames([]);
+    setLiveBoxScore(null);
+    setSubscribedGameId(null);
+    setHighlightedCells(new Map());
+    setBoldedCells(new Map());
+    setActiveGameCount(0);
+    setLastUpdated(null);
+    prevBoxScoreRef.current = null;
+  }
   const highlightTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const boldTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const scoreAbortRef = useRef<AbortController | null>(null);
@@ -68,24 +131,25 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
 
   // --- Diff engine ---
   const processBoxScoreDiff = useCallback((
-    prev: LiveBoxScoreResponse | null,
-    current: LiveBoxScoreResponse
+    prev: AnyLiveBoxScoreResponse | null,
+    current: AnyLiveBoxScoreResponse
   ) => {
     if (!prev) return;
 
     const prevPlayers = new Map<string, Record<string, unknown>>();
-    [...prev.homeTeam.players, ...prev.awayTeam.players].forEach((p) => {
-      prevPlayers.set(p.personId, p as unknown as Record<string, unknown>);
+    extractPlayers(prev, sport).forEach((p: Record<string, unknown>) => {
+      prevPlayers.set(String(p.personId), p);
     });
 
     const changedKeys: string[] = [];
-    [...current.homeTeam.players, ...current.awayTeam.players].forEach((p) => {
-      const prevP = prevPlayers.get(p.personId);
+    extractPlayers(current, sport).forEach((p: Record<string, unknown>) => {
+      const prevP = prevPlayers.get(String(p.personId));
       if (!prevP) return;
 
-      for (const field of DIFF_FIELDS) {
+      const fields = getDiffFieldsForPlayer(sport, p);
+      for (const field of fields) {
         const prevVal = prevP[field];
-        const curVal = (p as unknown as Record<string, unknown>)[field];
+        const curVal = p[field];
         if (prevVal !== curVal) {
           changedKeys.push(`${p.personId}:${field}`);
         }
@@ -166,7 +230,7 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
       }, BOLD_FADE_MS);
       boldTimersRef.current.set(`b-fade-${key}`, bFadeTimer);
     }
-  }, []);
+  }, [sport]);
 
   // --- Scoreboard polling ---
   const fetchScoreboard = useCallback(async () => {
@@ -177,7 +241,7 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
     scoreAbortRef.current = controller;
 
     try {
-      const response = await fetch('/api/live-scores', {
+      const response = await fetch(sportConfig.liveScoresEndpoint, {
         signal: controller.signal,
       });
       if (!response.ok) return;
@@ -196,7 +260,7 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
       console.error('Live scoreboard poll error:', error);
     }
-  }, []);
+  }, [sportConfig.liveScoresEndpoint]);
 
   // --- Box score polling ---
   const fetchBoxScore = useCallback(async (gameId: string) => {
@@ -207,12 +271,12 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
     boxAbortRef.current = controller;
 
     try {
-      const response = await fetch(`/api/live-boxscore?gameId=${gameId}`, {
+      const response = await fetch(`${sportConfig.liveBoxScoreEndpoint}?gameId=${gameId}`, {
         signal: controller.signal,
       });
       if (!response.ok) return;
 
-      const data: LiveBoxScoreResponse = await response.json();
+      const data: AnyLiveBoxScoreResponse = await response.json();
 
       processBoxScoreDiff(prevBoxScoreRef.current, data);
       prevBoxScoreRef.current = data;
@@ -221,7 +285,7 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
       console.error('Live boxscore poll error:', error);
     }
-  }, [processBoxScoreDiff]);
+  }, [sportConfig.liveBoxScoreEndpoint, processBoxScoreDiff]);
 
   // Scoreboard polling lifecycle
   useEffect(() => {

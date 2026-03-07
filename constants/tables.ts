@@ -11,6 +11,20 @@ export const SOURCE_TABLES = {
   TEAM_STATS: 'nba_box_scores_v2.main.team_stats',
 } as const;
 
+export const NHL_SOURCE_TABLES = {
+  SCHEDULE: 'nhl_box_scores.main.schedule',
+  SKATER_STATS: 'nhl_box_scores.main.skater_stats',
+  GOALIE_STATS: 'nhl_box_scores.main.goalie_stats',
+  TEAM_STATS: 'nhl_box_scores.main.team_stats',
+} as const;
+
+export const NHL_TEMP_TABLES = {
+  SCHEDULE: 'temp_nhl_schedule',
+  SKATER_STATS: 'temp_nhl_skater_stats',
+  GOALIE_STATS: 'temp_nhl_goalie_stats',
+  TEAM_STATS: 'temp_nhl_team_stats',
+} as const;
+
 type TableKey = keyof typeof TEMP_TABLES & keyof typeof SOURCE_TABLES;
 
 /**

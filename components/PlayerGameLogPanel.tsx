@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, usePathname } from 'next/navigation';
 import { BoxScores as BoxScoreType } from '@/app/types/schema';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { resolveTable } from '@/constants/tables';
@@ -35,6 +35,9 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose, isLi
     result: string;
     margin: number;
   }
+
+  const pathname = usePathname();
+  const isNHL = pathname?.startsWith('/nhl');
 
   const searchParams = useSearchParams();
   const currentSeason = getSeasonYearFromDate(new Date());
@@ -153,6 +156,15 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose, isLi
       cancelled = true;
     };
   }, [entityId, seasonYear, seasonType, evaluateQuery]);
+
+  if (isNHL) {
+    return (
+      <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+        <p>Player game logs are in the penalty box.</p>
+        <p className="text-sm mt-1">NHL player stats coming soon!</p>
+      </div>
+    );
+  }
 
   return (
     <div

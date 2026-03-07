@@ -32,9 +32,9 @@ describe('DataLoader', () => {
       expect(mockEvaluateQuery).toHaveBeenCalledTimes(3);
       // Verify each call creates a temp table
       const calls = mockEvaluateQuery.mock.calls.map((c: [string]) => c[0]);
-      expect(calls[0]).toContain('CREATE TEMP TABLE IF NOT EXISTS temp_schedule');
-      expect(calls[1]).toContain('CREATE TEMP TABLE IF NOT EXISTS temp_box_scores');
-      expect(calls[2]).toContain('CREATE TEMP TABLE IF NOT EXISTS temp_team_stats');
+      expect(calls[0]).toContain('CREATE OR REPLACE TEMP TABLE temp_schedule');
+      expect(calls[1]).toContain('CREATE OR REPLACE TEMP TABLE temp_box_scores');
+      expect(calls[2]).toContain('CREATE OR REPLACE TEMP TABLE temp_team_stats');
     });
 
     it('does not run duplicate loads when called concurrently', async () => {
@@ -52,23 +52,20 @@ describe('DataLoader', () => {
   });
 
   describe('createDynamicTable', () => {
-    it('checks essential tables exist before creating dynamic table', async () => {
+    it('creates essential tables then dynamic table', async () => {
       await loader.createDynamicTable();
-      // 3 checks + 1 dynamic table creation
+      // 3 essential table creates + 1 dynamic table creation
       expect(mockEvaluateQuery).toHaveBeenCalledTimes(4);
       const calls = mockEvaluateQuery.mock.calls.map((c: [string]) => c[0]);
-      expect(calls[0]).toContain('SELECT 1 FROM temp_schedule LIMIT 1');
-      expect(calls[1]).toContain('SELECT 1 FROM temp_box_scores LIMIT 1');
-      expect(calls[2]).toContain('SELECT 1 FROM temp_team_stats LIMIT 1');
+      expect(calls[0]).toContain('CREATE OR REPLACE TEMP TABLE temp_schedule');
+      expect(calls[1]).toContain('CREATE OR REPLACE TEMP TABLE temp_box_scores');
+      expect(calls[2]).toContain('CREATE OR REPLACE TEMP TABLE temp_team_stats');
       expect(calls[3]).toContain('CREATE OR REPLACE TEMP TABLE temp_dynamic_stats');
     });
 
-    it('loads essential tables if check fails, then creates dynamic table', async () => {
-      // First call (SELECT 1 FROM temp_schedule) fails
-      mockEvaluateQuery.mockRejectedValueOnce(new Error('Table not found'));
-      await loader.createDynamicTable();
-      // 1 failed check + 3 essential table loads + 1 dynamic table creation
-      expect(mockEvaluateQuery).toHaveBeenCalledTimes(5);
+    it('propagates errors from essential table creation', async () => {
+      mockEvaluateQuery.mockRejectedValueOnce(new Error('Table creation failed'));
+      await expect(loader.createDynamicTable()).rejects.toThrow('Table creation failed');
     });
   });
 });
