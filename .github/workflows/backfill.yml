@@ -11,6 +11,14 @@ on:
         description: 'End season year inclusive (e.g. 2024 for 2024-25)'
         required: true
         type: string
+      season_type:
+        description: 'Season type to backfill'
+        required: true
+        type: choice
+        default: 'Regular Season'
+        options:
+          - Regular Season
+          - Playoffs
 
 jobs:
   backfill:
@@ -37,4 +45,4 @@ jobs:
       - name: Run backfill ingestion
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: npm run ingest -- --from ${{ inputs.from_season }} --to ${{ inputs.to_season }} --delay 500
+        run: npm run ingest -- --from ${{ inputs.from_season }} --to ${{ inputs.to_season }} --season-type "${{ inputs.season_type }}" --delay 500
