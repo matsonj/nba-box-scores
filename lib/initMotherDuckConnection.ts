@@ -8,23 +8,17 @@ export default async function initMotherDuckConnection(mdToken: string): Promise
         throw new Error("Web Workers are not supported in this environment.");
     }
 
-    try {
-        // Dynamically import MDConnection
-        const motherduckWasmModule = await import("@motherduck/wasm-client");
+    // Dynamically import MDConnection
+    const motherduckWasmModule = await import("@motherduck/wasm-client");
 
-        if (!motherduckWasmModule.MDConnection) {
-            throw new Error("Failed to load MDConnection");
-        }
-
-        const _connection = motherduckWasmModule.MDConnection.create({ mdToken });
-
-        // Wait for initialization to complete
-        await _connection.isInitialized();
-
-        // No USE needed — all queries use fully-qualified table names
-        // (e.g. nba_box_scores_v2.main.schedule)
-        return _connection;
-    } catch (error) {
-        throw error;
+    if (!motherduckWasmModule.MDConnection) {
+        throw new Error("Failed to load MDConnection");
     }
+
+    const _connection = motherduckWasmModule.MDConnection.create({ mdToken });
+
+    // Wait for initialization to complete
+    await _connection.isInitialized();
+
+    return _connection;
 }

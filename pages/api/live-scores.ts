@@ -24,9 +24,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-
     const response = await axios.get(
       `https://cdn.nba.com/static/json/liveData/scoreboard/todaysScoreboard_00.json`,
       {

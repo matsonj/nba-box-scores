@@ -1,4 +1,4 @@
-import { sanitizeNumericId, escapeSqlString, sanitizeTeamAbbreviation } from '../queryUtils';
+import { sanitizeNumericId, escapeSqlString } from '../queryUtils';
 
 describe('sanitizeNumericId', () => {
   it('passes valid numeric IDs', () => {
@@ -38,22 +38,3 @@ describe('escapeSqlString', () => {
   });
 });
 
-describe('sanitizeTeamAbbreviation', () => {
-  it('passes valid team abbreviations', () => {
-    expect(sanitizeTeamAbbreviation('LAL')).toBe('LAL');
-    expect(sanitizeTeamAbbreviation('BOS')).toBe('BOS');
-    expect(sanitizeTeamAbbreviation('GSW')).toBe('GSW');
-  });
-
-  it('throws on lowercase input', () => {
-    expect(() => sanitizeTeamAbbreviation('la')).toThrow('Invalid team abbreviation');
-  });
-
-  it('throws on too-long input', () => {
-    expect(() => sanitizeTeamAbbreviation('LAKERS')).toThrow('Invalid team abbreviation');
-  });
-
-  it('throws on input with digits', () => {
-    expect(() => sanitizeTeamAbbreviation('L4L')).toThrow('Invalid team abbreviation');
-  });
-});

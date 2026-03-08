@@ -12,7 +12,7 @@ interface MotherDuckContextValue {
   safeEvaluateQuery: (query: string) => Promise<SafeQueryResult<MaterializedQueryResult>>;
 }
 
-export const MotherDuckContext = createContext<MotherDuckContextValue | null>(null);
+const MotherDuckContext = createContext<MotherDuckContextValue | null>(null);
 
 export function MotherDuckClientProvider({ children }: { children: React.ReactNode },) {
   const connectionRef = useRef<PromiseWithResolvers<MDConnection | undefined>>(undefined);

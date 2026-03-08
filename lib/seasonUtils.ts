@@ -2,22 +2,6 @@ import { GAME_ID_PREFIXES } from '@/constants/game';
 
 export type SeasonType = 'all' | 'regular' | 'playoffs';
 
-export interface SeasonFilter {
-  seasonYear?: number;
-  seasonType?: SeasonType;
-  team?: string;
-}
-
-/**
- * Derives the season type from a game_id prefix.
- * Returns 'regular' for regular season, 'playoffs' for playoffs/play-in, or undefined for all-star.
- */
-export function getSeasonTypeFromGameId(gameId: string): 'regular' | 'playoffs' | undefined {
-  if (gameId.startsWith(GAME_ID_PREFIXES.REGULAR_SEASON)) return 'regular';
-  if (gameId.startsWith(GAME_ID_PREFIXES.PLAYOFFS) || gameId.startsWith(GAME_ID_PREFIXES.PLAY_IN)) return 'playoffs';
-  return undefined;
-}
-
 /**
  * Determines the NBA season year from a game date.
  * NBA seasons span two calendar years (e.g., the 2024-25 season).
