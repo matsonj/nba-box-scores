@@ -222,8 +222,6 @@ function HomeContent() {
     setCurrentPage(0);
   }, [team, season, seasonType, player]);
 
-  // Player index is now loaded with game data — search is client-side via useMemo above
-
   const totalPages = Math.max(1, Math.ceil(filteredGamesByDate.length / DATES_PER_PAGE));
   const paginatedDates = filteredGamesByDate.slice(
     currentPage * DATES_PER_PAGE,

@@ -15,13 +15,3 @@ export function sanitizeNumericId(value: string): string {
 export function escapeSqlString(value: string): string {
   return value.replace(/'/g, "''");
 }
-
-/**
- * Validates that a value is a valid NBA team abbreviation (3 uppercase letters).
- */
-export function sanitizeTeamAbbreviation(value: string): string {
-  if (!/^[A-Z]{3}$/.test(value)) {
-    throw new Error(`Invalid team abbreviation: ${value}`);
-  }
-  return value;
-}

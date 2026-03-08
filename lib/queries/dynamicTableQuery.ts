@@ -9,9 +9,7 @@ import { MIN_MINUTES_FOR_GAME_QUALITY, LEAGUE_AVG_FG_PCT, LEAGUE_AVG_FT_PCT } fr
  * Returns the SQL query for creating a dynamic stats table
  * @returns SQL query string
  */
-export const getDynamicTableQuery = () => {
-  // For now, a simple query that selects from the schedule table
-  // This can be expanded later to include filtering based on user parameters
+const getDynamicTableQuery = () => {
   return `with cte_schedule as materialized (
   select
     yearweek(game_date)::int as week_id,
@@ -44,7 +42,6 @@ export const getDynamicTableQuery = () => {
     bs.steals,
     bs.blocks,
     bs.turnovers,
--- Calculate week_id based on game_date
     s.week_id
   from ${TEMP_TABLES.BOX_SCORES} bs
   join cte_schedule s on bs.game_id = s.game_id

@@ -71,9 +71,6 @@ export class DataLoader {
     return this.loadPromise;
   }
 
-  // The loadData method has been removed in favor of more explicit control
-  // over when the dynamic table is created via the DynamicTableLoader component
-  
   /**
    * Creates or updates the dynamic table
    * This is an expensive operation that should only be called
@@ -81,7 +78,6 @@ export class DataLoader {
    */
   async createDynamicTable(seasonYear?: number): Promise<void> {
     try {
-      console.log('Starting dynamic table creation...');
       // Always recreate temp tables with the current season filter
       await this.loadEssentialTables(seasonYear);
       
@@ -89,7 +85,6 @@ export class DataLoader {
       const dynamicTableName = 'temp_dynamic_stats';
       const query = createDynamicTableStatement(dynamicTableName);
       await this.evaluateQuery(query);
-      console.log('Dynamic table created successfully');
     } catch (error) {
       console.error('Error creating dynamic table:', error);
       throw error;
