@@ -4,7 +4,6 @@ import { useRef, useEffect, useState, Suspense } from 'react';
 import { useSearchParams, usePathname } from 'next/navigation';
 import DynamicStatsTable from '@/components/DynamicStatsTable';
 import { useDataLoader } from '@/lib/dataLoader';
-import { InformationCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { getSeasonYearFromDate } from '@/lib/seasonUtils';
 import type { SeasonType } from '@/lib/seasonUtils';
 import { getSportFromPathname } from '@/lib/sportUtils';
@@ -79,9 +78,10 @@ function DynamicTablePopoverContent() {
                     className="focus:outline-none"
                     aria-label="Show information about Game Quality"
                   >
-                    <InformationCircleIcon
-                      className="h-5 w-5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 cursor-pointer"
-                    />
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"
+                      className="h-5 w-5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 cursor-pointer">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                    </svg>
                   </button>
                 </div>
                 <button
@@ -127,7 +127,9 @@ function DynamicTablePopoverContent() {
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               aria-label="Close"
             >
-              <XMarkIcon className="h-6 w-6" />
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-6 w-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
 
             <h3 className="text-lg font-semibold mb-4 dark:text-white">About Game Quality (GQ)</h3>

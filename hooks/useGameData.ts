@@ -6,31 +6,16 @@ import { Schedule, TeamStats } from '@/types/schema';
 import { getTeamName } from '@/lib/teams';
 import { SOURCE_TABLES } from '@/constants/tables';
 import { utcToLocalDate } from '@/lib/dateUtils';
-import { escapeSqlString } from '@/lib/queryUtils';
+import { buildSeasonWhereClause } from '@/lib/queryUtils';
+import { buildPlayerIndex, buildGameScoresMap } from '@/lib/gameDataUtils';
 import type { SeasonType } from '@/lib/seasonUtils';
+
+// Re-export shared types for backwards compatibility
+export type { PlayerIndexEntry } from '@/lib/gameDataUtils';
 
 export interface GameDataFilters {
   seasonYear?: number;
   seasonType?: SeasonType;
-}
-
-function buildSeasonWhereClause(filters?: GameDataFilters, alias?: string): string {
-  const clauses: string[] = [];
-  const prefix = alias ? `${alias}.` : '';
-
-  if (filters?.seasonYear) {
-    clauses.push(`${prefix}season_year = ${filters.seasonYear}`);
-  }
-
-  if (filters?.seasonType && filters.seasonType !== 'all') {
-    if (filters.seasonType === 'regular') {
-      clauses.push(`${prefix}season_type = 'Regular Season'`);
-    } else if (filters.seasonType === 'playoffs') {
-      clauses.push(`${prefix}season_type IN ('Playoffs', 'Play-In')`);
-    }
-  }
-
-  return clauses.length > 0 ? ' AND ' + clauses.join(' AND ') : '';
 }
 
 export function useSchedule() {
@@ -101,21 +86,7 @@ export function useBoxScores() {
       const result = await evaluateQuery(query);
       const periodScores = result.data.toRows() as unknown as TeamStats[];
 
-      const gameScores = new Map<string, Array<{ teamId: string; period: string; points: number }>>();
-
-      const uniqueGameIds = new Set(periodScores.map(score => score.game_id));
-      uniqueGameIds.forEach(gameId => {
-        gameScores.set(gameId, []);
-      });
-
-      for (const score of periodScores) {
-        const scores = gameScores.get(score.game_id)!;
-        scores.push({
-          teamId: score.team_abbreviation,
-          period: score.period,
-          points: Number(score.points)
-        });
-      }
+      const gameScores = buildGameScoresMap(periodScores);
 
       return Object.fromEntries(gameScores);
     } catch (error) {
@@ -127,37 +98,10 @@ export function useBoxScores() {
   return { fetchBoxScores };
 }
 
-export interface PlayerIndexEntry {
-  entity_id: string;
-  player_name: string;
-  team_abbreviation: string;
-  game_ids: string[];
-}
-
-/** Builds a player search index from flat (player, game_id) rows, grouped client-side. */
-function buildPlayerIndex(rows: Array<{ entity_id: string; player_name: string; team_abbreviation: string; game_id: string }>): PlayerIndexEntry[] {
-  const map = new Map<string, PlayerIndexEntry>();
-  for (const r of rows) {
-    const key = `${r.entity_id}|${r.team_abbreviation}`;
-    let entry = map.get(key);
-    if (!entry) {
-      entry = {
-        entity_id: String(r.entity_id),
-        player_name: String(r.player_name),
-        team_abbreviation: String(r.team_abbreviation),
-        game_ids: [],
-      };
-      map.set(key, entry);
-    }
-    entry.game_ids.push(String(r.game_id));
-  }
-  return Array.from(map.values());
-}
-
 export function usePlayerIndex() {
   const { evaluateQuery } = useMotherDuckClientState();
 
-  const fetchPlayerIndex = useCallback(async (filters?: GameDataFilters): Promise<PlayerIndexEntry[]> => {
+  const fetchPlayerIndex = useCallback(async (filters?: GameDataFilters) => {
     try {
       let query: string;
       if (filters?.seasonYear || (filters?.seasonType && filters.seasonType !== 'all')) {
