@@ -2,8 +2,8 @@ name: Nightly Full Sync
 
 on:
   schedule:
-    # 12 PM UTC = 7 AM ET, after West Coast games end
-    - cron: '0 12 * * *'
+    # 4 PM UTC = 11 AM ET, ensure PBP data is available after West Coast games
+    - cron: '0 16 * * *'
   workflow_dispatch:
 
 jobs:
