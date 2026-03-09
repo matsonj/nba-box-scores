@@ -1,0 +1,109 @@
+# Domain annotations for nba_box_scores_v2
+# Merged with auto-generated facts by metadata-generator
+
+tables:
+  schedule:
+    annotation: "One row per NBA game. Source of truth for game dates, teams, and final scores."
+    columns:
+      game_id: "NBA API game identifier, e.g. '0022400001'. Format: 00=league, 2=season_type, 24=year, 00001=sequence."
+      game_date: "UTC timestamp of scheduled game start."
+      home_team_id: "NBA API numeric team identifier."
+      away_team_id: "NBA API numeric team identifier."
+      home_team_abbreviation: "Standard 3-letter NBA team code, e.g. 'LAL', 'BOS'."
+      away_team_abbreviation: "Standard 3-letter NBA team code, e.g. 'LAL', 'BOS'."
+      home_team_score: "Final score for the home team."
+      away_team_score: "Final score for the away team."
+      game_status: "'Final' for completed games."
+      season_year: "Starting year of the NBA season, e.g. 2024 for the 2024-25 season."
+      season_type: "'Regular Season', 'Playoffs', 'Pre Season', or 'PlayIn'."
+
+  box_scores:
+    annotation: "Individual player stats per game per period. One row per player per period (Q1-Q4, OT, FullGame). Use period='FullGame' for game totals."
+    columns:
+      game_id: "FK to schedule.game_id."
+      team_abbreviation: "3-letter team code the player played for in this game."
+      entity_id: "NBA API player identifier, numeric string."
+      player_name: "Display name, e.g. 'LeBron James'."
+      period: "Game segment: 'Q1','Q2','Q3','Q4','OT1','OT2', or 'FullGame'. Use 'FullGame' for per-game totals."
+      minutes: "Actual playing time as 'MM:SS' string. Only meaningful for period='FullGame'."
+      points: "Individual player points scored in this period."
+      rebounds: "Individual player rebounds in this period."
+      assists: "Individual player assists in this period."
+      steals: "Individual player steals in this period."
+      blocks: "Individual player blocks in this period."
+      turnovers: "Individual player turnovers in this period."
+      fg_made: "Field goals made."
+      fg_attempted: "Field goals attempted."
+      fg3_made: "Three-point field goals made."
+      fg3_attempted: "Three-point field goals attempted."
+      ft_made: "Free throws made."
+      ft_attempted: "Free throws attempted."
+      starter: "1 if player started the game, 0 otherwise."
+
+  team_stats:
+    annotation: "Team-level aggregated stats per game per period. Derived view that sums box_scores by team. Do NOT compare minutes with box_scores.minutes."
+    columns:
+      game_id: "FK to schedule.game_id."
+      team_abbreviation: "3-letter team code."
+      period: "Game segment: 'Q1'-'Q4','OT1', or 'FullGame'."
+      minutes: "Always '12:00' for regulation quarters, NULL for FullGame. Not actual playing time."
+      points: "Total team points in this period (sum of all player points)."
+      rebounds: "Total team rebounds in this period."
+      assists: "Total team assists in this period."
+      steals: "Total team steals in this period."
+      blocks: "Total team blocks in this period."
+      turnovers: "Total team turnovers in this period."
+
+  players:
+    annotation: "Distinct player lookup table derived from box_scores. One row per player."
+    columns:
+      entity_id: "NBA API player identifier, numeric string. FK to box_scores.entity_id."
+      player_name: "Display name."
+
+  game_quality:
+    annotation: "Fantasy-style weekly player comparison metric. Compares each player head-to-head against all others in the same week across 9 categories. wins=-1 means player had <15 min (excluded from comparison)."
+    columns:
+      game_id: "FK to schedule.game_id."
+      entity_id: "FK to box_scores.entity_id."
+      player_name: "Display name."
+      fg_pct: "Field goal percentage (0-1 scale)."
+      ft_pct: "Free throw percentage (0-1 scale)."
+      fg_v: "Field goal value-over-average. (fg_pct - 0.47) * fg_attempted. Positive = above league avg."
+      ft_v: "Free throw value-over-average. (ft_pct - 0.80) * ft_attempted. Positive = above league avg."
+      fg3_made: "Three-pointers made."
+      points: "Individual game total points."
+      rebounds: "Individual game total rebounds."
+      assists: "Individual game total assists."
+      steals: "Individual game total steals."
+      blocks: "Individual game total blocks."
+      turnovers: "Individual game total turnovers. Lower is better in head-to-head."
+      week_id: "Integer yearweek (YYYYWW format) for weekly grouping. Eastern timezone."
+      wins: "Head-to-head wins against other players that week. -1 = excluded (<15 min played)."
+      gm_count: "Number of qualifying players that week (denominator for game_quality)."
+      game_quality: "wins / gm_count ratio (0-1 scale). Higher = better. -1 = excluded."
+
+  ingestion_log:
+    annotation: "Pipeline audit trail. One row per ingested game tracking status and timing."
+    columns:
+      game_id: "FK to schedule.game_id."
+      season_year: "Starting year of the NBA season."
+      season_type: "'Regular Season', 'Playoffs', etc."
+      ingested_at: "Timestamp when the game was ingested."
+      ingestion_status: "'success' or 'error'."
+      error_message: "Error details if ingestion_status='error', NULL otherwise."
+      audited_at: "Timestamp when data quality checks ran on this game."
+
+  data_quality_quarantine:
+    annotation: "Flagged records from data quality checks. Players who appear on wrong teams or have impossible stats."
+    columns:
+      game_id: "FK to schedule.game_id."
+      entity_id: "FK to box_scores.entity_id."
+      player_name: "Display name."
+      expected_team: "Team the player was expected to be on (from roster data). NULL if unknown."
+      actual_team: "Team recorded in the box score data."
+      detection_type: "'team_switch', 'impossible_stats', 'score_mismatch', or 'duplicate'."
+      resolution_status: "'pending', 'resolved', or 'false_positive'."
+      details: "JSON string with detection-specific context."
+      github_issue_number: "Linked GitHub issue for tracking resolution."
+      resolved_at: "Timestamp when the issue was resolved."
+      resolved_by: "Who resolved it (manual or 'auto')."
