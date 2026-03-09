@@ -3,7 +3,6 @@
 import { fetchMotherDuckToken } from "./fetchMotherDuckToken";
 import initMotherDuckConnection from "./initMotherDuckConnection";
 import type { MaterializedQueryResult, MDConnection, SafeQueryResult } from "@motherduck/wasm-client";
-import 'core-js/actual/promise/with-resolvers';
 import { createContext, useContext, useEffect, useMemo, useRef } from "react";
 
 // Safe interface for using the connection
