@@ -46,6 +46,59 @@ function groupByDate(games: ScheduleWithBoxScore[]) {
 
 const DATES_PER_PAGE = 7;
 
+interface ScheduleGame {
+  game_id: string;
+  game_date: Date;
+  home_team: string;
+  away_team: string;
+  home_team_id: number;
+  away_team_id: number;
+  home_team_abbreviation: string;
+  away_team_abbreviation: string;
+  home_team_score: number;
+  away_team_score: number;
+  game_status: string;
+  created_at: Date;
+}
+
+function buildGamesWithBoxScores(
+  scheduleData: ScheduleGame[],
+  boxScoresData: Record<string, Array<{ teamId: string; period: string; points: number }>>,
+) {
+  return scheduleData.map((game) => {
+    const hasBoxScore = !!boxScoresData[game.game_id];
+    const scores = boxScoresData[game.game_id] || [];
+
+    const homeTeam = {
+      teamId: game.home_team_id.toString(),
+      teamName: getTeamName(game.home_team_id.toString()),
+      teamAbbreviation: game.home_team_abbreviation,
+      score: game.home_team_score,
+      players: [],
+      periodScores: scores.filter(s => s.teamId === game.home_team_id.toString()),
+    };
+
+    const awayTeam = {
+      teamId: game.away_team_id.toString(),
+      teamName: getTeamName(game.away_team_id.toString()),
+      teamAbbreviation: game.away_team_abbreviation,
+      score: game.away_team_score,
+      players: [],
+      periodScores: scores.filter(s => s.teamId === game.away_team_id.toString()),
+    };
+
+    return {
+      ...game,
+      boxScoreLoaded: hasBoxScore,
+      isPlayoff: isPlayoffGame(game.game_id),
+      homeTeam,
+      awayTeam,
+      periodScores: scores,
+      created_at: new Date(),
+    };
+  });
+}
+
 function HomeContent() {
   const searchParams = useSearchParams();
   const [gamesByDate, setGamesByDate] = useState<Record<string, ScheduleWithBoxScore[]>>({});
@@ -265,42 +318,7 @@ function HomeContent() {
         setPlayerIndex(playerIndexData);
         updateLoadingMessage(1);
 
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        const gamesWithBoxScores = scheduleData.map((game) => {
-          const hasBoxScore = !!boxScoresData[game.game_id];
-          const scores = boxScoresData[game.game_id] || [];
-
-          const homeTeam = {
-            teamId: game.home_team_id.toString(),
-            teamName: getTeamName(game.home_team_id.toString()),
-            teamAbbreviation: game.home_team_abbreviation,
-            score: game.home_team_score,
-            players: [],
-            periodScores: scores.filter(s => s.teamId === game.home_team_id.toString())
-          };
-
-          const awayTeam = {
-            teamId: game.away_team_id.toString(),
-            teamName: getTeamName(game.away_team_id.toString()),
-            teamAbbreviation: game.away_team_abbreviation,
-            score: game.away_team_score,
-            players: [],
-            periodScores: scores.filter(s => s.teamId === game.away_team_id.toString())
-          };
-
-          return {
-            ...game,
-            boxScoreLoaded: hasBoxScore,
-            isPlayoff: isPlayoffGame(game.game_id),
-            homeTeam,
-            awayTeam,
-            periodScores: scores,
-            created_at: new Date()
-          };
-        });
-
-        const games = groupByDate(gamesWithBoxScores);
+        const games = groupByDate(buildGamesWithBoxScores(scheduleData, boxScoresData));
         setGamesByDate(games);
         setError('');
         setLoadingMessages(prev => [
@@ -318,40 +336,7 @@ function HomeContent() {
         ]);
         setPlayerIndex(playerIndexData);
 
-        const gamesWithBoxScores = scheduleData.map((game) => {
-          const hasBoxScore = !!boxScoresData[game.game_id];
-          const scores = boxScoresData[game.game_id] || [];
-
-          const homeTeam = {
-            teamId: game.home_team_id.toString(),
-            teamName: getTeamName(game.home_team_id.toString()),
-            teamAbbreviation: game.home_team_abbreviation,
-            score: game.home_team_score,
-            players: [],
-            periodScores: scores.filter(s => s.teamId === game.home_team_id.toString())
-          };
-
-          const awayTeam = {
-            teamId: game.away_team_id.toString(),
-            teamName: getTeamName(game.away_team_id.toString()),
-            teamAbbreviation: game.away_team_abbreviation,
-            score: game.away_team_score,
-            players: [],
-            periodScores: scores.filter(s => s.teamId === game.away_team_id.toString())
-          };
-
-          return {
-            ...game,
-            boxScoreLoaded: hasBoxScore,
-            isPlayoff: isPlayoffGame(game.game_id),
-            homeTeam,
-            awayTeam,
-            periodScores: scores,
-            created_at: new Date()
-          };
-        });
-
-        const games = groupByDate(gamesWithBoxScores);
+        const games = groupByDate(buildGamesWithBoxScores(scheduleData, boxScoresData));
         setGamesByDate(games);
         setError('');
       }
