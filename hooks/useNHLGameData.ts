@@ -6,8 +6,12 @@ import { Schedule, TeamStats } from '@/types/schema';
 import { getNHLTeamName } from '@/lib/nhl/teams';
 import { NHL_SOURCE_TABLES, NHL_TEMP_TABLES } from '@/constants/tables';
 import { utcToLocalDate } from '@/lib/dateUtils';
-import type { SeasonType } from '@/lib/seasonUtils';
-import { GameDataFilters, PlayerIndexEntry } from './useGameData';
+import { buildSeasonWhereClause } from '@/lib/queryUtils';
+import { buildPlayerIndex, buildGameScoresMap } from '@/lib/gameDataUtils';
+import { GameDataFilters } from './useGameData';
+import type { PlayerIndexEntry } from '@/lib/gameDataUtils';
+
+const NHL_PLAYOFF_TYPES = ['Playoffs'];
 
 // Track cache state per evaluateQuery instance — automatically invalidates
 // when the MotherDuck connection drops and a new evaluateQuery is created.
@@ -38,8 +42,8 @@ async function ensureNHLTempTables(evaluateQuery: EvalFn, filters?: GameDataFilt
   const seasonKey = `${filters?.seasonYear ?? 'all'}-${filters?.seasonType ?? 'all'}`;
   if (cache.seasonKey === seasonKey) return;
 
-  const whereClause = buildNHLSeasonWhereClause(filters);
-  const joinWhereClause = buildNHLSeasonWhereClause(filters, 's');
+  const whereClause = buildSeasonWhereClause(filters, undefined, NHL_PLAYOFF_TYPES);
+  const joinWhereClause = buildSeasonWhereClause(filters, 's', NHL_PLAYOFF_TYPES);
 
   const queries = [
     `CREATE OR REPLACE TEMP TABLE ${NHL_TEMP_TABLES.SCHEDULE} AS
@@ -64,45 +68,6 @@ async function ensureNHLTempTables(evaluateQuery: EvalFn, filters?: GameDataFilt
 
   await Promise.all(queries.map(query => evaluateQuery(query)));
   cache.seasonKey = seasonKey;
-}
-
-function buildNHLSeasonWhereClause(filters?: GameDataFilters, alias?: string): string {
-  const clauses: string[] = [];
-  const prefix = alias ? `${alias}.` : '';
-
-  if (filters?.seasonYear) {
-    clauses.push(`${prefix}season_year = ${filters.seasonYear}`);
-  }
-
-  if (filters?.seasonType && filters.seasonType !== 'all') {
-    if (filters.seasonType === 'regular') {
-      clauses.push(`${prefix}season_type = 'Regular Season'`);
-    } else if (filters.seasonType === 'playoffs') {
-      clauses.push(`${prefix}season_type = 'Playoffs'`);
-    }
-  }
-
-  return clauses.length > 0 ? ' AND ' + clauses.join(' AND ') : '';
-}
-
-/** Builds a player search index from flat (player, game_id) rows, grouped client-side. */
-function buildPlayerIndex(rows: Array<{ entity_id: string; player_name: string; team_abbreviation: string; game_id: string }>): PlayerIndexEntry[] {
-  const map = new Map<string, PlayerIndexEntry>();
-  for (const r of rows) {
-    const key = `${r.entity_id}|${r.team_abbreviation}`;
-    let entry = map.get(key);
-    if (!entry) {
-      entry = {
-        entity_id: String(r.entity_id),
-        player_name: String(r.player_name),
-        team_abbreviation: String(r.team_abbreviation),
-        game_ids: [],
-      };
-      map.set(key, entry);
-    }
-    entry.game_ids.push(String(r.game_id));
-  }
-  return Array.from(map.values());
 }
 
 export function useNHLSchedule() {
@@ -159,21 +124,7 @@ export function useNHLBoxScores() {
       `);
       const periodScores = result.data.toRows() as unknown as TeamStats[];
 
-      const gameScores = new Map<string, Array<{ teamId: string; period: string; points: number }>>();
-
-      const uniqueGameIds = new Set(periodScores.map(score => score.game_id));
-      uniqueGameIds.forEach(gameId => {
-        gameScores.set(gameId, []);
-      });
-
-      for (const score of periodScores) {
-        const scores = gameScores.get(score.game_id)!;
-        scores.push({
-          teamId: score.team_abbreviation,
-          period: score.period,
-          points: Number(score.points)
-        });
-      }
+      const gameScores = buildGameScoresMap(periodScores);
 
       return Object.fromEntries(gameScores);
     } catch (error) {
