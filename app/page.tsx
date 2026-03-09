@@ -101,7 +101,7 @@ function buildGamesWithBoxScores(
 
 function HomeContent() {
   const searchParams = useSearchParams();
-  const [gamesByDate, setGamesByDate] = useState<Record<string, ScheduleWithBoxScore[]>>({});
+  const [allGames, setAllGames] = useState<ScheduleWithBoxScore[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [loadingMessages, setLoadingMessages] = useState<Array<{ message: string; completed: boolean }>>([]);
@@ -249,26 +249,24 @@ function HomeContent() {
   }, [player, playerIndex]);
 
   const filteredGamesByDate = useMemo(() => {
-    if (!gamesByDate || Object.keys(gamesByDate).length === 0) return [];
+    if (allGames.length === 0) return [];
 
     return Object.entries(
       groupByDate(
-        Object.values(gamesByDate)
-          .flat()
-          .filter(game => {
-            if (team && game.home_team_abbreviation !== team && game.away_team_abbreviation !== team) {
-              return false;
-            }
-            if (playerGameIds && !playerGameIds.has(String(game.game_id))) {
-              return false;
-            }
-            return true;
-          })
+        allGames.filter(game => {
+          if (team && game.home_team_abbreviation !== team && game.away_team_abbreviation !== team) {
+            return false;
+          }
+          if (playerGameIds && !playerGameIds.has(String(game.game_id))) {
+            return false;
+          }
+          return true;
+        })
       )
     )
       .map(([date, games]) => ({ date, games }))
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [gamesByDate, team, playerGameIds]);
+  }, [allGames, team, playerGameIds]);
 
   // Reset page when filters change
   useEffect(() => {
@@ -318,8 +316,7 @@ function HomeContent() {
         setPlayerIndex(playerIndexData);
         updateLoadingMessage(1);
 
-        const games = groupByDate(buildGamesWithBoxScores(scheduleData, boxScoresData));
-        setGamesByDate(games);
+        setAllGames(buildGamesWithBoxScores(scheduleData, boxScoresData));
         setError('');
         setLoadingMessages(prev => [
           ...prev,
@@ -336,8 +333,7 @@ function HomeContent() {
         ]);
         setPlayerIndex(playerIndexData);
 
-        const games = groupByDate(buildGamesWithBoxScores(scheduleData, boxScoresData));
-        setGamesByDate(games);
+        setAllGames(buildGamesWithBoxScores(scheduleData, boxScoresData));
         setError('');
       }
     } catch (err) {
