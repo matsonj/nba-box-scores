@@ -28,12 +28,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run NBA current season ingestion
+      - name: Run NBA current season ingestion (regular season)
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: npm run ingest:current
 
-      - name: Run NHL current season ingestion
+      - name: Run NBA current season ingestion (playoffs)
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: npm run ingest:current:playoffs
+
+      - name: Run NHL current season ingestion (regular season)
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: npm run ingest:nhl:current
+
+      - name: Run NHL current season ingestion (playoffs)
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: npm run ingest:nhl:current:playoffs
