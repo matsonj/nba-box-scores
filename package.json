@@ -27,7 +27,8 @@
     "ingest:nhl:current": "tsx scripts/ingest/nhl/index.ts --season 2025",
     "ingest:nhl:current:playoffs": "tsx scripts/ingest/nhl/index.ts --season 2025 --season-type 03",
     "ingest:nhl:backfill": "tsx scripts/ingest/nhl/index.ts --all --delay 500",
-    "ingest:nhl:playoffs": "tsx scripts/ingest/nhl/index.ts --all --season-type 03"
+    "ingest:nhl:playoffs": "tsx scripts/ingest/nhl/index.ts --all --season-type 03",
+    "ingest:legacy": "tsx scripts/ingest/legacy/index.ts --from 1947 --to 1999"
   },
   "dependencies": {
     "@duckdb/node-api": "^1.4.4-r.2",

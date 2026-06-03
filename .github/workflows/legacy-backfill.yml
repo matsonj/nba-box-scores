@@ -1,0 +1,74 @@
+name: Legacy Backfill (pre-2000)
+
+# One-time / occasional import of pre-2000 NBA box scores from a static Kaggle
+# dataset. stats.nba.com is IP-blocked from CI (Azure runners), so this reads a
+# downloaded dataset file directly via DuckDB — see scripts/ingest/legacy/.
+#
+# IMPORTANT: the Kaggle dataset is NOT committed and requires auth to download.
+# The primary supported path is LOCAL:
+#
+#   1. Download "Historical NBA Data and Player Box Scores" from Kaggle.
+#   2. npm run ingest:legacy -- --source /path/to/dataset --dry-run --verbose
+#   3. Inspect the logged source columns + sample rows, then drop --dry-run.
+#
+# This workflow is a stub for re-runs once a dataset is made available to CI
+# (e.g. via a KAGGLE_USERNAME/KAGGLE_KEY secret + `kaggle datasets download`,
+# left as future work). Without that, the run step below will no-op on a missing
+# --source and should be wired up before use.
+
+on:
+  workflow_dispatch:
+    inputs:
+      from_year:
+        description: 'Start season year (e.g. 1947 for 1947-48)'
+        required: true
+        type: string
+        default: '1947'
+      to_year:
+        description: 'End season year inclusive (e.g. 1999 for 1999-00)'
+        required: true
+        type: string
+        default: '1999'
+      dry_run:
+        description: 'Read + parse + log only, write nothing'
+        required: true
+        type: boolean
+        default: true
+
+jobs:
+  legacy-backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Install dependencies
+        run: npm ci
+
+      # TODO: acquire the Kaggle dataset here before running, e.g.
+      #   pip install kaggle
+      #   kaggle datasets download -d eoinamoore/historical-nba-data-and-player-box-scores -p ./_kaggle --unzip
+      # gated on KAGGLE_USERNAME / KAGGLE_KEY secrets, then set --source ./_kaggle below.
+
+      - name: Run legacy backfill
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: |
+          npm run ingest:legacy -- \
+            --source "${LEGACY_SOURCE:-./_kaggle}" \
+            --from ${{ inputs.from_year }} \
+            --to ${{ inputs.to_year }} \
+            ${{ inputs.dry_run && '--dry-run' || '' }} \
+            --verbose

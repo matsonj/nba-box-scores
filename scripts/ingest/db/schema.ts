@@ -28,9 +28,13 @@ CREATE TABLE IF NOT EXISTS main.box_scores (
   points INTEGER NOT NULL DEFAULT 0,
   rebounds INTEGER NOT NULL DEFAULT 0,
   assists INTEGER NOT NULL DEFAULT 0,
-  steals INTEGER NOT NULL DEFAULT 0,
-  blocks INTEGER NOT NULL DEFAULT 0,
-  turnovers INTEGER NOT NULL DEFAULT 0,
+  -- steals/blocks/turnovers are nullable: untracked before the league recorded them
+  -- (steals/blocks pre-1973-74, player turnovers pre-1977-78). The legacy backfill
+  -- fills them with regression estimates and flags those rows via estimated_stats;
+  -- NULL is the safety-net for the genuinely-unimputable case.
+  steals INTEGER DEFAULT 0,
+  blocks INTEGER DEFAULT 0,
+  turnovers INTEGER DEFAULT 0,
   fg_made INTEGER NOT NULL DEFAULT 0,
   fg_attempted INTEGER NOT NULL DEFAULT 0,
   fg3_made INTEGER NOT NULL DEFAULT 0,
@@ -38,6 +42,9 @@ CREATE TABLE IF NOT EXISTS main.box_scores (
   ft_made INTEGER NOT NULL DEFAULT 0,
   ft_attempted INTEGER NOT NULL DEFAULT 0,
   starter INTEGER,
+  -- Comma-separated list of fields that are regression-estimated rather than measured
+  -- (e.g. 'steals,blocks,turnovers'). NULL for fully-real / structural-zero rows.
+  estimated_stats VARCHAR,
   PRIMARY KEY (game_id, entity_id, period)
 );`;
 
@@ -236,6 +243,57 @@ CREATE TABLE IF NOT EXISTS main.raw_game_data_pbpstats (
   ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`;
 
+// Raw data lake for the pre-2000 legacy backfill. Kept separate from
+// raw_game_data_pbpstats because the source (a static Kaggle dataset) and its
+// JSON shape differ from the live PBPStats feed.
+export const CREATE_RAW_GAME_DATA_LEGACY = `
+CREATE TABLE IF NOT EXISTS main.raw_game_data_legacy (
+  game_id TEXT PRIMARY KEY,
+  season_year INTEGER NOT NULL,
+  season_type TEXT NOT NULL,
+  source_dataset TEXT NOT NULL,
+  source_version TEXT,
+  game_json JSON,
+  box_score_json JSON,
+  ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);`;
+
+// Provenance for the regression imputation: one row per fitted model run, with
+// the coefficients and R² so estimates are reproducible and auditable.
+export const CREATE_LEGACY_IMPUTATION_MODELS = `
+CREATE TABLE IF NOT EXISTS main.legacy_imputation_models (
+  fit_id TEXT NOT NULL,
+  target TEXT NOT NULL,
+  feature TEXT NOT NULL,
+  coefficient DOUBLE NOT NULL,
+  r2 DOUBLE,
+  n_train INTEGER,
+  fit_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (fit_id, target, feature)
+);`;
+
+// Documents which stats each historical era actually tracked, so consumers can
+// tell a structural/estimated zero from a measured one.
+export const CREATE_LEGACY_STAT_AVAILABILITY_VIEW = `
+CREATE OR REPLACE VIEW main.legacy_stat_availability AS
+SELECT * FROM (VALUES
+  (1946, 1972, 'PTS,REB,AST,FG,FT',  false, false, false, false),
+  (1973, 1976, '+BLK,STL',           true,  true,  false, false),
+  (1977, 1978, '+player TOV',        true,  true,  true,  false),
+  (1979, 1999, '+3PT',               true,  true,  true,  true)
+) AS t(from_year, to_year, added_stats, has_blocks, has_steals, has_turnovers, has_3pt);`;
+
+// Idempotent migrations for databases created before the legacy backfill landed.
+// CREATE TABLE IF NOT EXISTS will not alter an existing box_scores, so these run
+// the in-place changes. Each is safe to re-run; the orchestrator ignores
+// "already applied" errors.
+export const LEGACY_MIGRATIONS = [
+  `ALTER TABLE main.box_scores ALTER COLUMN steals DROP NOT NULL;`,
+  `ALTER TABLE main.box_scores ALTER COLUMN blocks DROP NOT NULL;`,
+  `ALTER TABLE main.box_scores ALTER COLUMN turnovers DROP NOT NULL;`,
+  `ALTER TABLE main.box_scores ADD COLUMN IF NOT EXISTS estimated_stats VARCHAR;`,
+] as const;
+
 // Schema comments are now generated dynamically by metadata-generator
 // after ingest. See scripts/ingest/db/metadata.ts and `npm run metadata:refresh`.
 
@@ -245,7 +303,10 @@ export const ALL_DDL = [
   CREATE_INGESTION_LOG,
   CREATE_DATA_QUALITY_QUARANTINE,
   CREATE_RAW_GAME_DATA_PBPSTATS,
+  CREATE_RAW_GAME_DATA_LEGACY,
+  CREATE_LEGACY_IMPUTATION_MODELS,
   CREATE_TEAM_STATS_VIEW,
   CREATE_PLAYERS_VIEW,
   CREATE_GAME_QUALITY_VIEW,
+  CREATE_LEGACY_STAT_AVAILABILITY_VIEW,
 ] as const;

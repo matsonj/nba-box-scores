@@ -66,9 +66,11 @@ export interface BoxScoreRow {
   points: number;
   rebounds: number;
   assists: number;
-  steals: number;
-  blocks: number;
-  turnovers: number;
+  // Nullable: untracked before the league recorded them (legacy backfill fills
+  // estimates and flags them via estimated_stats). The live pipeline always sets numbers.
+  steals: number | null;
+  blocks: number | null;
+  turnovers: number | null;
   fg_made: number;
   fg_attempted: number;
   fg3_made: number;
@@ -76,6 +78,8 @@ export interface BoxScoreRow {
   ft_made: number;
   ft_attempted: number;
   starter: number | null;
+  /** Comma-separated list of regression-estimated fields, or null/undefined when fully real. */
+  estimated_stats?: string | null;
 }
 
 /** Row matching the v2 schedule table schema */
