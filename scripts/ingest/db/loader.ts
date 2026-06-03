@@ -52,7 +52,7 @@ export class Loader {
             `${num(r.fg_made)}, ${num(r.fg_attempted)}, ` +
             `${num(r.fg3_made)}, ${num(r.fg3_attempted)}, ` +
             `${num(r.ft_made)}, ${num(r.ft_attempted)}, ` +
-            `${num(r.starter)})`,
+            `${num(r.starter)}, ${esc(r.estimated_stats ?? null)})`,
         )
         .join(',\n');
 
@@ -61,7 +61,7 @@ export class Loader {
           game_id, team_abbreviation, entity_id, player_name, period, minutes,
           points, rebounds, assists, steals, blocks, turnovers,
           fg_made, fg_attempted, fg3_made, fg3_attempted,
-          ft_made, ft_attempted, starter
+          ft_made, ft_attempted, starter, estimated_stats
         ) VALUES\n${values}`,
       );
 
@@ -105,6 +105,26 @@ export class Loader {
         batchSize: batch.length,
         total: rows.length,
       });
+    }
+  }
+
+  /** Mark many games as ingested in one batched insert (avoids per-game round-trips). */
+  async markIngestedBatch(entries: IngestionLogEntry[]): Promise<void> {
+    if (entries.length === 0) return;
+    for (let i = 0; i < entries.length; i += this.batchSize) {
+      const batch = entries.slice(i, i + this.batchSize);
+      const values = batch
+        .map(
+          (e) =>
+            `(${esc(e.game_id)}, ${num(e.season_year)}, ${esc(e.season_type)}, ` +
+            `${esc(e.ingestion_status)}, ${esc(e.error_message ?? null)})`,
+        )
+        .join(',\n');
+      await this.db.execute(
+        `INSERT OR REPLACE INTO main.ingestion_log
+         (game_id, season_year, season_type, ingestion_status, error_message)
+         VALUES\n${values}`,
+      );
     }
   }
 
