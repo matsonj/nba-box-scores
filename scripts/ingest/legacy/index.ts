@@ -17,7 +17,7 @@ import {
   type RawLegacyRow,
 } from './source-reader';
 import { fitModels, modelsToRows } from './imputer';
-import { parseGames, parsePlayerRows, legacyGameId } from './parser';
+import { parseGames, parsePlayerRows, legacyGameId, LEGACY_ID_PREFIX } from './parser';
 import { logger } from '../util/logger';
 import { shutdownSignal } from '../util/shutdown';
 import type { IngestionLogEntry } from '../types';
@@ -86,6 +86,17 @@ async function main(): Promise<void> {
 
     const scheduleRows = parseGames(gameRows);
     const boxScoreRows = parsePlayerRows(playerRows, models);
+
+    // Collision guard: every legacy id MUST carry the prefix so it can never
+    // overwrite a live ('00…') row via INSERT OR REPLACE. Cheap invariant check
+    // that fails loud if id-prefixing ever regresses.
+    const unprefixed = scheduleRows.find((r) => !r.game_id.startsWith(LEGACY_ID_PREFIX));
+    if (unprefixed) {
+      throw new Error(
+        `Legacy game_id "${unprefixed.game_id}" is missing the '${LEGACY_ID_PREFIX}' prefix — ` +
+          `aborting to avoid clobbering live data.`,
+      );
+    }
 
     // 3. Idempotency: skip games already logged (unless --force).
     const { keptSchedule, keptGameIds } = await filterAlreadyIngested(loader, scheduleRows, config.force);
