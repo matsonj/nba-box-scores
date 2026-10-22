@@ -344,7 +344,7 @@ export default function NHLBoxScorePanel({ gameId, onClose, liveData, highlighte
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto"
+      className="fixed inset-0 bg-black/50 z-50 overflow-y-auto"
       onClick={handleClose}
     >
       <div
@@ -357,7 +357,7 @@ export default function NHLBoxScorePanel({ gameId, onClose, liveData, highlighte
           <div className="absolute top-2 right-2 z-50 flex items-center gap-1.5">
             {isLiveView && (
               <div className="flex items-center gap-1.5 mr-1">
-                <span className="relative inline-flex items-center justify-center w-4 h-4 flex-shrink-0 text-green-600 dark:text-green-400">
+                <span className="relative inline-flex items-center justify-center w-4 h-4 shrink-0 text-green-600 dark:text-green-400">
                   <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
                   <span className="absolute inline-block w-3.5 h-3.5 rounded-full bg-green-500 opacity-30 animate-ping" />
                 </span>
@@ -436,7 +436,7 @@ export default function NHLBoxScorePanel({ gameId, onClose, liveData, highlighte
             ) : null}
           </div>
           {selectedPlayer && (
-            <div className="fixed inset-0 z-[60] bg-black bg-opacity-50">
+            <div className="fixed inset-0 z-[60] bg-black/50">
               <NHLPlayerGameLogPanel
                 entityId={selectedPlayer.entityId}
                 playerName={selectedPlayer.name}

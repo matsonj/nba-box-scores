@@ -231,7 +231,7 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto"
+      className="fixed inset-0 bg-black/50 z-50 overflow-y-auto"
       onClick={handleClose}
     >
       <div
@@ -244,7 +244,7 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
           <div className="absolute top-2 right-2 z-50 flex items-center gap-1.5">
             {isLiveView && liveData && (
               <div className="flex items-center gap-1.5 mr-1">
-                <span className="relative inline-flex items-center justify-center w-4 h-4 flex-shrink-0 text-green-600 dark:text-green-400">
+                <span className="relative inline-flex items-center justify-center w-4 h-4 shrink-0 text-green-600 dark:text-green-400">
                   <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
                   <CountdownRing key={pollTick} durationMs={pollInterval} size={16} />
                 </span>
@@ -302,7 +302,7 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
                   />
                 </div>
                 {selectedPlayer && (
-                  <div className="fixed inset-0 z-[60] bg-black bg-opacity-50">
+                  <div className="fixed inset-0 z-[60] bg-black/50">
                     <PlayerGameLogPanel
                       entityId={selectedPlayer.entityId}
                       playerName={selectedPlayer.name}
@@ -346,7 +346,7 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
                   />
                 </div>
                 {selectedPlayer && (
-                  <div className="fixed inset-0 z-[60] bg-black bg-opacity-50">
+                  <div className="fixed inset-0 z-[60] bg-black/50">
                     <PlayerGameLogPanel
                       entityId={selectedPlayer.entityId}
                       playerName={selectedPlayer.name}

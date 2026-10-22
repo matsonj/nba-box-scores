@@ -4,9 +4,8 @@ import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { NHL_TEMP_TABLES } from '@/constants/tables';
-import { utcToLocalDate } from '@/lib/dateUtils';
+import { utcToLocalDate, formatDate } from '@/lib/dateUtils';
 import { sanitizeNumericId } from '@/lib/queryUtils';
-import { format } from 'date-fns';
 import { nhlConfig } from '@/lib/sports/nhl';
 
 interface NHLPlayerGameLogPanelProps {
@@ -222,7 +221,7 @@ export default function NHLPlayerGameLogPanel({ entityId, playerName, playerType
         ) : (
           skaterGames.map((game, index) => (
             <tr key={game.game_id} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
-              <td className={cellClass}>{format(game.game_date, 'MM-dd-yy')}</td>
+              <td className={cellClass}>{formatDate(game.game_date, 'MM-dd-yy')}</td>
               <td className={cellClass}>{formatResult(game.result, game.margin)}</td>
               <td className={cellClassRight}>{game.toi}</td>
               <td className={cellClassRight}>{game.goals}</td>
@@ -268,7 +267,7 @@ export default function NHLPlayerGameLogPanel({ entityId, playerName, playerType
         ) : (
           goalieGames.map((game, index) => (
             <tr key={game.game_id} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
-              <td className={cellClass}>{format(game.game_date, 'MM-dd-yy')}</td>
+              <td className={cellClass}>{formatDate(game.game_date, 'MM-dd-yy')}</td>
               <td className={cellClass}>{formatResult(game.result, game.margin)}</td>
               <td className={cellClassRight}>{game.toi}</td>
               <td className={cellClassRight}>{game.shots_against}</td>

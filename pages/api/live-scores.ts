@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import axios from 'axios';
+import { fetchJson } from '@/lib/fetchJson';
 import { ESPN_NBA_BASE, toNbaTricode } from '@/lib/espn';
 
 import type { LiveScoreGame, LiveScoresResponse } from '@/app/types/live';
@@ -25,12 +25,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const response = await axios.get(`${ESPN_NBA_BASE}/scoreboard`, {
-      timeout: 4000,
-      headers: { 'Accept': 'application/json' },
-    });
+    const data = await fetchJson(`${ESPN_NBA_BASE}/scoreboard`, 4000);
 
-    const events = (response.data?.events || []) as Record<string, unknown>[];
+    const events = (data?.events || []) as Record<string, unknown>[];
     const games: LiveScoreGame[] = events.map((event) => {
       const competition = ((event.competitions as Record<string, unknown>[]) || [])[0] || {};
       const competitors = (competition.competitors as Record<string, unknown>[]) || [];

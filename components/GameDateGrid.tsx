@@ -1,4 +1,4 @@
-import { format, parseISO } from 'date-fns';
+import { formatDate, parseLocalDate } from '@/lib/dateUtils';
 import GameCard from '@/components/GameCard';
 import type { ScheduleWithBoxScore } from '@/app/types/extended';
 
@@ -40,7 +40,7 @@ export default function GameDateGrid({
         return (
           <div key={date} className="mb-8">
             <h2 className="text-xl font-bold mb-4">
-              {format(parseISO(date), 'EEEE, MMMM do')}
+              {formatDate(parseLocalDate(date), 'EEEE, MMMM do')}
             </h2>
             <div className="grid grid-cols-1 max-md:landscape:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
               {games.map((game) => (

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react';
-import { format } from 'date-fns';
 import { useSearchParams } from 'next/navigation';
 import SeasonFilter from '@/components/SeasonFilter';
 import { useSchedule } from '@/hooks/useGameData';
@@ -9,7 +8,7 @@ import { useDataLoader } from '@/lib/dataLoader';
 import { getSeasonYearFromDate } from '@/lib/seasonUtils';
 import type { SeasonType } from '@/lib/seasonUtils';
 import type { GameDataFilters } from '@/hooks/useGameData';
-import { parseGameDate } from '@/lib/dateUtils';
+import { parseGameDate, formatDate } from '@/lib/dateUtils';
 
 interface ScheduleRow {
   game_id: string;
@@ -136,7 +135,7 @@ function AnalyticsContent() {
                       className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
                     >
                       <td className="px-3 py-2 text-sm dark:text-gray-200 whitespace-nowrap">
-                        {format(gameDate, 'MMM d, yyyy')}
+                        {formatDate(gameDate, 'MMM d, yyyy')}
                       </td>
                       <td className={`px-3 py-2 text-sm dark:text-gray-200 ${awayWon ? 'font-bold' : ''}`}>
                         {game.away_team_abbreviation}

@@ -64,7 +64,7 @@ function DynamicTablePopoverContent() {
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[90] flex items-center justify-center p-4 md:p-0">
+        <div className="fixed inset-0 bg-black/50 z-[90] flex items-center justify-center p-4 md:p-0">
           <div className="w-full md:w-3/4 lg:w-2/3 h-full md:h-auto max-h-[90vh] md:max-h-[80vh] bg-white dark:bg-gray-800 rounded-lg shadow-lg z-[100] border border-gray-200 dark:border-gray-700 overflow-auto relative">
             <div className="sticky top-0 bg-white dark:bg-gray-800 p-4 border-b border-gray-200 dark:border-gray-700 z-10">
               <div className="flex justify-between items-center">
@@ -75,7 +75,7 @@ function DynamicTablePopoverContent() {
                       e.stopPropagation();
                       setShowInfoModal(true);
                     }}
-                    className="focus:outline-none"
+                    className="focus:outline-hidden"
                     aria-label="Show information about Game Quality"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"
@@ -115,7 +115,7 @@ function DynamicTablePopoverContent() {
       {/* Info Modal */}
       {showInfoModal && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[300]"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[300]"
           onClick={() => setShowInfoModal(false)}
         >
           <div

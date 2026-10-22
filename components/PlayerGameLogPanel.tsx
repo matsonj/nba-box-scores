@@ -5,10 +5,9 @@ import { useSearchParams, usePathname } from 'next/navigation';
 import { BoxScores as BoxScoreType } from '@/app/types/schema';
 import { useMotherDuckClientState } from '@/lib/MotherDuckContext';
 import { resolveTable } from '@/constants/tables';
-import { utcToLocalDate } from '@/lib/dateUtils';
+import { utcToLocalDate, formatDate } from '@/lib/dateUtils';
 import { sanitizeNumericId } from '@/lib/queryUtils';
 import { getSeasonYearFromDate } from '@/lib/seasonUtils';
-import { format } from 'date-fns';
 import dynamic from 'next/dynamic';
 
 const PlayerPerformanceTrend = dynamic(
@@ -246,7 +245,7 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose, isLi
               ) : (
                 games.map((game, index) => (
                   <tr key={game.game_id} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
-                    <td className="md:px-1 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200">{format(game.game_date, 'MM-dd-yy')}</td>
+                    <td className="md:px-1 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200">{formatDate(game.game_date, 'MM-dd-yy')}</td>
                     <td className="md:px-1 md:py-0.5 p-0.5 md:text-base text-xs dark:text-gray-200">
                       {`${game.result} [${game.margin > 0 ? '+' : game.margin < 0 ? '-' : ''}${Math.abs(game.margin)}]`}
                     </td>
