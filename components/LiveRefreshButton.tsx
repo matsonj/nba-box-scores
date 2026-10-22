@@ -12,27 +12,22 @@ export function LiveRefreshButton() {
   const [ringKey, setRingKey] = useState(0);
 
   useEffect(() => {
-    if (!cooldownEnd) {
-      setCooldownRemaining(0);
-      return;
-    }
+    if (!cooldownEnd) return;
 
-    const tick = () => {
+    const id = setInterval(() => {
       const remaining = Math.max(0, cooldownEnd - Date.now());
       setCooldownRemaining(remaining);
       if (remaining <= 0) {
         setCooldownEnd(null);
       }
-    };
-
-    tick();
-    const id = setInterval(tick, 1000);
+    }, 1000);
     return () => clearInterval(id);
   }, [cooldownEnd]);
 
   const handleRefresh = useCallback(() => {
     forceRefresh();
     setCooldownEnd(Date.now() + REFRESH_COOLDOWN_MS);
+    setCooldownRemaining(REFRESH_COOLDOWN_MS);
     setRingKey((k) => k + 1);
   }, [forceRefresh]);
 

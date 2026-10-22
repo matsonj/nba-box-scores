@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLiveData } from '@/lib/LiveDataContext';
 import { CountdownRing } from './LiveRefreshButton';
+import { useMounted } from '@/hooks/useMounted';
 
 type LiveButtonState = 'off' | 'checking' | 'live' | 'no-games';
 
@@ -10,23 +11,21 @@ const MIN_CHECK_DURATION_MS = 1000;
 
 export function LiveModeToggle() {
   const { isLive, setIsLive, lastUpdated, activeGameCount, pollInterval, pollTick } = useLiveData();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
   const [buttonState, setButtonState] = useState<LiveButtonState>('off');
   const checkStartedAt = useRef<number | null>(null);
   const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setMounted(true);
     return () => {
       if (transitionTimer.current) clearTimeout(transitionTimer.current);
     };
   }, []);
 
-  useEffect(() => {
-    if (!isLive && buttonState !== 'no-games' && buttonState !== 'checking') {
-      setButtonState('off');
-    }
-  }, [isLive, buttonState]);
+  // Live mode was turned off elsewhere (e.g. the sport changed)
+  if (!isLive && buttonState === 'live') {
+    setButtonState('off');
+  }
 
   useEffect(() => {
     if (buttonState !== 'checking' || !isLive || !lastUpdated) return;
@@ -50,12 +49,16 @@ export function LiveModeToggle() {
     };
   }, [isLive, lastUpdated, activeGameCount, buttonState, setIsLive]);
 
+  // All live games ended while live mode was on
+  if (buttonState === 'live' && isLive && lastUpdated && activeGameCount === 0) {
+    setButtonState('no-games');
+  }
+
   useEffect(() => {
-    if (buttonState === 'live' && isLive && lastUpdated && activeGameCount === 0) {
-      setButtonState('no-games');
+    if (buttonState === 'no-games' && isLive) {
       setIsLive(false);
     }
-  }, [isLive, lastUpdated, activeGameCount, buttonState, setIsLive]);
+  }, [buttonState, isLive, setIsLive]);
 
   const handleClick = () => {
     if (buttonState === 'off' || buttonState === 'no-games') {

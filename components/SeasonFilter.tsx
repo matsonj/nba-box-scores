@@ -65,9 +65,11 @@ export default function SeasonFilter({
   }, []);
 
   // Reset highlight when suggestions change
-  useEffect(() => {
+  const [prevSuggestions, setPrevSuggestions] = useState(playerSuggestions);
+  if (prevSuggestions !== playerSuggestions) {
+    setPrevSuggestions(playerSuggestions);
     setHighlightedIndex(-1);
-  }, [playerSuggestions]);
+  }
 
   const updateParams = useCallback((key: string, value: string) => {
     const params = new URLSearchParams(searchParams?.toString() ?? '');

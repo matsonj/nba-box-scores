@@ -211,7 +211,7 @@ export default function PlayerGameLogPanel({ entityId, playerName, onClose, isLi
 
         {viewMode === 'chart' && !loading && games.length > 0 && (
           <div className="mb-4">
-            <PlayerPerformanceTrend games={games} playerName={playerName} />
+            <PlayerPerformanceTrend games={games} />
           </div>
         )}
 
