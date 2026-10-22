@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { format } from 'date-fns';
 import { useSearchParams } from 'next/navigation';
 import { ScheduleWithBoxScore } from '@/app/types/extended';
-import { parseGameDate } from '@/lib/dateUtils';
+import { parseGameDate, formatDate } from '@/lib/dateUtils';
 import { useDataLoader } from '@/lib/dataLoader';
 import type { GameDataFilters, PlayerIndexEntry } from '@/hooks/useGameData';
 import type { SeasonType } from '@/lib/seasonUtils';
@@ -17,7 +16,7 @@ export function groupByDate(games: ScheduleWithBoxScore[]) {
       return;
     }
     const dateObj = parseGameDate(game.game_date);
-    const gameDate = format(dateObj, 'yyyy-MM-dd');
+    const gameDate = formatDate(dateObj, 'yyyy-MM-dd');
     if (!gamesByDate[gameDate]) {
       gamesByDate[gameDate] = [];
     }

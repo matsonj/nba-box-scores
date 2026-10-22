@@ -13,7 +13,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { format } from 'date-fns';
+import { formatDate } from '@/lib/dateUtils';
 
 interface GameLogEntry {
   game_date: Date;
@@ -102,7 +102,7 @@ export default function PlayerPerformanceTrend({ games, playerName }: PlayerPerf
   // Build chart data indexed by game order (not date spine) for reliable tooltips
   const sorted = [...games].sort((a, b) => a.game_date.getTime() - b.game_date.getTime());
 
-  const indexToLabel = new Map(sorted.map((g, i) => [i, format(g.game_date, 'MM/dd')]));
+  const indexToLabel = new Map(sorted.map((g, i) => [i, formatDate(g.game_date, 'MM/dd')]));
 
   const chartData = sorted.map((game, i) => {
     const decimalMinutes = parseMinutes(game.minutes);

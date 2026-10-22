@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import axios from 'axios';
+import { fetchJson } from '@/lib/fetchJson';
 import { ESPN_NBA_BASE, toNbaTricode } from '@/lib/espn';
 import type { LiveBoxScoreResponse, LiveBoxScoreTeam, LivePlayerStats } from '@/app/types/live';
 
@@ -94,13 +94,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const response = await axios.get(`${ESPN_NBA_BASE}/summary`, {
-      params: { event: gameId },
-      timeout: 4000,
-      headers: { 'Accept': 'application/json' },
-    });
-
-    const data = response.data;
+    const data = await fetchJson(`${ESPN_NBA_BASE}/summary?event=${gameId}`, 4000);
     const competition = ((data?.header?.competitions as Record<string, unknown>[]) || [])[0];
     if (!competition) {
       return res.status(404).json({ error: 'Game not found' });

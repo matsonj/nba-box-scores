@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import axios from 'axios';
+import { fetchJson } from '@/lib/fetchJson';
 
 import type { LiveScoreGame, LiveScoresResponse } from '@/app/types/live';
 
@@ -114,15 +114,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const response = await axios.get(
-      'https://api-web.nhle.com/v1/score/now',
-      {
-        timeout: 4000,
-        headers: { 'Accept': 'application/json' },
-      }
-    );
+    const data = await fetchJson('https://api-web.nhle.com/v1/score/now', 4000);
 
-    const gamesData = response.data?.games || [];
+    const gamesData = data?.games || [];
     const games: LiveScoreGame[] = gamesData.map((game: Record<string, unknown>) => {
       const homeTeam = game.homeTeam as Record<string, unknown> | undefined;
       const awayTeam = game.awayTeam as Record<string, unknown> | undefined;

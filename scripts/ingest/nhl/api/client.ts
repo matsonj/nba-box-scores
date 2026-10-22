@@ -1,6 +1,6 @@
 // HTTP client for NHL API with retry and backoff
 
-import axios, { type AxiosError } from 'axios';
+import { HttpError, getJson } from '../../api/http';
 import { acquire, recordSuccess, recordThrottle } from '../../api/rate-limiter';
 import { logger } from '../../util/logger';
 import type { NHLBoxScoreResponse, NHLScheduleResponse } from '../types';
@@ -32,15 +32,11 @@ async function fetchWithRetry<T>(
     await acquire();
 
     try {
-      const response = await axios.get<T>(url, {
-        headers: DEFAULT_HEADERS,
-        signal,
-      });
+      const data = await getJson<T>(url, DEFAULT_HEADERS, signal);
       recordSuccess();
-      return response.data;
+      return data;
     } catch (err) {
-      const axErr = err as AxiosError;
-      const status = axErr.response?.status;
+      const status = err instanceof HttpError ? err.status : undefined;
 
       // Don't retry if aborted
       if (signal?.aborted) throw err;
