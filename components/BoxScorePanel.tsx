@@ -52,13 +52,15 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
 
   const isLiveView = !!liveData;
 
-  // Reset state when gameId changes
-  useEffect(() => {
+  // Reset state when the game changes (adjusted during render, not in an effect)
+  const [prevGame, setPrevGame] = useState<{ gameId: string | null; isLiveView: boolean } | null>(null);
+  if (prevGame?.gameId !== gameId || prevGame?.isLiveView !== isLiveView) {
+    setPrevGame({ gameId, isLiveView });
     if (!isLiveView) {
       setData({ homeTeam: null, awayTeam: null, gameInfo: null });
       setLoading(true);
     }
-  }, [gameId, isLiveView]);
+  }
 
   // Load data when gameId changes (only for historical mode)
   useEffect(() => {
@@ -220,7 +222,7 @@ export default function BoxScorePanel({ gameId, onClose, liveData, highlightedCe
     return () => {
       cancelled = true;
     };
-  }, [gameId, evaluateQuery]);
+  }, [gameId, evaluateQuery, isLiveView]);
 
   const handleClose = () => {
     setData({ homeTeam: null, awayTeam: null, gameInfo: null });

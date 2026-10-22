@@ -93,14 +93,22 @@ export default function NHLBoxScorePanel({ gameId, onClose, liveData, highlighte
     };
   }, [gameId]);
 
+  // Reset state when the game changes (adjusted during render, not in an effect)
+  const [prevGame, setPrevGame] = useState<{ gameId: string | null; isLiveView: boolean } | null>(null);
+  if (prevGame?.gameId !== gameId || prevGame?.isLiveView !== isLiveView) {
+    setPrevGame({ gameId, isLiveView });
+    if (gameId && !isLiveView) {
+      setLoading(true);
+      setSkaters([]);
+      setGoalies([]);
+      setSchedule(null);
+    }
+  }
+
   useEffect(() => {
     if (!gameId || isLiveView) return;
 
     let cancelled = false;
-    setLoading(true);
-    setSkaters([]);
-    setGoalies([]);
-    setSchedule(null);
 
     const loadData = async () => {
       try {

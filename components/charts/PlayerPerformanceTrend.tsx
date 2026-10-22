@@ -35,7 +35,6 @@ interface GameLogEntry {
 
 interface PlayerPerformanceTrendProps {
   games: GameLogEntry[];
-  playerName: string;
 }
 
 const STAT_OPTIONS = [
@@ -80,7 +79,7 @@ function parseMinutes(minutes: string): number {
   return mm + ss / 60;
 }
 
-export default function PlayerPerformanceTrend({ games, playerName }: PlayerPerformanceTrendProps) {
+export default function PlayerPerformanceTrend({ games }: PlayerPerformanceTrendProps) {
   const [selectedStats, setSelectedStats] = useState<Set<StatKey>>(new Set(['points']));
   const [per36, setPer36] = useState(false);
 

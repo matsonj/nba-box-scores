@@ -10,12 +10,14 @@ import { nhlConfig } from '@/lib/sports/nhl';
 import { useNHLSchedule, useNHLBoxScores, useNHLPlayerIndex } from '@/hooks/useNHLGameData';
 import { useSportPage } from '@/hooks/useSportPage';
 import type { NHLLiveBoxScoreResponse } from '@/app/types/live';
+import type { Schedule } from '@/app/types/schema';
+import type { PeriodScore } from '@/app/types/extended';
 
 const nhlSeasons = nhlConfig.getAvailableSeasons();
 
 function buildGamesWithBoxScores(
-  scheduleData: any[],
-  boxScoresData: Record<string, Array<{ teamId: string; period: string; points: number }>>,
+  scheduleData: Schedule[],
+  boxScoresData: Record<string, PeriodScore[]>,
 ) {
   return scheduleData.map((game) => {
     const hasBoxScore = !!boxScoresData[game.game_id];
@@ -57,7 +59,7 @@ function NHLContent() {
   const { fetchPlayerIndex } = useNHLPlayerIndex();
 
   const buildGames = useCallback(
-    (schedule: any[], boxScores: Record<string, any[]>) =>
+    (schedule: Schedule[], boxScores: Record<string, PeriodScore[]>) =>
       buildGamesWithBoxScores(schedule, boxScores),
     []
   );

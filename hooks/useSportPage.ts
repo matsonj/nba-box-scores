@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ScheduleWithBoxScore } from '@/app/types/extended';
+import type { PeriodScore, ScheduleWithBoxScore } from '@/app/types/extended';
+import type { Schedule } from '@/app/types/schema';
 import { parseGameDate, formatDate } from '@/lib/dateUtils';
 import { useDataLoader } from '@/lib/dataLoader';
 import type { GameDataFilters, PlayerIndexEntry } from '@/hooks/useGameData';
@@ -31,10 +32,10 @@ export function groupByDate(games: ScheduleWithBoxScore[]) {
 const DATES_PER_PAGE = 7;
 
 export interface UseSportPageConfig {
-  fetchSchedule: (filters: GameDataFilters) => Promise<any[]>;
-  fetchBoxScores: (filters: GameDataFilters) => Promise<Record<string, any[]>>;
+  fetchSchedule: (filters: GameDataFilters) => Promise<Schedule[]>;
+  fetchBoxScores: (filters: GameDataFilters) => Promise<Record<string, PeriodScore[]>>;
   fetchPlayerIndex: (filters: GameDataFilters) => Promise<PlayerIndexEntry[]>;
-  buildGames: (schedule: any[], boxScores: Record<string, any[]>) => ScheduleWithBoxScore[];
+  buildGames: (schedule: Schedule[], boxScores: Record<string, PeriodScore[]>) => ScheduleWithBoxScore[];
   getDefaultSeason: () => number;
   loadingLabel?: string;
 }
@@ -161,9 +162,12 @@ export function useSportPage(config: UseSportPageConfig) {
   }, [allGames, team, playerGameIds]);
 
   // Reset page when filters change
-  useEffect(() => {
+  const filterKey = `${team}|${season}|${seasonType}|${player}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (prevFilterKey !== filterKey) {
+    setPrevFilterKey(filterKey);
     setCurrentPage(0);
-  }, [team, season, seasonType, player]);
+  }
 
   const totalPages = Math.max(1, Math.ceil(filteredGamesByDate.length / DATES_PER_PAGE));
   const paginatedDates = filteredGamesByDate.slice(

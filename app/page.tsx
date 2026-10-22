@@ -10,7 +10,8 @@ import { useSchedule, useBoxScores, usePlayerIndex } from '@/hooks/useGameData';
 import { isPlayoffGame, getSeasonYearFromDate } from '@/lib/seasonUtils';
 import { useSportPage } from '@/hooks/useSportPage';
 import type { LiveBoxScoreResponse } from '@/app/types/live';
-import type { Team } from '@/app/types/schema';
+import type { Schedule, Team } from '@/app/types/schema';
+import type { PeriodScore } from '@/app/types/extended';
 import dynamic from 'next/dynamic';
 
 const DynamicTableLoader = dynamic(
@@ -19,8 +20,8 @@ const DynamicTableLoader = dynamic(
 );
 
 function buildGamesWithBoxScores(
-  scheduleData: any[],
-  boxScoresData: Record<string, Array<{ teamId: string; period: string; points: number }>>,
+  scheduleData: Schedule[],
+  boxScoresData: Record<string, PeriodScore[]>,
 ) {
   return scheduleData.map((game) => {
     const hasBoxScore = !!boxScoresData[game.game_id];
@@ -62,7 +63,7 @@ function HomeContent() {
   const { fetchPlayerIndex } = usePlayerIndex();
 
   const buildGames = useCallback(
-    (schedule: any[], boxScores: Record<string, any[]>) =>
+    (schedule: Schedule[], boxScores: Record<string, PeriodScore[]>) =>
       buildGamesWithBoxScores(schedule, boxScores),
     []
   );

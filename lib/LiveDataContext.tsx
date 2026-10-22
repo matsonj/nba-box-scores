@@ -108,11 +108,12 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
 
   const prevBoxScoreRef = useRef<AnyLiveBoxScoreResponse | null>(null);
 
-  // Clear stale data when sport changes
-  const prevSportRef = useRef(sport);
-  if (prevSportRef.current !== sport) {
-    prevSportRef.current = sport;
-    // Synchronously reset to avoid showing stale cross-sport data
+  // Clear stale data when sport changes. Reset during render to avoid showing
+  // stale cross-sport data; clearing subscribedGameId also resets prevBoxScoreRef
+  // in the box score effect.
+  const [prevSport, setPrevSport] = useState(sport);
+  if (prevSport !== sport) {
+    setPrevSport(sport);
     setLiveGames([]);
     setLiveBoxScore(null);
     setSubscribedGameId(null);
@@ -120,7 +121,32 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
     setBoldedCells(new Map());
     setActiveGameCount(0);
     setLastUpdated(null);
-    prevBoxScoreRef.current = null;
+  }
+
+  // Clear scoreboard data when live mode turns off
+  const [prevIsLive, setPrevIsLive] = useState(isLive);
+  if (prevIsLive !== isLive) {
+    setPrevIsLive(isLive);
+    if (!isLive) {
+      setLiveGames([]);
+      setActiveGameCount(0);
+    }
+  }
+
+  // Clear highlights when the subscribed game changes (and the box score when
+  // unsubscribing); polling for an unchanged game keeps them
+  const boxKey = `${subscribedGameId}|${isLive}`;
+  const [prevBoxKey, setPrevBoxKey] = useState(boxKey);
+  if (prevBoxKey !== boxKey) {
+    setPrevBoxKey(boxKey);
+    if (!subscribedGameId) {
+      setLiveBoxScore(null);
+      setHighlightedCells(new Map());
+      setBoldedCells(new Map());
+    } else if (isLive) {
+      setHighlightedCells(new Map());
+      setBoldedCells(new Map());
+    }
   }
   const highlightTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const boldTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -294,11 +320,11 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
         clearInterval(scoreIntervalRef.current);
         scoreIntervalRef.current = null;
       }
-      setLiveGames([]);
-      setActiveGameCount(0);
       return;
     }
 
+    // fetchScoreboard only sets state after its fetch resolves, not synchronously
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchScoreboard();
     scoreIntervalRef.current = setInterval(fetchScoreboard, POLL_INTERVAL);
 
@@ -336,18 +362,13 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
         boxIntervalRef.current = null;
       }
       if (!subscribedGameId) {
-        setLiveBoxScore(null);
         prevBoxScoreRef.current = null;
-        setHighlightedCells(new Map());
-        setBoldedCells(new Map());
       }
       return;
     }
 
-    // Reset previous data on game change
+    // Reset previous data on game change (highlights are cleared during render)
     prevBoxScoreRef.current = null;
-    setHighlightedCells(new Map());
-    setBoldedCells(new Map());
 
     fetchBoxScore(subscribedGameId);
     boxIntervalRef.current = setInterval(() => fetchBoxScore(subscribedGameId), POLL_INTERVAL);
@@ -380,9 +401,11 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
 
   // Cleanup timers on unmount
   useEffect(() => {
+    const highlightTimers = highlightTimersRef.current;
+    const boldTimers = boldTimersRef.current;
     return () => {
-      highlightTimersRef.current.forEach((timer) => clearTimeout(timer));
-      boldTimersRef.current.forEach((timer) => clearTimeout(timer));
+      highlightTimers.forEach((timer) => clearTimeout(timer));
+      boldTimers.forEach((timer) => clearTimeout(timer));
     };
   }, []);
 
