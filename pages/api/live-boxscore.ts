@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
-import { NBA_CDN_HEADERS } from '@/lib/nbaCdn';
-import type { LiveBoxScoreResponse, LivePlayerStats } from '@/app/types/live';
+import { ESPN_NBA_BASE, toNbaTricode } from '@/lib/espn';
+import type { LiveBoxScoreResponse, LiveBoxScoreTeam, LivePlayerStats } from '@/app/types/live';
 
 interface CacheEntry {
   data: LiveBoxScoreResponse;
@@ -11,14 +11,64 @@ interface CacheEntry {
 const cache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 5000;
 
-function parseMinutes(ptMinutes: string): string {
-  if (!ptMinutes) return '0:00';
-  // Format: "PT36M12.00S" or "PT05M30.00S"
-  const match = ptMinutes.match(/PT(\d+)M([\d.]+)S/);
-  if (!match) return '0:00';
-  const minutes = parseInt(match[1], 10);
-  const seconds = Math.floor(parseFloat(match[2]));
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+// ESPN play types that aren't real plays (skipped when picking the last play)
+const NON_PLAY_TYPES = new Set(['End Period', 'End Game', 'Start Period', 'Start Game']);
+
+/** Splits an ESPN "made-attempted" stat like "3-7" into [3, 7]. */
+function parseMadeAttempted(value: string | undefined): [number, number] {
+  const [made, attempted] = String(value || '0-0').split('-');
+  return [parseInt(made, 10) || 0, parseInt(attempted, 10) || 0];
+}
+
+function mapTeam(
+  teamPlayers: Record<string, unknown> | undefined,
+  competitor: Record<string, unknown> | undefined
+): LiveBoxScoreTeam {
+  const team = (teamPlayers?.team || competitor?.team) as Record<string, unknown> | undefined;
+  const statGroup = ((teamPlayers?.statistics as Record<string, unknown>[]) || [])[0];
+  const keys = (statGroup?.keys as string[]) || [];
+  const athletes = (statGroup?.athletes as Record<string, unknown>[]) || [];
+
+  const players: LivePlayerStats[] = athletes.map((a) => {
+    const athlete = a.athlete as Record<string, unknown> | undefined;
+    const stats = (a.stats as string[]) || [];
+    const stat = (key: string) => stats[keys.indexOf(key)];
+    const num = (key: string) => parseInt(stat(key) || '0', 10) || 0;
+    const [fgm, fga] = parseMadeAttempted(stat('fieldGoalsMade-fieldGoalsAttempted'));
+    const [tpm, tpa] = parseMadeAttempted(stat('threePointFieldGoalsMade-threePointFieldGoalsAttempted'));
+    const [ftm, fta] = parseMadeAttempted(stat('freeThrowsMade-freeThrowsAttempted'));
+
+    return {
+      personId: String(athlete?.id || ''),
+      playerName: String(athlete?.displayName || ''),
+      // ESPN only reports whole minutes
+      minutes: stat('minutes') || '0',
+      points: num('points'),
+      rebounds: num('rebounds'),
+      assists: num('assists'),
+      steals: num('steals'),
+      blocks: num('blocks'),
+      turnovers: num('turnovers'),
+      fieldGoalsMade: fgm,
+      fieldGoalsAttempted: fga,
+      threePointersMade: tpm,
+      threePointersAttempted: tpa,
+      freeThrowsMade: ftm,
+      freeThrowsAttempted: fta,
+      plusMinus: num('plusMinus'),
+      starter: Boolean(a.starter),
+      // ESPN's `active` flag marks players currently on the court
+      oncourt: Boolean(a.active),
+      played: !a.didNotPlay && stats.length > 0,
+    };
+  });
+
+  return {
+    teamId: String(team?.id || ''),
+    teamTricode: toNbaTricode(team?.abbreviation),
+    score: Number(competitor?.score || 0),
+    players,
+  };
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -32,7 +82,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const gameId = req.query.gameId;
-  if (!gameId || typeof gameId !== 'string' || !/^\d{10}$/.test(gameId)) {
+  if (!gameId || typeof gameId !== 'string' || !/^\d+$/.test(gameId)) {
     return res.status(400).json({ error: 'Invalid gameId parameter' });
   }
 
@@ -44,87 +94,50 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const response = await axios.get(
-      `https://cdn.nba.com/static/json/liveData/boxscore/boxscore_${gameId}.json`,
-      {
-        timeout: 4000,
-        headers: NBA_CDN_HEADERS,
-      }
-    );
+    const response = await axios.get(`${ESPN_NBA_BASE}/summary`, {
+      params: { event: gameId },
+      timeout: 4000,
+      headers: { 'Accept': 'application/json' },
+    });
 
-    const game = response.data?.game;
-    if (!game) {
+    const data = response.data;
+    const competition = ((data?.header?.competitions as Record<string, unknown>[]) || [])[0];
+    if (!competition) {
       return res.status(404).json({ error: 'Game not found' });
     }
 
-    const mapPlayers = (players: Record<string, unknown>[]): LivePlayerStats[] =>
-      (players || []).map((p) => {
-        const stats = p.statistics as Record<string, unknown> | undefined;
-        return {
-          personId: String(p.personId || ''),
-          playerName: `${p.firstName || ''} ${p.familyName || ''}`.trim(),
-          minutes: parseMinutes(String(stats?.minutes || '')),
-          points: Number(stats?.points || 0),
-          rebounds: Number(stats?.reboundsTotal || 0),
-          assists: Number(stats?.assists || 0),
-          steals: Number(stats?.steals || 0),
-          blocks: Number(stats?.blocks || 0),
-          turnovers: Number(stats?.turnovers || 0),
-          fieldGoalsMade: Number(stats?.fieldGoalsMade || 0),
-          fieldGoalsAttempted: Number(stats?.fieldGoalsAttempted || 0),
-          threePointersMade: Number(stats?.threePointersMade || 0),
-          threePointersAttempted: Number(stats?.threePointersAttempted || 0),
-          freeThrowsMade: Number(stats?.freeThrowsMade || 0),
-          freeThrowsAttempted: Number(stats?.freeThrowsAttempted || 0),
-          plusMinus: Number(stats?.plusMinusPoints || 0),
-          starter: p.starter === '1' || p.starter === 1,
-          oncourt: p.oncourt === '1' || p.oncourt === 1,
-          played: p.played === '1' || p.played === 1,
-        };
-      });
+    const competitors = (competition.competitors as Record<string, unknown>[]) || [];
+    const home = competitors.find((c) => c.homeAway === 'home');
+    const away = competitors.find((c) => c.homeAway === 'away');
+    const teamIdOf = (c: Record<string, unknown> | undefined) =>
+      String((c?.team as Record<string, unknown> | undefined)?.id || '');
 
-    // Fetch last play from play-by-play endpoint (best effort)
+    const boxPlayers = (data.boxscore?.players as Record<string, unknown>[]) || [];
+    const playersFor = (teamId: string) =>
+      boxPlayers.find((p) => String((p.team as Record<string, unknown> | undefined)?.id) === teamId);
+
+    // Walk backwards to find the last real play (skip period/game markers)
+    const plays = (data.plays as Record<string, unknown>[]) || [];
     let lastPlay: string | null = null;
-    try {
-      const pbpResponse = await axios.get(
-        `https://cdn.nba.com/static/json/liveData/playbyplay/playbyplay_${gameId}.json`,
-        { timeout: 3000, headers: NBA_CDN_HEADERS }
-      );
-      const actions = pbpResponse.data?.game?.actions as Record<string, unknown>[] | undefined;
-      if (actions && actions.length > 0) {
-        // Walk backwards to find the last action with a description (skip "Period End" etc.)
-        for (let i = actions.length - 1; i >= 0; i--) {
-          const desc = actions[i].description as string | undefined;
-          const actionType = actions[i].actionType as string | undefined;
-          if (desc && actionType !== 'game' && actionType !== 'period') {
-            lastPlay = desc;
-            break;
-          }
-        }
+    for (let i = plays.length - 1; i >= 0; i--) {
+      const text = plays[i].text as string | undefined;
+      const playType = (plays[i].type as Record<string, unknown> | undefined)?.text as string | undefined;
+      if (text && !NON_PLAY_TYPES.has(playType || '')) {
+        lastPlay = text;
+        break;
       }
-    } catch {
-      // play-by-play is optional, don't fail the request
     }
 
-    const homeTeam = game.homeTeam as Record<string, unknown>;
-    const awayTeam = game.awayTeam as Record<string, unknown>;
+    const statusType = (competition.status as Record<string, unknown> | undefined)?.type as
+      | Record<string, unknown>
+      | undefined;
 
     const result: LiveBoxScoreResponse = {
       gameId,
-      gameStatus: String(game.gameStatusText || ''),
+      gameStatus: String(statusType?.shortDetail || ''),
       lastPlay,
-      homeTeam: {
-        teamId: String(homeTeam?.teamId || ''),
-        teamTricode: String(homeTeam?.teamTricode || ''),
-        score: Number(homeTeam?.score || 0),
-        players: mapPlayers(homeTeam?.players as Record<string, unknown>[] || []),
-      },
-      awayTeam: {
-        teamId: String(awayTeam?.teamId || ''),
-        teamTricode: String(awayTeam?.teamTricode || ''),
-        score: Number(awayTeam?.score || 0),
-        players: mapPlayers(awayTeam?.players as Record<string, unknown>[] || []),
-      },
+      homeTeam: mapTeam(playersFor(teamIdOf(home)), home),
+      awayTeam: mapTeam(playersFor(teamIdOf(away)), away),
     };
 
     cache.set(gameId, { data: result, timestamp: now });

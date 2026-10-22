@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
-import { NBA_CDN_HEADERS } from '@/lib/nbaCdn';
+import { ESPN_NBA_BASE, toNbaTricode } from '@/lib/espn';
 
 import type { LiveScoreGame, LiveScoresResponse } from '@/app/types/live';
 
@@ -25,48 +25,45 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const response = await axios.get(
-      `https://cdn.nba.com/static/json/liveData/scoreboard/todaysScoreboard_00.json`,
-      {
-        timeout: 4000,
-        headers: NBA_CDN_HEADERS,
-      }
-    );
+    const response = await axios.get(`${ESPN_NBA_BASE}/scoreboard`, {
+      timeout: 4000,
+      headers: { 'Accept': 'application/json' },
+    });
 
-    const scoreboard = response.data?.scoreboard;
-    const games: LiveScoreGame[] = (scoreboard?.games || []).map((game: Record<string, unknown>) => {
-      const homeTeam = game.homeTeam as Record<string, unknown> | undefined;
-      const awayTeam = game.awayTeam as Record<string, unknown> | undefined;
+    const events = (response.data?.events || []) as Record<string, unknown>[];
+    const games: LiveScoreGame[] = events.map((event) => {
+      const competition = ((event.competitions as Record<string, unknown>[]) || [])[0] || {};
+      const competitors = (competition.competitors as Record<string, unknown>[]) || [];
+      const home = competitors.find((c) => c.homeAway === 'home') || {};
+      const away = competitors.find((c) => c.homeAway === 'away') || {};
+      const homeTeam = home.team as Record<string, unknown> | undefined;
+      const awayTeam = away.team as Record<string, unknown> | undefined;
+      const homeTricode = toNbaTricode(homeTeam?.abbreviation);
+      const awayTricode = toNbaTricode(awayTeam?.abbreviation);
 
-      const homePeriods = (homeTeam?.periods as { period: number; score: number }[]) || [];
-      const awayPeriods = (awayTeam?.periods as { period: number; score: number }[]) || [];
+      const status = event.status as Record<string, unknown> | undefined;
+      const statusType = status?.type as Record<string, unknown> | undefined;
 
-      const periodScores = [
-        ...homePeriods.map((p) => ({
-          teamId: String(homeTeam?.teamTricode || ''),
-          period: String(p.period),
-          points: Number(p.score || 0),
-        })),
-        ...awayPeriods.map((p) => ({
-          teamId: String(awayTeam?.teamTricode || ''),
-          period: String(p.period),
-          points: Number(p.score || 0),
-        })),
-      ];
+      const linescores = (team: Record<string, unknown>, tricode: string) =>
+        ((team.linescores as { value: number }[]) || []).map((l, i) => ({
+          teamId: tricode,
+          period: String(i + 1),
+          points: Number(l.value || 0),
+        }));
 
       return {
-        game_id: String(game.gameId || ''),
-        game_date: String(game.gameTimeUTC || ''),
-        home_team_abbreviation: String(homeTeam?.teamTricode || ''),
-        away_team_abbreviation: String(awayTeam?.teamTricode || ''),
-        home_team_id: Number(homeTeam?.teamId || 0),
-        away_team_id: Number(awayTeam?.teamId || 0),
-        home_team_score: Number(homeTeam?.score || 0),
-        away_team_score: Number(awayTeam?.score || 0),
-        status: String(game.gameStatusText || ''),
-        period: String(game.period || '0'),
-        clock: String(game.gameClock || ''),
-        periodScores,
+        game_id: String(event.id || ''),
+        game_date: String(event.date || ''),
+        home_team_abbreviation: homeTricode,
+        away_team_abbreviation: awayTricode,
+        home_team_id: Number(homeTeam?.id || 0),
+        away_team_id: Number(awayTeam?.id || 0),
+        home_team_score: Number(home.score || 0),
+        away_team_score: Number(away.score || 0),
+        status: String(statusType?.shortDetail || ''),
+        period: String(status?.period || '0'),
+        clock: String(status?.displayClock || ''),
+        periodScores: [...linescores(home, homeTricode), ...linescores(away, awayTricode)],
       };
     });
 
