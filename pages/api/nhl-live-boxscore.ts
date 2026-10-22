@@ -85,7 +85,7 @@ function mapSkater(player: Record<string, unknown>, position: 'F' | 'D'): NHLSka
     points: Number(player.points || 0),
     plusMinus: Number(player.plusMinus || 0),
     pim: Number(player.pim || 0),
-    shots: Number(player.shots || 0),
+    shots: Number(player.sog ?? player.shots ?? 0),
     hits: Number(player.hits || 0),
     blockedShots: Number(player.blockedShots || 0),
     faceoffWins,
@@ -113,7 +113,8 @@ function mapGoalie(player: Record<string, unknown>): NHLGoalieStats {
 function mapGameStatus(game: Record<string, unknown>): string {
   const gameState = String(game.gameState || '');
   const clock = game.clock as Record<string, unknown> | undefined;
-  const period = Number(game.period || 0);
+  const periodDescriptor = game.periodDescriptor as Record<string, unknown> | undefined;
+  const period = Number(game.period ?? periodDescriptor?.number ?? 0);
   const timeRemaining = String(clock?.timeRemaining || '');
 
   switch (gameState) {
