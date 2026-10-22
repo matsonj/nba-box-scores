@@ -48,7 +48,7 @@ export function LiveRefreshButton() {
       onClick={handleRefresh}
       disabled={isCoolingDown}
       className={`
-        relative h-5 w-5 rounded flex items-center justify-center flex-shrink-0
+        relative h-5 w-5 rounded flex items-center justify-center shrink-0
         transition-all duration-200
         ${isCoolingDown
           ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'

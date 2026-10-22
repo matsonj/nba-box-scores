@@ -143,7 +143,7 @@ export function LiveModeToggle() {
             ${innerBgColor}
             h-full
           `}>
-            <span className="relative inline-flex items-center justify-center w-4 h-4 flex-shrink-0">
+            <span className="relative inline-flex items-center justify-center w-4 h-4 shrink-0">
               <span className={`inline-block w-2 h-2 rounded-full transition-colors duration-300 ${dotClasses}`} />
               {buttonState === 'live' && (
                 <CountdownRing key={pollTick} durationMs={pollInterval} size={16} />

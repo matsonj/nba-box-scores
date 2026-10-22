@@ -29,7 +29,7 @@ export default function GameCard({ game, loading: isLoading, onGameSelect, regul
     >
 
       {isLoading && (
-        <div className="absolute inset-0 bg-white dark:bg-gray-800 bg-opacity-75 dark:bg-opacity-75 flex items-center justify-center rounded-lg">
+        <div className="absolute inset-0 bg-white/75 dark:bg-gray-800/75 flex items-center justify-center rounded-lg">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
         </div>
       )}
