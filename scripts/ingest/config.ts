@@ -6,7 +6,7 @@ const USAGE = `
 Usage: tsx scripts/ingest/index.ts [options]
 
 Season selection (at least one required):
-  --season <year>               Single season (e.g. 2025 for 2025-26)
+  --season <year>               Single season (e.g. 2025 for 2025-26; or "current")
   --from <year> --to <year>     Range of seasons (inclusive)
   --all                         All seasons from 2000 to current
 
@@ -62,7 +62,7 @@ export function buildConfig(args: string[] = process.argv.slice(2)): PipelineCon
       case '--season': {
         const val = argv.shift();
         if (!val) fail('--season requires a value');
-        season = parseInt(val, 10);
+        season = val === 'current' ? currentSeasonYear() : parseInt(val, 10);
         if (isNaN(season) || season < 1946 || season > 2100) {
           fail(`Invalid season year: ${val}`);
         }

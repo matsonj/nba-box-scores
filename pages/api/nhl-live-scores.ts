@@ -10,7 +10,8 @@ const CACHE_TTL_MS = 5000;
 function mapGameStatus(game: Record<string, unknown>): string {
   const gameState = String(game.gameState || '');
   const clock = game.clock as Record<string, unknown> | undefined;
-  const period = Number(game.period || 0);
+  const periodDescriptor = game.periodDescriptor as Record<string, unknown> | undefined;
+  const period = Number(game.period ?? periodDescriptor?.number ?? 0);
   const timeRemaining = String(clock?.timeRemaining || '');
 
   switch (gameState) {
@@ -136,7 +137,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         home_team_score: Number(homeTeam?.score ?? 0),
         away_team_score: Number(awayTeam?.score ?? 0),
         status: mapGameStatus(game),
-        period: String(game.period ?? 0),
+        period: String(game.period ?? (game.periodDescriptor as Record<string, unknown> | undefined)?.number ?? 0),
         clock: String((game.clock as Record<string, unknown>)?.timeRemaining ?? ''),
         periodScores: buildPeriodScores(game),
         lastPlay: getLastGoalDescription(game) || undefined,

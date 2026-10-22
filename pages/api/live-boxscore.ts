@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
+import { NBA_CDN_HEADERS } from '@/lib/nbaCdn';
 import type { LiveBoxScoreResponse, LivePlayerStats } from '@/app/types/live';
 
 interface CacheEntry {
@@ -47,7 +48,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       `https://cdn.nba.com/static/json/liveData/boxscore/boxscore_${gameId}.json`,
       {
         timeout: 4000,
-        headers: { 'Accept': 'application/json' },
+        headers: NBA_CDN_HEADERS,
       }
     );
 
@@ -87,7 +88,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const pbpResponse = await axios.get(
         `https://cdn.nba.com/static/json/liveData/playbyplay/playbyplay_${gameId}.json`,
-        { timeout: 3000, headers: { 'Accept': 'application/json' } }
+        { timeout: 3000, headers: NBA_CDN_HEADERS }
       );
       const actions = pbpResponse.data?.game?.actions as Record<string, unknown>[] | undefined;
       if (actions && actions.length > 0) {

@@ -6,7 +6,7 @@ const USAGE = `
 Usage: tsx scripts/ingest/nhl/index.ts [options]
 
 Season selection (at least one required):
-  --season <year>               Single season (e.g. 2024 for 2024-25)
+  --season <year>               Single season (e.g. 2024 for 2024-25; or "current")
   --from <year> --to <year>     Range of seasons (inclusive)
   --all                         All seasons from 2015 to current
 
@@ -69,7 +69,7 @@ export function buildNHLConfig(args: string[] = process.argv.slice(2)): NHLPipel
       case '--season': {
         const val = argv.shift();
         if (!val) fail('--season requires a value');
-        season = parseInt(val, 10);
+        season = val === 'current' ? currentSeasonYear() : parseInt(val, 10);
         if (isNaN(season) || season < 2000 || season > 2100) {
           fail(`Invalid season year: ${val}`);
         }

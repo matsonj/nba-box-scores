@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
+import { NBA_CDN_HEADERS } from '@/lib/nbaCdn';
 
 import type { LiveScoreGame, LiveScoresResponse } from '@/app/types/live';
 
@@ -28,9 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       `https://cdn.nba.com/static/json/liveData/scoreboard/todaysScoreboard_00.json`,
       {
         timeout: 4000,
-        headers: {
-          'Accept': 'application/json',
-        },
+        headers: NBA_CDN_HEADERS,
       }
     );
 
